@@ -33,48 +33,51 @@
         .font-times { font-family: 'Times New Roman', serif; }
         .font-calibri { font-family: 'Calibri', sans-serif; }
 
-        /* --- CSS PRATINJAU KERTAS SKALA KECIL (DESKTOP) --- */
+        /* --- CSS PRATINJAU KERTAS FLUID (DESKTOP) --- */
         #content-preview {
-            padding: 2rem 0; /* Tambahkan padding vertikal untuk tampilan preview */
+            padding: 2rem 0; 
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
         #letter-container {
-            /* Container untuk menampung kertas yang diskalakan */
+            /* Container menampung kertas, menentukan lebar maksimum */
             max-width: 900px; 
             width: 100%;
-            display: flex;
-            justify-content: center;
-            overflow: hidden; 
-            border-radius: 0.75rem;
             margin-bottom: 2rem;
+            padding: 0 1rem; /* Tambahkan sedikit padding horizontal */
         }
 
-        #letter-content {
-            /* Definisi ukuran kertas A4 asli (untuk cetak) */
-            width: 210mm; /* A4 width in mm */
-            min-height: 297mm; /* A4 height in mm */
-            padding: 25mm 20mm; /* Margin yang sesuai untuk cetak (2.5cm & 2cm) */
-            
-            /* Tampilan Fisik Kertas pada Pratinjau Desktop */
+        /* Aspect ratio wrapper untuk menahan rasio A4/F4 */
+        #aspect-ratio-wrapper {
+            position: relative;
+            width: 100%;
+            /* padding-bottom akan diatur oleh JS untuk menjaga rasio (misalnya 141.42% untuk A4) */
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
             background-color: white;
             border: 1px solid #e2e8f0;
             transition: all 0.3s ease;
-            font-size: 12pt; 
-            margin: 0;
-            transform-origin: top center; /* Scaling dari atas tengah */
-            
-            /* Skala kecil untuk Desktop Preview (sekitar 75% dari ukuran penuh) */
-            transform: scale(0.75); 
+            border-radius: 0.75rem;
+            overflow: hidden; 
         }
 
-        /* Kop Surat Style BARU */
+        #letter-content {
+            /* Konten surat yang sebenarnya: posisikan absolut di dalam wrapper untuk aspek rasio */
+            position: absolute; 
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            padding: 25mm 20mm; /* Margin yang sesuai untuk cetak (2.5cm & 2cm) */
+            font-size: 12pt; 
+            transition: all 0.3s ease;
+            margin: 0;
+        }
+
+        /* Kop Surat Style */
         .kop-container {
-            /* Container utama kop surat */
-            margin-bottom: 5px; /* Kurangi margin bawah agar mendekati tanggal */
+            margin-bottom: 5px; 
         }
         .kop-header {
             border-bottom: 2px solid #000; /* Garis tebal di bawah alamat */
@@ -156,22 +159,26 @@
             transition: transform 0.3s ease-out; 
         }
         
-        /* Responsif: Nonaktifkan scaling di mobile agar dokumen tampil proporsional */
+        /* Responsif: Nonaktifkan aspect ratio hack di mobile */
         @media (max-width: 1024px) {
-            #letter-content {
-                width: 95%; /* Kembali ke lebar responsif */
-                min-height: auto !important; /* Agar bisa scroll di mobile tanpa tinggi minimum statis */
-                padding: 1.5rem 1rem;
-                font-size: 11pt;
-                transform: scale(1); /* Full scale di mobile */
-                box-shadow: none;
-                margin: 0 auto;
-            }
-            /* Menghapus style simulasi paper di mobile */
             #letter-container {
-                padding: 0;
+                padding: 0; /* Hapus padding container di mobile */
+            }
+            #aspect-ratio-wrapper {
                 box-shadow: none;
-                margin-bottom: 0;
+                border: none;
+                border-radius: 0;
+                padding-bottom: 0 !important; /* Hapus padding aspect ratio di mobile */
+                position: static;
+            }
+            #letter-content {
+                position: static; /* Kembali ke posisi statis */
+                width: 95%; 
+                height: auto; 
+                min-height: auto !important;
+                padding: 1.5rem 1rem; /* Padding yang lebih kecil */
+                font-size: 11pt;
+                margin: 0 auto;
             }
             .kop-teks { font-size: 11pt; }
             .kop-teks.instansi { font-size: 13pt; }
@@ -404,100 +411,103 @@ Tempat: Lapangan</textarea>
                 </div>
 
                 <div id="letter-container">
-                    <div id="letter-content" class="font-times overflow-hidden mx-auto">
-                        
-                        <!-- Kop Surat (Header) - Disesuaikan seperti gambar BARU -->
-                        <div class="kop-container">
-                            <div id="header-section" class="kop-header">
-                                <div class="flex items-start justify-between text-center">
-                                    <!-- Logo Kiri -->
-                                    <div class="w-1/6 flex justify-start pr-4">
-                                        <img id="logo-kiri" src="" class="w-16 h-20 object-contain" alt="Logo Kiri" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KIRI';">
-                                    </div>
+                    <!-- NEW WRAPPER untuk menahan Aspect Ratio di Desktop -->
+                    <div id="aspect-ratio-wrapper"> 
+                        <div id="letter-content" class="font-times overflow-hidden">
+                            
+                            <!-- Kop Surat (Header) - Disesuaikan seperti gambar BARU -->
+                            <div class="kop-container">
+                                <div id="header-section" class="kop-header">
+                                    <div class="flex items-start justify-between text-center">
+                                        <!-- Logo Kiri -->
+                                        <div class="w-1/6 flex justify-start pr-4">
+                                            <img id="logo-kiri" src="" class="w-16 h-20 object-contain" alt="Logo Kiri" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KIRI';">
+                                        </div>
 
-                                    <div class="w-4/6 flex-grow text-center mt-1">
-                                        <p class="kop-teks utama" id="preview-kop-utama"></p>
-                                        <p class="kop-teks" id="preview-kop-sub1">DINAS PENDIDIKAN DAN KEBUDAYAAN</p>
-                                        <p class="kop-teks instansi" id="preview-kop-sub2"></p>
-                                        <p class="kop-teks text-xs" id="preview-kop-alamat"></p>
-                                    </div>
+                                        <div class="w-4/6 flex-grow text-center mt-1">
+                                            <p class="kop-teks utama" id="preview-kop-utama"></p>
+                                            <p class="kop-teks" id="preview-kop-sub1">DINAS PENDIDIKAN DAN KEBUDAYAAN</p>
+                                            <p class="kop-teks instansi" id="preview-kop-sub2"></p>
+                                            <p class="kop-teks text-xs" id="preview-kop-alamat"></p>
+                                        </div>
 
-                                     <!-- Logo Kanan -->
-                                     <div class="w-1/6 flex justify-end pl-4">
-                                        <img id="logo-kanan" src="" class="w-16 h-20 object-contain" alt="Logo Kanan" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KANAN';">
+                                         <!-- Logo Kanan -->
+                                         <div class="w-1/6 flex justify-end pl-4">
+                                            <img id="logo-kanan" src="" class="w-16 h-20 object-contain" alt="Logo Kanan" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KANAN';">
+                                        </div>
                                     </div>
+                                </div>
+
+                                <!-- Tempat dan Tanggal (DI BAWAH GARIS) -->
+                                <p class="text-right text-base text-gray-800" id="preview-tanggal-surat"></p>
+                            </div>
+                            <!-- Akhir Kop Surat -->
+
+                            <!-- Informasi Surat (Nomor, Lampiran, Perihal) -->
+                            <div class="text-base mt-6 mb-8">
+                                <div class="flex">
+                                    <span class="w-24">Nomor</span>
+                                    <span id="preview-nomor"></span>
+                                </div>
+                                <div class="flex">
+                                    <span class="w-24">Lampiran</span>
+                                    <span id="preview-lampiran"></span>
+                                </div>
+                                <div class="flex">
+                                    <span class="w-24">Perihal</span>
+                                    <span id="preview-perihal"></span>
                                 </div>
                             </div>
 
-                            <!-- Tempat dan Tanggal (DI BAWAH GARIS) -->
-                            <p class="text-right text-base text-gray-800" id="preview-tanggal-surat"></p>
-                        </div>
-                        <!-- Akhir Kop Surat -->
-
-                        <!-- Informasi Surat (Nomor, Lampiran, Perihal) -->
-                        <div class="text-base mt-6 mb-8">
-                            <div class="flex">
-                                <span class="w-24">Nomor</span>
-                                <span id="preview-nomor"></span>
+                            <!-- Alamat Tujuan -->
+                            <div class="mb-6">
+                                <p class="text-base mb-2">Kepada</p>
+                                <p class="text-base font-semibold" id="preview-tujuan-nama"></p>
+                                <p class="text-base">di Tempat</p>
                             </div>
-                            <div class="flex">
-                                <span class="w-24">Lampiran</span>
-                                <span id="preview-lampiran"></span>
-                            </div>
-                            <div class="flex">
-                                <span class="w-24">Perihal</span>
-                                <span id="preview-perihal"></span>
-                            </div>
-                        </div>
 
-                        <!-- Alamat Tujuan -->
-                        <div class="mb-6">
-                            <p class="text-base mb-2">Kepada</p>
-                            <p class="text-base font-semibold" id="preview-tujuan-nama"></p>
-                            <p class="text-base">di Tempat</p>
-                        </div>
+                            <!-- Isi Surat -->
+                            <div class="text-gray-800 space-y-4 text-base leading-normal">
+                                <p>Dengan hormat,</p>
+                                <p class="text-justify indent-10" id="preview-isi-utama-1"></p>
 
-                        <!-- Isi Surat -->
-                        <div class="text-gray-800 space-y-4 text-base leading-normal">
-                            <p>Dengan hormat,</p>
-                            <p class="text-justify indent-10" id="preview-isi-utama-1"></p>
-
-                            <!-- Detail Kegiatan (Diparsing dari textarea dengan baris baru) -->
-                            <div class="ml-10 text-base space-y-1" id="preview-detail-kegiatan">
-                                <!-- Konten akan diisi oleh JS -->
-                            </div>
-                            
-                            <p class="text-justify indent-10 mt-6" id="preview-isi-penutup"></p>
-                        </div>
-
-                        <!-- Penutup dan Tanda Tangan (Format Dua Kolom) -->
-                        <div class="mt-20 text-base flex">
-                            <!-- Kolom Kiri -->
-                            <div class="w-1/2 flex flex-col items-start px-8">
-                                <!-- "Hormat kami" di kiri atas -->
-                                <p class="font-normal mb-1">Hormat kami,</p> 
+                                <!-- Detail Kegiatan (Diparsing dari textarea dengan baris baru) -->
+                                <div class="ml-10 text-base space-y-1" id="preview-detail-kegiatan">
+                                    <!-- Konten akan diisi oleh JS -->
+                                </div>
                                 
-                                <!-- Jabatan Kiri -->
-                                <p class="font-medium text-base mb-16" id="preview-jabatan-kiri"></p>
-                                
-                                <!-- Nama Kiri -->
-                                <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kiri"></p>
+                                <p class="text-justify indent-10 mt-6" id="preview-isi-penutup"></p>
                             </div>
 
-                            <!-- Kolom Kanan -->
-                            <div class="w-1/2 flex flex-col items-start px-8">
-                                <!-- Jabatan Kanan sejajar dengan "Hormat kami," (menggunakan &nbsp; sebagai placeholder baris) -->
-                                <p class="font-normal mb-1">&nbsp;</p> 
+                            <!-- Penutup dan Tanda Tangan (Format Dua Kolom) -->
+                            <div class="mt-20 text-base flex">
+                                <!-- Kolom Kiri -->
+                                <div class="w-1/2 flex flex-col items-start px-8">
+                                    <!-- "Hormat kami" di kiri atas -->
+                                    <p class="font-normal mb-1">Hormat kami,</p> 
+                                    
+                                    <!-- Jabatan Kiri -->
+                                    <p class="font-medium text-base mb-16" id="preview-jabatan-kiri"></p>
+                                    
+                                    <!-- Nama Kiri -->
+                                    <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kiri"></p>
+                                </div>
 
-                                <!-- Jabatan Kanan -->
-                                <p class="font-medium text-base mb-16" id="preview-jabatan-kanan"></p>
-                                
-                                <!-- Nama Kanan -->
-                                <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kanan"></p>
+                                <!-- Kolom Kanan -->
+                                <div class="w-1/2 flex flex-col items-start px-8">
+                                    <!-- Jabatan Kanan sejajar dengan "Hormat kami," (menggunakan &nbsp; sebagai placeholder baris) -->
+                                    <p class="font-normal mb-1">&nbsp;</p> 
+
+                                    <!-- Jabatan Kanan -->
+                                    <p class="font-medium text-base mb-16" id="preview-jabatan-kanan"></p>
+                                    
+                                    <!-- Nama Kanan -->
+                                    <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kanan"></p>
+                                </div>
                             </div>
+
                         </div>
-
-                    </div>
+                    </div> <!-- END ASPECT RATIO WRAPPER -->
                 </div>
             </div>
             <!-- Akhir Konten Aplikasi: Pratinjau & Unduh PDF -->
@@ -506,7 +516,7 @@ Tempat: Lapangan</textarea>
     </main>
 
     <!-- Footer Simple -->
-    <footer class="bg-gray-800 text-white mt-12 p-4 text-center">
+    <footer class="bg-gray-800 text-white mt-8 p-4 text-center">
         <div class="container mx-auto max-w-4xl text-sm opacity-80">
             <p>Sistem Pengarsipan Dokumen Profesional (Versi 1.2) | Disimpan di Realtime Database</p>
         </div>
@@ -685,16 +695,28 @@ Tempat: Lapangan</textarea>
             });
         }
         
-        // Fungsi untuk menyesuaikan tinggi pratinjau sesuai ukuran kertas
+        // Fungsi untuk menyesuaikan tinggi pratinjau sesuai ukuran kertas (mempertahankan aspek rasio)
         function updatePreviewPaperSize(size) {
-            const content = document.getElementById('letter-content');
-            if (size === 'f4') {
-                // F4/Folio height: 330mm
-                content.style.minHeight = '330mm';
-            } else {
-                // A4 height: 297mm
-                content.style.minHeight = '297mm';
+            const aspectRatioWrapper = document.getElementById('aspect-ratio-wrapper');
+            const isMobile = window.innerWidth < 1024;
+            
+            // Di mobile, kita tidak perlu aspect ratio hack karena layoutnya responsif penuh
+            if (isMobile) {
+                aspectRatioWrapper.style.paddingBottom = '0';
+                return;
             }
+
+            let paddingPercentage;
+            if (size === 'f4') {
+                // F4/Folio (215mm x 330mm) Ratio: 330/215 ≈ 153.49%
+                paddingPercentage = '153.49%';
+            } else {
+                // A4 (210mm x 297mm) Ratio: 297/210 ≈ 141.42%
+                paddingPercentage = '141.42%';
+            }
+            
+            // Set padding-bottom untuk menahan aspect ratio
+            aspectRatioWrapper.style.paddingBottom = paddingPercentage;
         }
         window.updatePreviewPaperSize = updatePreviewPaperSize;
 
@@ -857,14 +879,6 @@ Tempat: Lapangan</textarea>
                 return;
             }
 
-            // Atur ulang tinggi konten ke dimensi cetak penuh sebelum membuat PDF
-            const originalMinHeight = content.style.minHeight;
-            content.style.minHeight = `${paperOptions.height}mm`; 
-            
-            // Nonaktifkan scaling sementara untuk cetak yang akurat
-            const originalTransform = content.style.transform;
-            content.style.transform = 'scale(1)';
-
             // Opsi html2pdf
             const opt = {
                 margin: [15, 15, 15, 15], // Margin 15mm untuk semua sisi
@@ -874,14 +888,19 @@ Tempat: Lapangan</textarea>
                 jsPDF: { unit: 'mm', format: paperOptions, orientation: 'portrait' }
             };
 
-            setTimeout(() => {
-                html2pdf().set(opt).from(content).save().then(() => {
-                    // Kembalikan tinggi dan skala setelah selesai
-                    content.style.minHeight = originalMinHeight;
-                    content.style.transform = originalTransform;
+            // Ambil elemen yang akan dicetak (letter-content)
+            const elementToPrint = document.getElementById('letter-content');
+            
+            // Gunakan promise chain dengan .finally() untuk memastikan loading indicator disembunyikan
+            html2pdf().set(opt).from(elementToPrint).save()
+                .catch(error => {
+                    console.error("PDF generation failed:", error);
+                    // Tambahkan notifikasi error jika diperlukan
+                })
+                .finally(() => {
+                    // Pastikan loading message disembunyikan, baik berhasil atau gagal
                     loadingMessage.classList.add('hidden');
                 });
-            }, 100);
         }
         window.prepareAndDownloadPdf = prepareAndDownloadPdf; 
 
@@ -890,7 +909,13 @@ Tempat: Lapangan</textarea>
 
         document.addEventListener('DOMContentLoaded', () => {
              showTab('edit');
-             updatePreviewPaperSize('a4'); // Set default A4 height on load
+             // Panggil updatePreviewPaperSize untuk pertama kali dengan default A4
+             updatePreviewPaperSize('a4'); 
+        });
+        
+        // Listener untuk menyesuaikan aspect ratio ketika jendela diubah ukurannya (Desktop <-> Mobile)
+        window.addEventListener('resize', () => {
+             updatePreviewPaperSize(document.getElementById('paper-size-select').value);
         });
 
     </script>
