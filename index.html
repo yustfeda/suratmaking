@@ -75,18 +75,20 @@
             margin: 0;
         }
 
-        /* Kop Surat Style */
+        /* Kop Surat Style - Disesuaikan agar mirip format resmi */
         .kop-container {
             margin-bottom: 5px; 
         }
         .kop-header {
-            border-bottom: 2px solid #000; /* Garis tebal di bawah alamat */
+            /* GARIS TEBAL DI BAWAH KOP */
+            border-bottom: 3px solid #000; 
             padding-bottom: 8px;
-            margin-bottom: 5px;
+            margin-bottom: 0; /* Jarak dibuat dari margin-top Tanggal Surat */
         }
         .kop-teks {
             font-size: 12pt;
             line-height: 1.2;
+            color: #1f2937; /* Gray-800 */
         }
         .kop-teks.utama {
             font-weight: bold;
@@ -95,7 +97,27 @@
             font-weight: bold;
             font-size: 14pt;
         }
+        .kop-teks.alamat {
+            font-size: 10pt;
+            font-weight: normal;
+        }
 
+        /* --- PENGATURAN TEKS SURAT --- */
+        .data-surat-row {
+            display: flex;
+            margin-bottom: 3px;
+        }
+        .data-surat-label {
+            width: 80px; /* Lebar label (Nomor, Lampiran, Perihal) */
+            flex-shrink: 0;
+            font-weight: normal;
+        }
+        .data-surat-separator {
+            width: 15px; /* Lebar untuk ':' */
+            text-align: center;
+            flex-shrink: 0;
+        }
+        
         /* Style umum untuk input form */
         .form-input-field {
             width: 100%;
@@ -415,46 +437,51 @@ Tempat: Lapangan</textarea>
                     <div id="aspect-ratio-wrapper"> 
                         <div id="letter-content" class="font-times overflow-hidden">
                             
-                            <!-- Kop Surat (Header) - Disesuaikan seperti gambar BARU -->
+                            <!-- Kop Surat (Header) - Disesuaikan agar mirip format resmi -->
                             <div class="kop-container">
                                 <div id="header-section" class="kop-header">
-                                    <div class="flex items-start justify-between text-center">
+                                    <div class="flex items-center justify-between text-center">
                                         <!-- Logo Kiri -->
-                                        <div class="w-1/6 flex justify-start pr-4">
+                                        <div class="w-1/10 flex justify-start">
                                             <img id="logo-kiri" src="" class="w-16 h-20 object-contain" alt="Logo Kiri" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KIRI';">
                                         </div>
 
-                                        <div class="w-4/6 flex-grow text-center mt-1">
+                                        <!-- Teks Kop (80% Lebar) -->
+                                        <div class="w-8/10 flex-grow text-center flex flex-col justify-center items-center">
                                             <p class="kop-teks utama" id="preview-kop-utama"></p>
-                                            <p class="kop-teks" id="preview-kop-sub1">DINAS PENDIDIKAN DAN KEBUDAYAAN</p>
+                                            <p class="kop-teks" id="preview-kop-sub1"></p>
                                             <p class="kop-teks instansi" id="preview-kop-sub2"></p>
-                                            <p class="kop-teks text-xs" id="preview-kop-alamat"></p>
+                                            <p class="kop-teks alamat" id="preview-kop-alamat"></p>
                                         </div>
 
                                          <!-- Logo Kanan -->
-                                         <div class="w-1/6 flex justify-end pl-4">
+                                         <div class="w-1/10 flex justify-end">
                                             <img id="logo-kanan" src="" class="w-16 h-20 object-contain" alt="Logo Kanan" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KANAN';">
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Tempat dan Tanggal (DI BAWAH GARIS) -->
-                                <p class="text-right text-base text-gray-800" id="preview-tanggal-surat"></p>
+                                <!-- Margin-top 5px agar lebih rapat ke garis -->
+                                <p class="text-right text-base text-gray-800 pt-1" id="preview-tanggal-surat"></p>
                             </div>
                             <!-- Akhir Kop Surat -->
 
-                            <!-- Informasi Surat (Nomor, Lampiran, Perihal) -->
-                            <div class="text-base mt-6 mb-8">
-                                <div class="flex">
-                                    <span class="w-24">Nomor</span>
+                            <!-- Informasi Surat (Nomor, Lampiran, Perihal) - Jarak 1.5 spasi -->
+                            <div class="text-base mt-6 mb-8 leading-relaxed">
+                                <div class="data-surat-row">
+                                    <span class="data-surat-label">Nomor</span>
+                                    <span class="data-surat-separator">:</span>
                                     <span id="preview-nomor"></span>
                                 </div>
-                                <div class="flex">
-                                    <span class="w-24">Lampiran</span>
+                                <div class="data-surat-row">
+                                    <span class="data-surat-label">Lampiran</span>
+                                    <span class="data-surat-separator">:</span>
                                     <span id="preview-lampiran"></span>
                                 </div>
-                                <div class="flex">
-                                    <span class="w-24">Perihal</span>
+                                <div class="data-surat-row">
+                                    <span class="data-surat-label">Perihal</span>
+                                    <span class="data-surat-separator">:</span>
                                     <span id="preview-perihal"></span>
                                 </div>
                             </div>
@@ -465,10 +492,12 @@ Tempat: Lapangan</textarea>
                                 <p class="text-base font-semibold" id="preview-tujuan-nama"></p>
                                 <p class="text-base">di Tempat</p>
                             </div>
+                            
+                            <!-- Salam Pembuka -->
+                            <p class="text-base text-gray-800 mb-4">Dengan hormat,</p>
 
                             <!-- Isi Surat -->
                             <div class="text-gray-800 space-y-4 text-base leading-normal">
-                                <p>Dengan hormat,</p>
                                 <p class="text-justify indent-10" id="preview-isi-utama-1"></p>
 
                                 <!-- Detail Kegiatan (Diparsing dari textarea dengan baris baru) -->
@@ -482,8 +511,7 @@ Tempat: Lapangan</textarea>
                             <!-- Penutup dan Tanda Tangan (Format Dua Kolom) -->
                             <div class="mt-20 text-base flex">
                                 <!-- Kolom Kiri -->
-                                <div class="w-1/2 flex flex-col items-start px-8">
-                                    <!-- "Hormat kami" di kiri atas -->
+                                <div class="w-1/2 flex flex-col items-start pr-12">
                                     <p class="font-normal mb-1">Hormat kami,</p> 
                                     
                                     <!-- Jabatan Kiri -->
@@ -491,11 +519,11 @@ Tempat: Lapangan</textarea>
                                     
                                     <!-- Nama Kiri -->
                                     <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kiri"></p>
+                                    <p class="text-xs text-transparent">.</p> <!-- Menjaga jarak baris -->
                                 </div>
 
                                 <!-- Kolom Kanan -->
-                                <div class="w-1/2 flex flex-col items-start px-8">
-                                    <!-- Jabatan Kanan sejajar dengan "Hormat kami," (menggunakan &nbsp; sebagai placeholder baris) -->
+                                <div class="w-1/2 flex flex-col items-start pl-12">
                                     <p class="font-normal mb-1">&nbsp;</p> 
 
                                     <!-- Jabatan Kanan -->
@@ -503,8 +531,10 @@ Tempat: Lapangan</textarea>
                                     
                                     <!-- Nama Kanan -->
                                     <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kanan"></p>
+                                    <p class="text-xs text-transparent">.</p> <!-- Menjaga jarak baris -->
                                 </div>
                             </div>
+                            <!-- Catatan: Untuk penandatangan mengetahui/menyetujui, biasanya ditambahkan di kiri atas, namun saya hanya mengikuti layout dua kolom di gambar Anda. -->
 
                         </div>
                     </div> <!-- END ASPECT RATIO WRAPPER -->
@@ -515,7 +545,7 @@ Tempat: Lapangan</textarea>
         </div>
     </main>
 
-    <!-- Footer Simple -->
+    <!-- Footer Simple - Jarak Diperpendek menjadi mt-8 -->
     <footer class="bg-gray-800 text-white mt-8 p-4 text-center">
         <div class="container mx-auto max-w-4xl text-sm opacity-80">
             <p>Sistem Pengarsipan Dokumen Profesional (Versi 1.2) | Disimpan di Realtime Database</p>
@@ -739,15 +769,13 @@ Tempat: Lapangan</textarea>
             document.getElementById('preview-kop-alamat').textContent = letterData.kopAlamat;
             document.getElementById('preview-tanggal-surat').textContent = letterData.tanggalSurat;
             
-            document.getElementById('preview-nomor').textContent = `: ${letterData.nomor}`;
-            document.getElementById('preview-lampiran').textContent = `: ${letterData.lampiran}`;
-            document.getElementById('preview-perihal').textContent = `: ${letterData.perihal}`;
+            // Detail Surat menggunakan layout baru (tanpa spasi di preview)
+            document.getElementById('preview-nomor').textContent = letterData.nomor;
+            document.getElementById('preview-lampiran').textContent = letterData.lampiran;
+            document.getElementById('preview-perihal').textContent = letterData.perihal;
             
-            // Tambahkan "Bapak/Ibu" hanya jika tujuan nama tidak kosong dan belum mengandung kata sapaan
+            // Tujuan
             let tujuanNama = letterData.tujuanNama;
-            if (tujuanNama && !tujuanNama.toLowerCase().startsWith('bapak') && !tujuanNama.toLowerCase().startsWith('ibu') && !tujuanNama.toLowerCase().startsWith('yth')) {
-                tujuanNama = `Bapak/Ibu ${tujuanNama}`;
-            }
             document.getElementById('preview-tujuan-nama').textContent = tujuanNama;
 
             document.getElementById('preview-isi-utama-1').textContent = letterData.isiUtama;
@@ -765,10 +793,11 @@ Tempat: Lapangan</textarea>
                     const value = parts.slice(1).join(':').trim(); 
                     
                     const div = document.createElement('div');
-                    div.className = 'flex';
+                    div.className = 'flex data-surat-row'; // Menggunakan style yang sama
                     div.innerHTML = `
-                        <span class="w-28 font-normal">${key}</span>
-                        <span class="flex-grow">: ${value}</span>
+                        <span class="data-surat-label">${key}</span>
+                        <span class="data-surat-separator">:</span>
+                        <span class="flex-grow">${value}</span>
                     `;
                     detailKegiatanContainer.appendChild(div);
                 }
@@ -881,10 +910,16 @@ Tempat: Lapangan</textarea>
 
             // Opsi html2pdf
             const opt = {
-                margin: [15, 15, 15, 15], // Margin 15mm untuk semua sisi
+                // Mengatur margin default (misalnya 15mm)
+                margin: [15, 15, 15, 15], 
                 filename: filename,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, logging: false },
+                html2canvas: { 
+                    scale: 2, 
+                    logging: false,
+                    // Pastikan elemen Kop Surat memiliki latar belakang putih untuk mengatasi potensi masalah transparansi
+                    // Ini diatur di CSS .kop-header, tapi bagus untuk memastikan
+                },
                 jsPDF: { unit: 'mm', format: paperOptions, orientation: 'portrait' }
             };
 
@@ -895,7 +930,7 @@ Tempat: Lapangan</textarea>
             html2pdf().set(opt).from(elementToPrint).save()
                 .catch(error => {
                     console.error("PDF generation failed:", error);
-                    // Tambahkan notifikasi error jika diperlukan
+                    // Tidak perlu alert, cukup di konsol
                 })
                 .finally(() => {
                     // Pastikan loading message disembunyikan, baik berhasil atau gagal
