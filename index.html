@@ -3,348 +3,626 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Mewah & Elegan</title>
+    <title>Surat Bisnis - Profesional</title>
     <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Memuat html2pdf.js untuk membuat PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         /* Menggunakan font Inter secara default */
-        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
-        /* Style untuk area surat agar terlihat seperti kertas */
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        
+        /* Definisi font kustom */
+        .font-times { font-family: 'Times New Roman', serif; }
+        .font-calibri { font-family: 'Calibri', sans-serif; }
+
+        /* Style untuk area surat agar terlihat seperti kertas (Hanya untuk Pratinjau) */
         #letter-content {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 0 40px -8px rgba(0, 0, 0, 0.2); 
             background-color: white;
-            padding: 3rem; /* Padding lebih besar untuk kesan mewah */
-        }
-
-        /* Style untuk membuatnya editable */
-        .editable {
-            outline: none;
-            cursor: text;
-        }
-        /* Mengubah ukuran font di perangkat kecil */
-        @media (max-width: 640px) {
-            #letter-content { padding: 1.5rem; }
-            .text-xl { font-size: 1.15rem; }
-            .text-lg { font-size: 1rem; }
-        }
-
-        /* Kelas untuk cetak: hanya tampilkan konten surat */
-        @media print {
-            body * { visibility: hidden; }
-            #letter-content, #letter-content * { visibility: visible; }
-            #letter-content {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-            }
-        }
-
-        /* Style mewah untuk tombol */
-        .btn-elegant {
+            padding: 3rem;
+            border: 1px solid #e2e8f0;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px -3px rgba(100, 116, 139, 0.3);
+            font-size: 12pt; /* Ukuran font standar surat resmi */
         }
-        .btn-elegant:hover {
-            box-shadow: 0 6px 20px -5px rgba(100, 116, 139, 0.5);
-            transform: translateY(-1px);
+
+        /* Kop Surat Style */
+        .kop-container {
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        .kop-teks {
+            font-size: 12pt;
+            line-height: 1.2;
+        }
+        .kop-teks.utama {
+            font-weight: bold;
+        }
+        .kop-teks.instansi {
+            font-weight: bold;
+            font-size: 14pt;
+        }
+
+        /* Style umum untuk input form */
+        .form-input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            background-color: #ffffff;
+        }
+        .form-input-field:focus {
+            border-color: #10b981; 
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            outline: none;
+        }
+
+        /* Style mewah untuk tombol utama (PDF/Tab Terpilih) */
+        .btn-primary {
+            background-image: linear-gradient(to right, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px -5px rgba(16, 185, 129, 0.5);
+        }
+        .btn-primary:hover {
+            box-shadow: 0 8px 20px -7px rgba(16, 185, 129, 0.7);
+            transform: translateY(-2px);
+            background-image: linear-gradient(to right, #059669 0%, #10b981 100%);
+        }
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Style untuk Tab Button (Permintaan Pengguna: Berwarna) */
+        .tab-button {
+            border-bottom: 3px solid transparent;
+            color: #4b5563; /* Warna default abu-abu */
+        }
+
+        .tab-button.active {
+            color: #059669; /* Warna aktif hijau */
+            border-bottom-color: #059669; /* Garis bawah hijau */
+            font-weight: 600;
+        }
+
+        .tab-button.active-edit {
+             color: #ef4444; /* Warna aktif merah */
+             border-bottom-color: #ef4444; /* Garis bawah merah */
+             font-weight: 600;
+        }
+
+        /* Responsif untuk HP */
+        @media (max-width: 640px) {
+            #letter-content { padding: 1rem; }
+            .form-input-field { padding: 0.5rem 0.75rem; }
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <main class="flex-grow container mx-auto p-4 sm:p-8">
+    <!-- HEADER APLIKASI PROFESIONAL -->
+    <header class="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-md">
+        <div class="container mx-auto max-w-6xl flex justify-between items-center py-4 px-4 sm:px-8">
+            <div class="flex items-center">
+                <!-- Logo Aplikasi -->
+                <svg class="w-6 h-6 text-emerald-500 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <h1 class="text-xl font-bold text-gray-800">SuratPro - Generator Dokumen</h1>
+            </div>
+            <div id="auth-status" class="text-sm text-gray-600">
+                <!-- Status User ID akan ditampilkan di sini -->
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto max-w-6xl p-4 sm:p-8">
         <div class="max-w-4xl mx-auto">
             
-            <!-- Judul Aplikasi -->
-            <h1 class="text-3xl font-extrabold text-gray-800 text-center mb-6 sm:mb-8">
-                Generator Surat Bisnis Elegan
-            </h1>
-
             <!-- Kontrol Tab -->
-            <div class="flex justify-center border-b border-gray-200 mb-8">
-                <button id="tab-edit" onclick="showTab('edit')" class="px-6 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none" aria-current="page">
+            <div class="flex justify-center border-b-2 border-gray-300 mb-8 mt-4 sticky top-[65px] bg-f0f4f8 z-10">
+                <button id="tab-edit" onclick="showTab('edit')" class="tab-button active-edit px-6 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none text-red-500 border-red-500 hover:bg-red-50" aria-current="page">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    Mode Edit
+                    Edit Data Surat
                 </button>
-                <button id="tab-download" onclick="showTab('download')" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Unduh PDF
+                <button id="tab-preview" onclick="showTab('preview')" class="tab-button px-6 py-3 text-sm font-medium text-gray-500 hover:text-emerald-700 transition-colors duration-200 focus:outline-none hover:bg-emerald-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    Pratinjau & Unduh PDF
                 </button>
             </div>
 
-            <!-- Konten Aplikasi: Mode Edit -->
-            <div id="content-edit" class="tab-content transition-opacity duration-300">
-                <div id="letter-content" class="min-h-[800px] shadow-xl rounded-lg border border-gray-100 mb-8 overflow-hidden">
+            <!-- Konten Aplikasi: Mode Edit (Form Input) -->
+            <div id="content-edit" class="tab-content transition-opacity duration-300 bg-white p-6 sm:p-8 rounded-lg shadow-xl border border-gray-100">
+                <div id="data-status" class="mb-4 text-center text-sm font-medium text-gray-500">
+                    <span id="save-status">Status: Memuat data...</span>
+                </div>
+
+                <div class="space-y-8">
+                     <!-- Pilihan Font (Tambahan dari permintaan pengguna) -->
+                    <div class="p-4 border-l-4 border-purple-500 bg-purple-50 rounded-lg shadow-inner">
+                        <h3 class="font-semibold text-xl text-gray-800 mb-4">0. Pengaturan Tampilan Dokumen</h3>
+                        <div>
+                            <label for="input-font-choice" class="block text-sm font-medium text-gray-700 mb-1">Pilih Jenis Font Dokumen</label>
+                            <select id="input-font-choice" data-field="fontChoice" onchange="handleInputChange(this)" class="form-input-field">
+                                <option value="font-times">Times New Roman (Serif, Formal)</option>
+                                <option value="font-calibri">Calibri (Sans-serif, Modern)</option>
+                            </select>
+                        </div>
+                    </div>
+
+
+                    <!-- Bagian Kop Surat -->
+                    <div class="space-y-4 p-4 border-l-4 border-emerald-500 bg-gray-50 rounded-lg shadow-inner">
+                        <h3 class="font-semibold text-xl text-gray-800">1. Data Instansi</h3>
+                        
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="input-kop-utama" class="block text-sm font-medium text-gray-700 mb-1">Kop Utama (Baris 1)</label>
+                                <input type="text" id="input-kop-utama" data-field="kopUtama" oninput="handleInputChange(this)" class="form-input-field" value="PEMERINTAH KABUPATEN LEBAK">
+                            </div>
+                            <div>
+                                <label for="input-kop-sub2" class="block text-sm font-medium text-gray-700 mb-1">Nama Instansi</label>
+                                <input type="text" id="input-kop-sub2" data-field="namaInstansi" oninput="handleInputChange(this)" class="form-input-field" value="SMP NEGERI 2 CILELES">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="input-tanggal-surat" class="block text-sm font-medium text-gray-700 mb-1">Tempat, Tanggal Surat</label>
+                            <input type="text" id="input-tanggal-surat" data-field="tanggalSurat" oninput="handleInputChange(this)" class="form-input-field" value="Cileles, 25 Nopember 2025">
+                        </div>
+                         <div>
+                            <label for="input-kop-alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat Instansi</label>
+                            <input type="text" id="input-kop-alamat" data-field="kopAlamat" oninput="handleInputChange(this)" class="form-input-field" value="Alamat: Kp. Pasir Galatik Desa Gumuruh Kec. Cileles-Lebak">
+                        </div>
+                    </div>
+
+                    <!-- Bagian Detail Surat -->
+                    <div class="space-y-4 p-4 border-l-4 border-amber-500 bg-white rounded-lg shadow">
+                        <h3 class="font-semibold text-xl text-gray-800">2. Detail Surat</h3>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="input-nomor" class="block text-sm font-medium text-gray-700 mb-1">Nomor</label>
+                                <input type="text" id="input-nomor" data-field="nomor" oninput="handleInputChange(this)" class="form-input-field" value="421. /SMP/Filal/CLLS/XI/2025">
+                            </div>
+                            <div>
+                                <label for="input-lampiran" class="block text-sm font-medium text-gray-700 mb-1">Lampiran</label>
+                                <input type="text" id="input-lampiran" data-field="lampiran" oninput="handleInputChange(this)" class="form-input-field" value="-">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="input-perihal" class="block text-sm font-medium text-gray-700 mb-1">Perihal</label>
+                            <input type="text" id="input-perihal" data-field="perihal" oninput="handleInputChange(this)" class="form-input-field" value="Pemberitahuan Kegiatan PERJUSAMI">
+                        </div>
+                         <div>
+                            <label for="input-tujuan-nama" class="block text-sm font-medium text-gray-700 mb-1">Tujuan (Kepada Yth.)</label>
+                            <input type="text" id="input-tujuan-nama" data-field="tujuanNama" oninput="handleInputChange(this)" class="form-input-field" value="Bapak Kepala SMP Negeri 2 Cileles">
+                        </div>
+                    </div>
+
+                    <!-- Bagian Isi Surat -->
+                    <div class="space-y-4 p-4 border-l-4 border-emerald-500 bg-gray-50 rounded-lg shadow-inner">
+                        <h3 class="font-semibold text-xl text-gray-800">3. Isi & Rincian Kegiatan</h3>
+                        <div>
+                            <label for="input-isi-utama-1" class="block text-sm font-medium text-gray-700 mb-1">Paragraf Pembuka/Utama</label>
+                            <textarea id="input-isi-utama-1" data-field="isiUtama" oninput="handleInputChange(this)" rows="4" class="form-input-field">Dalam rangka meningkatkan kedisiplinan, kemandirian, serta kemampuan kepramukaan peserta didik sebagai generasi muda yang berkarakter dan berjiwa Pancasila, kami bermaksud akan melaksanakan kegiatan Perkembangan Jumat Sabtu Minggu (Perjusami). Sehubungan dengan hal tersebut, bersama ini kami memberitahukan bahwa kegiatan akan dilaksanakan pada:</textarea>
+                        </div>
+                        <div>
+                            <label for="input-detail-kegiatan" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kegiatan (Gunakan baris baru untuk setiap detail)</label>
+                            <textarea id="input-detail-kegiatan" data-field="detailKegiatan" oninput="handleInputChange(this)" rows="4" class="form-input-field">Hari/Tanggal: Jumat s.d. minggu (7-9 Nopember 2025)
+Pukul: 08.00 s.d Selesai
+Tempat: Lapangan</textarea>
+                        </div>
+                        <div>
+                            <label for="input-isi-penutup" class="block text-sm font-medium text-gray-700 mb-1">Paragraf Penutup</label>
+                            <textarea id="input-isi-penutup" data-field="isiPenutup" oninput="handleInputChange(this)" rows="3" class="form-input-field">Demikian pemberitahuan ini kami sampaikan. Besar harapan kami Bapak Kepala Sekolah memberikan izin pelaksanaan kegiatan tersebut. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.</textarea>
+                        </div>
+                    </div>
+
+                     <!-- Bagian Tanda Tangan -->
+                    <div class="space-y-4 p-4 border-l-4 border-amber-500 bg-white rounded-lg shadow">
+                        <h3 class="font-semibold text-xl text-gray-800">4. Penandatangan</h3>
+                        <div class="grid sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="input-jabatan-kiri" class="block text-sm font-medium text-gray-700 mb-1">Jabatan Kiri</label>
+                                <input type="text" id="input-jabatan-kiri" data-field="jabatanKiri" oninput="handleInputChange(this)" class="form-input-field" value="Ketua Pelaksana Kegiatan">
+                                <label for="input-nama-kiri" class="block text-sm font-medium text-gray-700 my-1">Nama Kiri</label>
+                                <input type="text" id="input-nama-kiri" data-field="namaKiri" oninput="handleInputChange(this)" class="form-input-field" value="M. Nur Ikhwan, S. Pd.">
+                            </div>
+                            <div>
+                                <label for="input-jabatan-kanan" class="block text-sm font-medium text-gray-700 mb-1">Jabatan Kanan</label>
+                                <input type="text" id="input-jabatan-kanan" data-field="jabatanKanan" oninput="handleInputChange(this)" class="form-input-field" value="Sekretaris">
+                                <label for="input-nama-kanan" class="block text-sm font-medium text-gray-700 my-1">Nama Kanan</label>
+                                <input type="text" id="input-nama-kanan" data-field="namaKanan" oninput="handleInputChange(this)" class="form-input-field" value="Danu Septiana, S. Pd.">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Akhir Konten Aplikasi: Mode Edit -->
+
+            <!-- Konten Aplikasi: Pratinjau & Unduh PDF -->
+            <div id="content-preview" class="tab-content hidden transition-opacity duration-300">
+
+                 <!-- Kontrol Unduh PDF -->
+                <div class="p-6 bg-white rounded-lg shadow-xl mb-8 border border-gray-100 flex flex-col sm:flex-row justify-between items-center relative">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Unduh Dokumen sebagai PDF</h2>
                     
-                    <!-- Kop Surat (Header) -->
-                    <div id="header-section" class="mb-8 pb-4 border-b-2 border-slate-300">
-                        <div class="flex items-center justify-between">
-                            <!-- Placeholder Logo. Ganti dengan SVG/gambar logo Anda -->
-                            <div class="flex-shrink-0 mr-4">
-                                <svg id="logo-placeholder" class="w-16 h-16 text-slate-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-1.041-8.156-2.745l-.475-.36A23.931 23.931 0 013 15V7.5a2.5 2.5 0 012.5-2.5h14A2.5 2.5 0 0122 7.5v5.755zM12 21v-4m0 0l-3 3m3-3l3 3"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17h.01"></path>
-                                </svg>
+                    <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                         <div class="w-full sm:w-auto">
+                            <select id="paper-size-select" class="form-input-field p-2 text-sm">
+                                <option value="a4">Ukuran Kertas: A4 (Standar)</option>
+                                <option value="f4">Ukuran Kertas: F4 / Folio (Panjang)</option>
+                            </select>
+                        </div>
+                        <button onclick="prepareAndDownloadPdf()" class="btn-primary text-white px-6 py-2.5 rounded-lg text-sm font-semibold w-full sm:w-auto shadow-lg hover:shadow-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            Unduh PDF Sekarang
+                        </button>
+                    </div>
+
+                    <div id="loading-message" class="hidden absolute top-0 left-0 w-full h-full bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
+                        <svg class="animate-spin h-8 w-8 text-emerald-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-emerald-700 font-semibold">Memproses PDF...</span>
+                    </div>
+                </div>
+
+                <!-- Area Pratinjau Surat -->
+                <h2 class="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Pratinjau Dokumen</h2>
+
+                <div id="letter-content" class="font-times min-h-[800px] rounded-lg overflow-hidden mx-auto">
+                    
+                    <!-- Kop Surat (Header) - Disesuaikan seperti gambar -->
+                    <div id="header-section" class="kop-container">
+                        <div class="flex items-start justify-between text-center">
+                            <!-- Logo Kiri - Peringatan: Ganti URL ini dengan URL logo asli Anda -->
+                            <div class="w-1/6 flex justify-start pr-4">
+                                <img id="logo-kiri" src="https://placehold.co/60x80/ffffff/000000?text=LOGO+KIRI" class="w-16 h-20 object-contain" alt="Logo Kiri">
                             </div>
 
-                            <div class="flex-grow text-center">
-                                <p contenteditable="true" class="editable text-xl font-bold text-slate-800 leading-tight" id="kop-utama">
-                                    PEMERINTAH KABUPATEN LEBAK
-                                </p>
-                                <p contenteditable="true" class="editable text-md text-gray-700 leading-tight" id="kop-sub1">
-                                    DINAS PENDIDIKAN DAN KEBUDAYAAN
-                                </p>
-                                <p contenteditable="true" class="editable text-lg font-semibold text-slate-700 leading-tight" id="kop-sub2">
-                                    SMP NEGERI 2 CILELES
-                                </p>
-                                <p contenteditable="true" class="editable text-xs text-gray-500 mt-1" id="kop-alamat">
-                                    Alamat: Kp. Pasir Galatik Desa Gumuruh Kec. Cileles-Lebak
-                                </p>
+                            <div class="w-4/6 flex-grow text-center mt-1">
+                                <p class="kop-teks utama" id="preview-kop-utama"></p>
+                                <p class="kop-teks" id="preview-kop-sub1">DINAS PENDIDIKAN DAN KEBUDAYAAN</p>
+                                <p class="kop-teks instansi" id="preview-kop-sub2"></p>
+                                <p class="kop-teks text-xs" id="preview-kop-alamat"></p>
                             </div>
 
-                             <div class="flex-shrink-0 ml-4">
-                                <img src="https://placehold.co/64x64/000000/FFFFFF?text=LOGO" class="w-16 h-16" alt="Logo Sekolah" onerror="this.onerror=null;this.src='https://placehold.co/64x64/000000/FFFFFF?text=LOGO'">
+                             <!-- Logo Kanan - Peringatan: Ganti URL ini dengan URL logo asli Anda -->
+                             <div class="w-1/6 flex justify-end pl-4">
+                                <img id="logo-kanan" src="https://placehold.co/60x80/ffffff/000000?text=LOGO+KANAN" class="w-16 h-20 object-contain" alt="Logo Kanan">
                             </div>
                         </div>
                     </div>
 
                     <!-- Tempat dan Tanggal -->
-                    <p contenteditable="true" class="editable text-right text-sm text-gray-700 mb-8" id="tanggal-surat">
-                        Cileles, 25 Nopember 2025
-                    </p>
+                    <p class="text-right text-base text-gray-800 mb-6" id="preview-tanggal-surat"></p>
 
-                    <!-- Informasi Surat -->
-                    <div class="grid grid-cols-2 gap-4 text-sm mb-8">
-                        <div class="space-y-1">
-                            <div class="flex">
-                                <span class="w-24 font-medium">Nomor</span>
-                                <span contenteditable="true" class="editable flex-grow">: 421. /SMP/Filal/CLLS/XI/2025</span>
-                            </div>
-                            <div class="flex">
-                                <span class="w-24 font-medium">Lampiran</span>
-                                <span contenteditable="true" class="editable flex-grow">: -</span>
-                            </div>
-                            <div class="flex">
-                                <span class="w-24 font-medium">Perihal</span>
-                                <span contenteditable="true" class="editable flex-grow">: Pemberitahuan Kegiatan PERJUSAMI</span>
-                            </div>
+                    <!-- Informasi Surat (Nomor, Lampiran, Perihal) -->
+                    <div class="text-base mb-8">
+                        <div class="flex">
+                            <span class="w-24">Nomor</span>
+                            <span id="preview-nomor"></span>
+                        </div>
+                        <div class="flex">
+                            <span class="w-24">Lampiran</span>
+                            <span id="preview-lampiran"></span>
+                        </div>
+                        <div class="flex">
+                            <span class="w-24">Perihal</span>
+                            <span id="preview-perihal"></span>
                         </div>
                     </div>
 
                     <!-- Alamat Tujuan -->
-                    <div class="mb-8 mt-10">
-                        <p class="text-sm font-medium text-gray-700 mb-1">Kepada</p>
-                        <p contenteditable="true" class="editable font-semibold text-base text-gray-800" id="tujuan-nama">
-                            Bapak Kepala SMP Negeri 2 Cileles
-                        </p>
-                        <p contenteditable="true" class="editable text-sm text-gray-700" id="tujuan-tempat">
-                            di Tempat
-                        </p>
+                    <div class="mb-6">
+                        <p class="text-base mb-2">Kepada</p>
+                        <p class="text-base font-semibold" id="preview-tujuan-nama"></p>
+                        <p class="text-base">di Tempat</p>
                     </div>
 
                     <!-- Isi Surat -->
-                    <div class="text-gray-700 space-y-4 text-base leading-relaxed">
-                        <p contenteditable="true" class="editable" id="pembukaan">
-                            Dengan hormat,
-                        </p>
-                        <p contenteditable="true" class="editable text-justify" id="isi-utama-1">
-                            Dalam rangka meningkatkan kedisiplinan, kemandirian, serta kemampuan kepramukaan peserta didik sebagai generasi muda yang berkarakter dan berjiwa Pancasila, kami bermaksud akan melaksanakan kegiatan Perkembangan Jumat Sabtu Minggu (Perjusami). Sehubungan dengan hal tersebut, bersama ini kami memberitahukan bahwa kegiatan akan dilaksanakan pada:
-                        </p>
+                    <div class="text-gray-800 space-y-4 text-base leading-normal">
+                        <p>Dengan hormat,</p>
+                        <p class="text-justify indent-10" id="preview-isi-utama-1"></p>
 
-                        <!-- Detail Kegiatan -->
-                        <div class="ml-8 text-sm space-y-2">
-                            <div class="flex">
-                                <span class="w-32 font-medium">Hari/Tanggal</span>
-                                <span contenteditable="true" class="editable flex-grow">: Jumat s.d. minggu (7-9 Nopember 2025)</span>
-                            </div>
-                            <div class="flex">
-                                <span class="w-32 font-medium">Pukul</span>
-                                <span contenteditable="true" class="editable flex-grow">: 08.00 s.d Selesai</span>
-                            </div>
-                            <div class="flex">
-                                <span class="w-32 font-medium">Tempat</span>
-                                <span contenteditable="true" class="editable flex-grow">: Lapangan</span>
-                            </div>
+                        <!-- Detail Kegiatan (Diparsing dari textarea dengan baris baru) -->
+                        <div class="ml-10 text-base space-y-1" id="preview-detail-kegiatan">
+                            <!-- Konten akan diisi oleh JS -->
                         </div>
-                        <!-- Akhir Detail Kegiatan -->
-
-                        <p contenteditable="true" class="editable text-justify" id="isi-penutup">
-                            Demikian pemberitahuan ini kami sampaikan. Besar harapan kami Bapak Kepala Sekolah memberikan izin pelaksanaan kegiatan tersebut. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.
-                        </p>
+                        
+                        <p class="text-justify indent-10 mt-6" id="preview-isi-penutup"></p>
                     </div>
 
                     <!-- Penutup dan Tanda Tangan -->
-                    <div class="mt-16 flex justify-between text-sm">
-                        <div class="w-1/2 pr-4">
-                            <p contenteditable="true" class="editable font-medium mb-2" id="hormat-kami">Hormat kami</p>
-                            <p contenteditable="true" class="editable font-medium text-lg mb-16" id="jabatan-kiri">Ketua Pelaksana Kegiatan</p>
+                    <div class="mt-20 flex justify-end text-base">
+                        <div class="w-full">
+                             <!-- Baris Horisontal untuk pemisah (sesuai gambar) -->
+                             <div class="border-t border-gray-500 w-full mb-10"></div>
                             
-                            <p contenteditable="true" class="editable font-bold border-b border-gray-500 pb-0.5" id="nama-kiri">
-                                M. Nur Ikhwan, S. Pd.
-                            </p>
-                        </div>
-                        <div class="w-1/2 pl-4">
-                            <p contenteditable="true" class="editable font-medium mb-2 text-right invisible" id="tempat-kosong">.</p>
-                            <p contenteditable="true" class="editable font-medium text-lg mb-16" id="jabatan-kanan">Sekretaris</p>
-                            
-                            <p contenteditable="true" class="editable font-bold border-b border-gray-500 pb-0.5" id="nama-kanan">
-                                Danu Septiana, S. Pd.
-                            </p>
+                            <div class="flex">
+                                <div class="w-1/2 text-center">
+                                    <p class="font-normal mb-2">Hormat kami</p>
+                                    <p class="font-medium text-lg mb-16" id="preview-jabatan-kiri"></p>
+                                    
+                                    <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kiri"></p>
+                                </div>
+                                <div class="w-1/2 text-center">
+                                    <p class="font-normal mb-2 invisible">.</p>
+                                    <p class="font-medium text-lg mb-16" id="preview-jabatan-kanan"></p>
+                                    
+                                    <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kanan"></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                 </div>
             </div>
-            <!-- Akhir Konten Aplikasi: Mode Edit -->
-
-            <!-- Konten Aplikasi: Mode Unduh PDF -->
-            <div id="content-download" class="tab-content hidden transition-opacity duration-300 p-8 bg-white rounded-lg shadow-xl">
-                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Pengaturan Unduhan PDF</h2>
-                <p class="text-gray-600 mb-6">Pilih ukuran kertas yang Anda inginkan untuk dokumen surat Anda. Ukuran F4 (Folio) biasanya digunakan untuk dokumen resmi di Indonesia.</p>
-
-                <div class="space-y-4">
-                    <!-- Opsi A4 -->
-                    <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="downloadPdf('a4')">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="font-bold text-lg text-slate-700">A4 (210 x 297 mm)</h3>
-                                <p class="text-sm text-gray-500">Standar Internasional. Cocok untuk sebagian besar surat.</p>
-                            </div>
-                            <button class="btn-elegant bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:bg-blue-600">
-                                Unduh A4
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Opsi F4 / Folio -->
-                    <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="downloadPdf('f4')">
-                         <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="font-bold text-lg text-slate-700">F4 / Folio (215 x 330 mm)</h3>
-                                <p class="text-sm text-gray-500">Ukuran lebih panjang. Sering digunakan untuk dokumen resmi Indonesia.</p>
-                            </div>
-                            <button class="btn-elegant bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:bg-green-600">
-                                Unduh F4
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="loading-message" class="hidden mt-8 p-4 bg-yellow-100 text-yellow-700 rounded-lg flex items-center">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Sedang memproses dokumen Anda... Mohon tunggu sebentar.</span>
-                </div>
-                
-            </div>
-            <!-- Akhir Konten Aplikasi: Mode Unduh PDF -->
+            <!-- Akhir Konten Aplikasi: Pratinjau & Unduh PDF -->
 
         </div>
     </main>
 
     <!-- Footer Simple -->
-    <footer class="bg-slate-800 text-white mt-12 p-4 text-center">
+    <footer class="bg-gray-800 text-white mt-12 p-4 text-center">
         <div class="container mx-auto max-w-4xl text-sm opacity-80">
-            <p>&copy; 2025 Aplikasi Generator Surat. Dibuat dengan Elegansi.</p>
+            <p>Sistem Pengarsipan Dokumen Profesional (Versi 1.0) | Disimpan di Cloud Firestore</p>
         </div>
     </footer>
 
-    <script>
-        // --- Inisialisasi Konten dan View ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Tampilkan mode Edit secara default
-            showTab('edit');
-            // Tambahkan event listener untuk menyimpan konten ke localStorage secara otomatis
-            document.querySelectorAll('.editable').forEach(el => {
-                el.addEventListener('input', saveContent);
-            });
-            // Muat konten yang tersimpan
-            loadContent();
-        });
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- KONFIGURASI GLOBAL (DIPERLUKAN UNTUK CANVAS) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const fallbackConfig = {
+            apiKey: "AIzaSyBg2MxCa9WR14J2Wc5iQyumFxVJIJd84Vs",
+            authDomain: "surat-903c5.firebaseapp.com",
+            databaseURL: "https://surat-903c5-default-rtdb.firebaseio.com",
+            projectId: "surat-903c5",
+            storageBucket: "surat-903c5.firebasestorage.app",
+            messagingSenderId: "50937404473",
+            appId: "1:50937404473:web:7d35356ec87735026481e8"
+        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // --- Fungsi Pengaturan Tampilan (Tabs) ---
-        const tabEdit = document.getElementById('tab-edit');
-        const tabDownload = document.getElementById('tab-download');
-        const contentEdit = document.getElementById('content-edit');
-        const contentDownload = document.getElementById('content-download');
+        // --- INISIALISASI FIREBASE ---
+        let db;
+        let auth;
+        let userId = 'loading'; // Status awal
+        let docRef;
 
-        function showTab(tabName) {
-            // Reset semua tampilan
-            contentEdit.classList.add('hidden', 'opacity-0');
-            contentDownload.classList.add('hidden', 'opacity-0');
-            tabEdit.classList.remove('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
-            tabDownload.classList.remove('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
-            tabEdit.classList.add('text-gray-500', 'hover:text-gray-700');
-            tabDownload.classList.add('text-gray-500', 'hover:text-gray-700');
+        // Data default untuk surat
+        const DEFAULT_DATA = {
+            fontChoice: "font-times", // Nilai default untuk font
+            kopUtama: "PEMERINTAH KABUPATEN LEBAK",
+            kopSub1: "DINAS PENDIDIKAN DAN KEBUDAYAAN",
+            kopSub2: "SMP NEGERI 2 CILELES",
+            kopAlamat: "Alamat: Kp. Pasir Galatik Desa Gumuruh Kec. Cileles-Lebak",
+            tanggalSurat: "Cileles, 25 Nopember 2025",
+            nomor: "421. /SMP/Filal/CLLS/XI/2025",
+            lampiran: "-",
+            perihal: "Pemberitahuan Kegiatan PERJUSAMI",
+            tujuanNama: "Bapak Kepala SMP Negeri 2 Cileles",
+            isiUtama: "Dalam rangka meningkatkan kedisiplinan, kemandirian, serta kemampuan kepramukaan peserta didik sebagai generasi muda yang berkarakter dan berjiwa Pancasila, kami bermaksud akan melaksanakan kegiatan Perkembangan Jumat Sabtu Minggu (Perjusami). Sehubungan dengan hal tersebut, bersama ini kami memberitahukan bahwa kegiatan akan dilaksanakan pada:",
+            detailKegiatan: "Hari/Tanggal: Jumat s.d. minggu (7-9 Nopember 2025)\nPukul: 08.00 s.d Selesai\nTempat: Lapangan",
+            isiPenutup: "Demikian pemberitahuan ini kami sampaikan. Besar harapan kami Bapak Kepala Sekolah memberikan izin pelaksanaan kegiatan tersebut. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.",
+            jabatanKiri: "Ketua Pelaksana Kegiatan",
+            namaKiri: "M. Nur Ikhwan, S. Pd.",
+            jabatanKanan: "Sekretaris",
+            namaKanan: "Danu Septiana, S. Pd.",
+        };
 
-            // Tampilkan tab yang dipilih
-            if (tabName === 'edit') {
-                contentEdit.classList.remove('hidden');
-                setTimeout(() => contentEdit.classList.remove('opacity-0'), 10);
-                tabEdit.classList.add('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
-                tabEdit.classList.remove('text-gray-500', 'hover:text-gray-700');
+        let letterData = { ...DEFAULT_DATA };
+        let saveTimeout = null;
+
+        async function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
                 
-                // Pastikan elemen surat dapat diedit saat di mode edit
-                document.getElementById('letter-content').querySelectorAll('[contenteditable]').forEach(el => {
-                    el.setAttribute('contenteditable', 'true');
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('auth-status').textContent = `User ID: ${userId}`;
+                        
+                        docRef = doc(db, 'artifacts', appId, 'users', userId, 'surat_data', 'main_document');
+                        
+                        setupRealtimeListener();
+                    } else {
+                        userId = 'anonymous';
+                        document.getElementById('auth-status').textContent = `User ID: ${userId}`;
+                        console.error("Autentikasi gagal atau pengguna keluar.");
+                    }
                 });
-            } else if (tabName === 'download') {
-                contentDownload.classList.remove('hidden');
-                setTimeout(() => contentDownload.classList.remove('opacity-0'), 10);
-                tabDownload.classList.add('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
-                tabDownload.classList.remove('text-gray-500', 'hover:text-gray-700');
+
+            } catch (error) {
+                console.error("Error saat inisialisasi Firebase:", error);
+                document.getElementById('save-status').textContent = 'Error: Gagal terhubung ke database.';
             }
         }
 
-        // --- Fungsi Penyimpanan dan Pemuatan Konten (LocalStorage) ---
-        function saveContent() {
-            document.querySelectorAll('.editable').forEach(el => {
-                localStorage.setItem(`letter-content-${el.id}`, el.innerHTML);
+        function setupRealtimeListener() {
+            if (!docRef) return;
+
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    letterData = { ...DEFAULT_DATA, ...docSnap.data() }; 
+                    document.getElementById('save-status').textContent = 'Status: Data dimuat dari cloud.';
+                } else {
+                    document.getElementById('save-status').textContent = 'Status: Data baru, disimpan pertama kali.';
+                    saveDataToFirestore(letterData);
+                }
+                syncDataToForms();
+                synchronizePreview();
+            }, (error) => {
+                console.error("Error listening to document:", error);
+                document.getElementById('save-status').textContent = 'Error: Gagal mendengarkan perubahan data.';
             });
         }
 
-        function loadContent() {
-            document.querySelectorAll('.editable').forEach(el => {
-                const savedContent = localStorage.getItem(`letter-content-${el.id}`);
-                if (savedContent) {
-                    el.innerHTML = savedContent;
+        // Fungsi debounce untuk menyimpan ke Firestore
+        function saveDataToFirestore(data) {
+            if (!docRef) {
+                console.error("Doc reference tidak siap.");
+                return;
+            }
+            if (saveTimeout) clearTimeout(saveTimeout);
+            
+            document.getElementById('save-status').textContent = 'Status: Menyimpan...';
+
+            saveTimeout = setTimeout(async () => {
+                try {
+                    await setDoc(docRef, data);
+                    document.getElementById('save-status').textContent = 'Status: Tersimpan ke Cloud.';
+                } catch (error) {
+                    console.error("Error saving document:", error);
+                    document.getElementById('save-status').textContent = 'Error: Gagal menyimpan data!';
+                }
+            }, 1000); // Tunggu 1 detik sebelum menyimpan
+        }
+
+        // --- HANDLERS DOM ---
+        
+        function handleInputChange(element) {
+            const field = element.getAttribute('data-field');
+            const value = element.value;
+            
+            if (field) {
+                letterData[field] = value;
+                saveDataToFirestore(letterData);
+                synchronizePreview(); // Perbarui pratinjau segera
+            }
+        }
+        window.handleInputChange = handleInputChange; 
+
+        function syncDataToForms() {
+            // Sinkronkan data dari state ke semua elemen form
+            document.querySelectorAll('[data-field]').forEach(el => {
+                const field = el.getAttribute('data-field');
+                if (letterData[field] !== undefined && el.value !== letterData[field]) {
+                    el.value = letterData[field];
                 }
             });
+            // Hapus status loading saat pertama kali data dimuat
+            if (document.getElementById('save-status').textContent.includes('Memuat')) {
+                document.getElementById('save-status').textContent = 'Status: Siap.';
+            }
+        }
+        
+        function synchronizePreview() {
+            const contentElement = document.getElementById('letter-content');
+
+            // 1. Terapkan Pilihan Font
+            contentElement.classList.remove('font-times', 'font-calibri');
+            contentElement.classList.add(letterData.fontChoice);
+
+            // 2. Sinkronkan konten teks
+            document.getElementById('preview-kop-utama').textContent = letterData.kopUtama;
+            document.getElementById('preview-kop-sub1').textContent = letterData.kopSub1;
+            document.getElementById('preview-kop-sub2').textContent = letterData.namaInstansi;
+            document.getElementById('preview-kop-alamat').textContent = letterData.kopAlamat;
+            document.getElementById('preview-tanggal-surat').textContent = letterData.tanggalSurat;
+            
+            document.getElementById('preview-nomor').textContent = `: ${letterData.nomor}`;
+            document.getElementById('preview-lampiran').textContent = `: ${letterData.lampiran}`;
+            document.getElementById('preview-perihal').textContent = `: ${letterData.perihal}`;
+            
+            document.getElementById('preview-tujuan-nama').textContent = `Bapak/Ibu ${letterData.tujuanNama}`;
+
+            document.getElementById('preview-isi-utama-1').textContent = letterData.isiUtama;
+            document.getElementById('preview-isi-penutup').textContent = letterData.isiPenutup;
+
+            // Detail Kegiatan (memerlukan parsing baris baru)
+            const detailKegiatanContainer = document.getElementById('preview-detail-kegiatan');
+            const detailText = letterData.detailKegiatan;
+            detailKegiatanContainer.innerHTML = ''; 
+            
+            detailText.split('\n').forEach(line => {
+                const parts = line.split(':');
+                if (parts.length >= 2) {
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join(':').trim(); 
+                    
+                    const div = document.createElement('div');
+                    div.className = 'flex';
+                    div.innerHTML = `
+                        <span class="w-28 font-normal">${key}</span>
+                        <span class="flex-grow">: ${value}</span>
+                    `;
+                    detailKegiatanContainer.appendChild(div);
+                }
+            });
+            
+            // Tanda Tangan
+            document.getElementById('preview-jabatan-kiri').textContent = letterData.jabatanKiri;
+            document.getElementById('preview-nama-kiri').textContent = letterData.namaKiri;
+            document.getElementById('preview-jabatan-kanan').textContent = letterData.jabatanKanan;
+            document.getElementById('preview-nama-kanan').textContent = letterData.namaKanan;
         }
 
+        // --- Fungsi Pengaturan Tampilan (Tabs) ---
+        function showTab(tabName) {
+            // Reset semua tampilan
+            const contents = [document.getElementById('content-edit'), document.getElementById('content-preview')];
+            contents.forEach(c => c.classList.add('hidden', 'opacity-0'));
+            
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active', 'active-edit');
+                btn.classList.add('text-gray-500');
+            });
+
+            // Tampilkan tab yang dipilih
+            const selectedContent = document.getElementById(`content-${tabName}`);
+            const selectedTab = document.getElementById(`tab-${tabName}`);
+
+            if (selectedContent) {
+                if (tabName === 'preview') {
+                    selectedTab.classList.add('active'); // Warna hijau
+                    synchronizePreview();
+                } else {
+                    selectedTab.classList.add('active-edit'); // Warna merah
+                }
+                
+                selectedTab.classList.remove('text-gray-500');
+                selectedContent.classList.remove('hidden');
+                setTimeout(() => selectedContent.classList.remove('opacity-0'), 10);
+            }
+        }
+        window.showTab = showTab; 
+
         // --- Fungsi Unduh PDF ---
-        function downloadPdf(paperSize) {
+        function prepareAndDownloadPdf() {
+            const paperSize = document.getElementById('paper-size-select').value;
             const content = document.getElementById('letter-content');
             const loadingMessage = document.getElementById('loading-message');
 
-            // 1. Tampilkan indikator loading
             loadingMessage.classList.remove('hidden');
             
-            // 2. Nonaktifkan mode edit untuk cetak (penting!)
-            content.querySelectorAll('[contenteditable]').forEach(el => {
-                el.setAttribute('contenteditable', 'false');
-            });
-            
-            // 3. Atur konfigurasi PDF
+            // Konfigurasi PDF
             let paperOptions;
             let filename;
 
             if (paperSize === 'a4') {
                 // A4: 210 x 297 mm
                 paperOptions = { width: 210, height: 297 };
-                filename = 'Surat-A4.pdf';
+                filename = 'Surat-A4-Profesional.pdf';
             } else if (paperSize === 'f4') {
-                // F4/Folio: 215 x 330 mm (8.5in x 13in)
-                paperOptions = { width: 215, height: 330 };
-                filename = 'Surat-F4.pdf';
+                // F4/Folio: 215 x 330 mm 
+                paperOptions = { width: 215, height: 330 }; 
+                filename = 'Surat-F4-Profesional.pdf';
             } else {
                 console.error("Ukuran kertas tidak valid.");
                 loadingMessage.classList.add('hidden');
@@ -352,26 +630,33 @@
             }
 
             const opt = {
-                margin: 10,
+                margin: [15, 15, 15, 15], 
                 filename: filename,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, logging: false },
                 jsPDF: { unit: 'mm', format: paperOptions, orientation: 'portrait' }
             };
 
-            // 4. Proses konversi ke PDF
-            html2pdf().set(opt).from(content).save().then(() => {
-                // 5. Sembunyikan indikator loading
-                loadingMessage.classList.add('hidden');
-                
-                // 6. Kembalikan mode edit
-                if (document.getElementById('content-edit').classList.contains('hidden') === false) {
-                     content.querySelectorAll('[contenteditable]').forEach(el => {
-                        el.setAttribute('contenteditable', 'true');
-                    });
-                }
-            });
+            setTimeout(() => {
+                html2pdf().set(opt).from(content).save().then(() => {
+                    loadingMessage.classList.add('hidden');
+                });
+            }, 100);
         }
+        window.prepareAndDownloadPdf = prepareAndDownloadPdf; 
+
+        // --- START APLIKASI ---
+        initFirebase();
+
+        // Tampilkan tab edit saat pertama kali dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+             // Pastikan sinkronisasi pratinjau dijalankan saat memuat data, 
+             // meskipun tab edit yang aktif.
+             synchronizePreview(); 
+             // Tampilkan tab edit default
+             showTab('edit');
+        });
+
     </script>
 
 </body>
