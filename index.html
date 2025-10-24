@@ -180,6 +180,28 @@
         #mobile-sidebar {
             transition: transform 0.3s ease-out; 
         }
+
+        /* Notifikasi Toast (Pop-up) */
+        #toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background-color: #10b981; /* bg-emerald-500 */
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+            display: flex;
+            align-items: center;
+        }
+        #toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
         
         /* Responsif: Nonaktifkan aspect ratio hack di mobile */
         @media (max-width: 1024px) {
@@ -545,42 +567,22 @@ Tempat: Lapangan</textarea>
         </div>
     </main>
 
+    <!-- Notifikasi Toast (Pop-up) -->
+    <div id="toast-notification" class="transition-all duration-300">
+        <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <span id="toast-message">Surat berhasil diunduh sebagai PDF!</span>
+    </div>
+
     <!-- Footer Simple - Jarak Diperpendek menjadi mt-8 -->
     <footer class="bg-gray-800 text-white mt-8 p-4 text-center">
         <div class="container mx-auto max-w-4xl text-sm opacity-80">
-            <p>Sistem Pengarsipan Dokumen Profesional (Versi 1.2) | Disimpan di Realtime Database</p>
+            <p>Sistem Generator Dokumen (Versi Lokal) | Data Disimpan di LocalStorage</p>
         </div>
     </footer>
 
     <script type="module">
-        // --- FIREBASE IMPORTS ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        // Menggunakan Realtime Database
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        // --- DATA LOKAL (PENGGANTI FIREBASE) ---
         
-        // --- KONFIGURASI GLOBAL (DIPERLUKAN UNTUK CANVAS) ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
-        // Konfigurasi fallback yang disediakan oleh pengguna
-        const fallbackConfig = {
-            apiKey: "AIzaSyBg2MxCa9WR14J2Wc5iQyumFxVJIJd84Vs",
-            authDomain: "surat-903c5.firebaseapp.com",
-            databaseURL: "https://surat-903c5-default-rtdb.firebaseio.com", 
-            projectId: "surat-903c5",
-            storageBucket: "surat-903c5.firebasestorage.app",
-            messagingSenderId: "50937404473",
-            appId: "1:50937404473:web:7d35356ec87735026481e8"
-        };
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // --- INISIALISASI FIREBASE ---
-        let rtdb; 
-        let auth;
-        let userId = null; 
-        let dbRef; 
-
         // Data default untuk surat
         const DEFAULT_DATA = {
             fontChoice: "font-times", 
@@ -608,99 +610,61 @@ Tempat: Lapangan</textarea>
         let saveTimeout = null;
         let currentTab = 'edit'; 
 
-        async function initFirebase() {
-            document.getElementById('save-status').textContent = 'Status: Menginisialisasi koneksi...';
-            try {
-                const app = initializeApp(firebaseConfig);
-                rtdb = getDatabase(app); 
-                auth = getAuth(app);
-                
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        document.getElementById('auth-status').textContent = `User ID: ${userId.substring(0, 8)}...`;
-                        
-                        // Path RTDB: artifacts/{appId}/users/{userId}/surat_data
-                        const dbPath = `artifacts/${appId}/users/${userId}/surat_data`;
-                        dbRef = ref(rtdb, dbPath); 
-                        
-                        setupRealtimeListener();
-                    } else {
-                        userId = crypto.randomUUID(); // Fallback ID unik jika auth gagal
-                        document.getElementById('auth-status').textContent = `User ID: (Anonim)`;
-                        document.getElementById('save-status').textContent = 'Error: Autentikasi gagal, data tidak akan disimpan.';
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error saat inisialisasi Firebase:", error);
-                document.getElementById('save-status').textContent = 'Error: Gagal terhubung ke database. Cek konsol.';
-                document.getElementById('data-status').classList.add('bg-red-100', 'border-red-400');
-                document.getElementById('save-status').classList.add('text-red-700');
-                // Lanjutkan dengan data default jika gagal
-                syncDataToForms();
-                synchronizePreview();
-            }
-        }
-
-        function setupRealtimeListener() {
-            if (!dbRef) return;
-
-            // Menggunakan onValue untuk RTDB
-            onValue(dbRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    letterData = { ...DEFAULT_DATA, ...snapshot.val() }; 
-                    document.getElementById('save-status').textContent = 'Status: Data dimuat dari RTDB.';
-                    document.getElementById('data-status').classList.remove('bg-red-100', 'border-red-400');
-                    document.getElementById('save-status').classList.remove('text-red-700');
-                } else {
-                    document.getElementById('save-status').textContent = 'Status: Data baru. Menyimpan default...';
-                    saveDataToRTDB(letterData); // Simpan default jika tidak ada data
-                }
-                syncDataToForms();
-                synchronizePreview();
-            }, (error) => {
-                console.error("Error listening to document:", error);
-                document.getElementById('save-status').textContent = 'Error: Gagal mendengarkan perubahan data. Cek izin database.';
-                document.getElementById('data-status').classList.add('bg-red-100', 'border-red-400');
-                document.getElementById('save-status').classList.add('text-red-700');
-            });
-        }
-
-        // Fungsi debounce untuk menyimpan ke Realtime Database
-        function saveDataToRTDB(data) {
-            if (!dbRef || !userId) {
-                document.getElementById('save-status').textContent = 'Status: Mode lokal. Tidak dapat menyimpan ke cloud.';
-                document.getElementById('data-status').classList.add('bg-yellow-100', 'border-yellow-400');
-                document.getElementById('save-status').classList.add('text-yellow-700');
-                return;
-            }
+        // Fungsi untuk menyimpan data ke LocalStorage dengan debounce
+        function saveDataToLocalStorage(data) {
             if (saveTimeout) clearTimeout(saveTimeout);
             
-            document.getElementById('save-status').textContent = 'Status: Menyimpan...';
-            document.getElementById('data-status').classList.remove('bg-red-100', 'border-red-400', 'bg-yellow-100', 'border-yellow-400');
-            document.getElementById('save-status').classList.remove('text-red-700', 'text-yellow-700');
+            document.getElementById('save-status').textContent = 'Status: Menyimpan... (Lokal)';
 
-
-            saveTimeout = setTimeout(async () => {
+            saveTimeout = setTimeout(() => {
                 try {
-                    await set(dbRef, data); 
-                    document.getElementById('save-status').textContent = 'Status: Tersimpan ke RTDB.';
+                    // Simpan data ke localStorage
+                    localStorage.setItem('suratPro_data', JSON.stringify(data)); 
+                    document.getElementById('save-status').textContent = 'Status: Tersimpan di penyimpanan lokal (LocalStorage).';
+                    // Reset styling status
+                    document.getElementById('data-status').classList.remove('bg-red-100', 'border-red-400', 'bg-yellow-100', 'border-yellow-400');
+                    document.getElementById('save-status').classList.remove('text-red-700', 'text-yellow-700');
+                    document.getElementById('data-status').classList.add('bg-gray-50', 'border-gray-200');
+                    document.getElementById('save-status').classList.add('text-gray-600');
                 } catch (error) {
-                    console.error("Error saving data to RTDB:", error);
-                    document.getElementById('save-status').textContent = 'Error: Gagal menyimpan data! Cek konsol.';
+                    console.error("Error saving data to LocalStorage:", error);
+                    document.getElementById('save-status').textContent = 'Error: Gagal menyimpan data lokal! (LocalStorage penuh?)';
                     document.getElementById('data-status').classList.add('bg-red-100', 'border-red-400');
                     document.getElementById('save-status').classList.add('text-red-700');
                 }
-            }, 1000); 
+            }, 500); 
         }
-        window.saveDataToRTDB = saveDataToRTDB; 
+        window.saveDataToLocalStorage = saveDataToLocalStorage; 
+
+        // Fungsi untuk memuat data dari LocalStorage
+        function loadDataFromLocalStorage() {
+            document.getElementById('save-status').textContent = 'Status: Memuat data dari penyimpanan lokal...';
+            try {
+                const storedData = localStorage.getItem('suratPro_data');
+                if (storedData) {
+                    letterData = { ...DEFAULT_DATA, ...JSON.parse(storedData) }; 
+                    document.getElementById('save-status').textContent = 'Status: Data dimuat dari LocalStorage.';
+                } else {
+                    document.getElementById('save-status').textContent = 'Status: Data baru. Menggunakan default.';
+                    saveDataToLocalStorage(letterData); 
+                }
+                document.getElementById('auth-status').textContent = `Penyimpanan: Lokal (Browser)`; 
+                
+            } catch (error) {
+                console.error("Error loading data from LocalStorage:", error);
+                document.getElementById('save-status').textContent = 'Error: Gagal memuat data dari LocalStorage.';
+                document.getElementById('data-status').classList.add('bg-red-100', 'border-red-400');
+                document.getElementById('save-status').classList.add('text-red-700');
+            }
+
+            syncDataToForms();
+            synchronizePreview();
+        }
+
+        // --- INISIALISASI APLIKASI ---
+        function initApp() {
+            loadDataFromLocalStorage();
+        }
 
         // --- HANDLERS DOM ---
         
@@ -710,7 +674,7 @@ Tempat: Lapangan</textarea>
             
             if (field) {
                 letterData[field] = value;
-                saveDataToRTDB(letterData); 
+                saveDataToLocalStorage(letterData); // Ganti RTDB dengan LocalStorage
                 synchronizePreview(); 
             }
         }
@@ -769,7 +733,7 @@ Tempat: Lapangan</textarea>
             document.getElementById('preview-kop-alamat').textContent = letterData.kopAlamat;
             document.getElementById('preview-tanggal-surat').textContent = letterData.tanggalSurat;
             
-            // Detail Surat menggunakan layout baru (tanpa spasi di preview)
+            // Detail Surat
             document.getElementById('preview-nomor').textContent = letterData.nomor;
             document.getElementById('preview-lampiran').textContent = letterData.lampiran;
             document.getElementById('preview-perihal').textContent = letterData.perihal;
@@ -793,7 +757,7 @@ Tempat: Lapangan</textarea>
                     const value = parts.slice(1).join(':').trim(); 
                     
                     const div = document.createElement('div');
-                    div.className = 'flex data-surat-row'; // Menggunakan style yang sama
+                    div.className = 'flex data-surat-row'; 
                     div.innerHTML = `
                         <span class="data-surat-label">${key}</span>
                         <span class="data-surat-separator">:</span>
@@ -809,6 +773,39 @@ Tempat: Lapangan</textarea>
             document.getElementById('preview-jabatan-kanan').textContent = letterData.jabatanKanan;
             document.getElementById('preview-nama-kanan').textContent = letterData.namaKanan;
         }
+
+        // --- Fungsi Notifikasi Toast ---
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast-notification');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            
+            // Mengubah warna dan ikon jika terjadi error
+            if (isError) {
+                toast.classList.remove('bg-emerald-500');
+                toast.classList.add('bg-red-600');
+                // Mengganti ikon menjadi peringatan (X atau alert)
+                toast.querySelector('svg').outerHTML = `
+                    <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                `;
+            } else {
+                toast.classList.add('bg-emerald-500');
+                toast.classList.remove('bg-red-600');
+                // Mengganti ikon kembali menjadi centang
+                toast.querySelector('svg').outerHTML = `
+                    <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                `;
+            }
+
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000); // Notifikasi akan hilang setelah 3 detik
+        }
+        window.showToast = showToast;
+
 
         // --- Fungsi Pengaturan Tampilan (Tabs & Sidebar) ---
         
@@ -904,6 +901,7 @@ Tempat: Lapangan</textarea>
                 filename = 'Surat-F4-Profesional.pdf';
             } else {
                 console.error("Ukuran kertas tidak valid.");
+                showToast("Error: Ukuran kertas tidak valid.", true);
                 loadingMessage.classList.add('hidden');
                 return;
             }
@@ -917,8 +915,6 @@ Tempat: Lapangan</textarea>
                 html2canvas: { 
                     scale: 2, 
                     logging: false,
-                    // Pastikan elemen Kop Surat memiliki latar belakang putih untuk mengatasi potensi masalah transparansi
-                    // Ini diatur di CSS .kop-header, tapi bagus untuk memastikan
                 },
                 jsPDF: { unit: 'mm', format: paperOptions, orientation: 'portrait' }
             };
@@ -928,9 +924,13 @@ Tempat: Lapangan</textarea>
             
             // Gunakan promise chain dengan .finally() untuk memastikan loading indicator disembunyikan
             html2pdf().set(opt).from(elementToPrint).save()
+                .then(() => {
+                    // Tampilkan notifikasi berhasil unduh
+                    showToast(`Berhasil mengunduh dokumen: ${filename}`, false);
+                })
                 .catch(error => {
                     console.error("PDF generation failed:", error);
-                    // Tidak perlu alert, cukup di konsol
+                    showToast("Gagal mengunduh PDF. Cek konsol untuk detail.", true);
                 })
                 .finally(() => {
                     // Pastikan loading message disembunyikan, baik berhasil atau gagal
@@ -940,7 +940,7 @@ Tempat: Lapangan</textarea>
         window.prepareAndDownloadPdf = prepareAndDownloadPdf; 
 
         // --- START APLIKASI ---
-        initFirebase();
+        initApp(); // Ganti dari initFirebase ke initApp
 
         document.addEventListener('DOMContentLoaded', () => {
              showTab('edit');
