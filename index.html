@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Mewah & Elegan</title>
+    <!-- Memuat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat html2pdf.js untuk membuat PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Menggunakan font Inter secara default */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        /* Style untuk area surat agar terlihat seperti kertas */
+        #letter-content {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            background-color: white;
+            padding: 3rem; /* Padding lebih besar untuk kesan mewah */
+        }
+
+        /* Style untuk membuatnya editable */
+        .editable {
+            outline: none;
+            cursor: text;
+        }
+        /* Mengubah ukuran font di perangkat kecil */
+        @media (max-width: 640px) {
+            #letter-content { padding: 1.5rem; }
+            .text-xl { font-size: 1.15rem; }
+            .text-lg { font-size: 1rem; }
+        }
+
+        /* Kelas untuk cetak: hanya tampilkan konten surat */
+        @media print {
+            body * { visibility: hidden; }
+            #letter-content, #letter-content * { visibility: visible; }
+            #letter-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+        }
+
+        /* Style mewah untuk tombol */
+        .btn-elegant {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -3px rgba(100, 116, 139, 0.3);
+        }
+        .btn-elegant:hover {
+            box-shadow: 0 6px 20px -5px rgba(100, 116, 139, 0.5);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <main class="flex-grow container mx-auto p-4 sm:p-8">
+        <div class="max-w-4xl mx-auto">
+            
+            <!-- Judul Aplikasi -->
+            <h1 class="text-3xl font-extrabold text-gray-800 text-center mb-6 sm:mb-8">
+                Generator Surat Bisnis Elegan
+            </h1>
+
+            <!-- Kontrol Tab -->
+            <div class="flex justify-center border-b border-gray-200 mb-8">
+                <button id="tab-edit" onclick="showTab('edit')" class="px-6 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none" aria-current="page">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Mode Edit
+                </button>
+                <button id="tab-download" onclick="showTab('download')" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Unduh PDF
+                </button>
+            </div>
+
+            <!-- Konten Aplikasi: Mode Edit -->
+            <div id="content-edit" class="tab-content transition-opacity duration-300">
+                <div id="letter-content" class="min-h-[800px] shadow-xl rounded-lg border border-gray-100 mb-8 overflow-hidden">
+                    
+                    <!-- Kop Surat (Header) -->
+                    <div id="header-section" class="mb-8 pb-4 border-b-2 border-slate-300">
+                        <div class="flex items-center justify-between">
+                            <!-- Placeholder Logo. Ganti dengan SVG/gambar logo Anda -->
+                            <div class="flex-shrink-0 mr-4">
+                                <svg id="logo-placeholder" class="w-16 h-16 text-slate-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-1.041-8.156-2.745l-.475-.36A23.931 23.931 0 013 15V7.5a2.5 2.5 0 012.5-2.5h14A2.5 2.5 0 0122 7.5v5.755zM12 21v-4m0 0l-3 3m3-3l3 3"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17h.01"></path>
+                                </svg>
+                            </div>
+
+                            <div class="flex-grow text-center">
+                                <p contenteditable="true" class="editable text-xl font-bold text-slate-800 leading-tight" id="kop-utama">
+                                    PEMERINTAH KABUPATEN LEBAK
+                                </p>
+                                <p contenteditable="true" class="editable text-md text-gray-700 leading-tight" id="kop-sub1">
+                                    DINAS PENDIDIKAN DAN KEBUDAYAAN
+                                </p>
+                                <p contenteditable="true" class="editable text-lg font-semibold text-slate-700 leading-tight" id="kop-sub2">
+                                    SMP NEGERI 2 CILELES
+                                </p>
+                                <p contenteditable="true" class="editable text-xs text-gray-500 mt-1" id="kop-alamat">
+                                    Alamat: Kp. Pasir Galatik Desa Gumuruh Kec. Cileles-Lebak
+                                </p>
+                            </div>
+
+                             <div class="flex-shrink-0 ml-4">
+                                <img src="https://placehold.co/64x64/000000/FFFFFF?text=LOGO" class="w-16 h-16" alt="Logo Sekolah" onerror="this.onerror=null;this.src='https://placehold.co/64x64/000000/FFFFFF?text=LOGO'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tempat dan Tanggal -->
+                    <p contenteditable="true" class="editable text-right text-sm text-gray-700 mb-8" id="tanggal-surat">
+                        Cileles, 25 Nopember 2025
+                    </p>
+
+                    <!-- Informasi Surat -->
+                    <div class="grid grid-cols-2 gap-4 text-sm mb-8">
+                        <div class="space-y-1">
+                            <div class="flex">
+                                <span class="w-24 font-medium">Nomor</span>
+                                <span contenteditable="true" class="editable flex-grow">: 421. /SMP/Filal/CLLS/XI/2025</span>
+                            </div>
+                            <div class="flex">
+                                <span class="w-24 font-medium">Lampiran</span>
+                                <span contenteditable="true" class="editable flex-grow">: -</span>
+                            </div>
+                            <div class="flex">
+                                <span class="w-24 font-medium">Perihal</span>
+                                <span contenteditable="true" class="editable flex-grow">: Pemberitahuan Kegiatan PERJUSAMI</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alamat Tujuan -->
+                    <div class="mb-8 mt-10">
+                        <p class="text-sm font-medium text-gray-700 mb-1">Kepada</p>
+                        <p contenteditable="true" class="editable font-semibold text-base text-gray-800" id="tujuan-nama">
+                            Bapak Kepala SMP Negeri 2 Cileles
+                        </p>
+                        <p contenteditable="true" class="editable text-sm text-gray-700" id="tujuan-tempat">
+                            di Tempat
+                        </p>
+                    </div>
+
+                    <!-- Isi Surat -->
+                    <div class="text-gray-700 space-y-4 text-base leading-relaxed">
+                        <p contenteditable="true" class="editable" id="pembukaan">
+                            Dengan hormat,
+                        </p>
+                        <p contenteditable="true" class="editable text-justify" id="isi-utama-1">
+                            Dalam rangka meningkatkan kedisiplinan, kemandirian, serta kemampuan kepramukaan peserta didik sebagai generasi muda yang berkarakter dan berjiwa Pancasila, kami bermaksud akan melaksanakan kegiatan Perkembangan Jumat Sabtu Minggu (Perjusami). Sehubungan dengan hal tersebut, bersama ini kami memberitahukan bahwa kegiatan akan dilaksanakan pada:
+                        </p>
+
+                        <!-- Detail Kegiatan -->
+                        <div class="ml-8 text-sm space-y-2">
+                            <div class="flex">
+                                <span class="w-32 font-medium">Hari/Tanggal</span>
+                                <span contenteditable="true" class="editable flex-grow">: Jumat s.d. minggu (7-9 Nopember 2025)</span>
+                            </div>
+                            <div class="flex">
+                                <span class="w-32 font-medium">Pukul</span>
+                                <span contenteditable="true" class="editable flex-grow">: 08.00 s.d Selesai</span>
+                            </div>
+                            <div class="flex">
+                                <span class="w-32 font-medium">Tempat</span>
+                                <span contenteditable="true" class="editable flex-grow">: Lapangan</span>
+                            </div>
+                        </div>
+                        <!-- Akhir Detail Kegiatan -->
+
+                        <p contenteditable="true" class="editable text-justify" id="isi-penutup">
+                            Demikian pemberitahuan ini kami sampaikan. Besar harapan kami Bapak Kepala Sekolah memberikan izin pelaksanaan kegiatan tersebut. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.
+                        </p>
+                    </div>
+
+                    <!-- Penutup dan Tanda Tangan -->
+                    <div class="mt-16 flex justify-between text-sm">
+                        <div class="w-1/2 pr-4">
+                            <p contenteditable="true" class="editable font-medium mb-2" id="hormat-kami">Hormat kami</p>
+                            <p contenteditable="true" class="editable font-medium text-lg mb-16" id="jabatan-kiri">Ketua Pelaksana Kegiatan</p>
+                            
+                            <p contenteditable="true" class="editable font-bold border-b border-gray-500 pb-0.5" id="nama-kiri">
+                                M. Nur Ikhwan, S. Pd.
+                            </p>
+                        </div>
+                        <div class="w-1/2 pl-4">
+                            <p contenteditable="true" class="editable font-medium mb-2 text-right invisible" id="tempat-kosong">.</p>
+                            <p contenteditable="true" class="editable font-medium text-lg mb-16" id="jabatan-kanan">Sekretaris</p>
+                            
+                            <p contenteditable="true" class="editable font-bold border-b border-gray-500 pb-0.5" id="nama-kanan">
+                                Danu Septiana, S. Pd.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <!-- Akhir Konten Aplikasi: Mode Edit -->
+
+            <!-- Konten Aplikasi: Mode Unduh PDF -->
+            <div id="content-download" class="tab-content hidden transition-opacity duration-300 p-8 bg-white rounded-lg shadow-xl">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Pengaturan Unduhan PDF</h2>
+                <p class="text-gray-600 mb-6">Pilih ukuran kertas yang Anda inginkan untuk dokumen surat Anda. Ukuran F4 (Folio) biasanya digunakan untuk dokumen resmi di Indonesia.</p>
+
+                <div class="space-y-4">
+                    <!-- Opsi A4 -->
+                    <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="downloadPdf('a4')">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-700">A4 (210 x 297 mm)</h3>
+                                <p class="text-sm text-gray-500">Standar Internasional. Cocok untuk sebagian besar surat.</p>
+                            </div>
+                            <button class="btn-elegant bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:bg-blue-600">
+                                Unduh A4
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Opsi F4 / Folio -->
+                    <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onclick="downloadPdf('f4')">
+                         <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-700">F4 / Folio (215 x 330 mm)</h3>
+                                <p class="text-sm text-gray-500">Ukuran lebih panjang. Sering digunakan untuk dokumen resmi Indonesia.</p>
+                            </div>
+                            <button class="btn-elegant bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:bg-green-600">
+                                Unduh F4
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="loading-message" class="hidden mt-8 p-4 bg-yellow-100 text-yellow-700 rounded-lg flex items-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Sedang memproses dokumen Anda... Mohon tunggu sebentar.</span>
+                </div>
+                
+            </div>
+            <!-- Akhir Konten Aplikasi: Mode Unduh PDF -->
+
+        </div>
+    </main>
+
+    <!-- Footer Simple -->
+    <footer class="bg-slate-800 text-white mt-12 p-4 text-center">
+        <div class="container mx-auto max-w-4xl text-sm opacity-80">
+            <p>&copy; 2025 Aplikasi Generator Surat. Dibuat dengan Elegansi.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Inisialisasi Konten dan View ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tampilkan mode Edit secara default
+            showTab('edit');
+            // Tambahkan event listener untuk menyimpan konten ke localStorage secara otomatis
+            document.querySelectorAll('.editable').forEach(el => {
+                el.addEventListener('input', saveContent);
+            });
+            // Muat konten yang tersimpan
+            loadContent();
+        });
+
+        // --- Fungsi Pengaturan Tampilan (Tabs) ---
+        const tabEdit = document.getElementById('tab-edit');
+        const tabDownload = document.getElementById('tab-download');
+        const contentEdit = document.getElementById('content-edit');
+        const contentDownload = document.getElementById('content-download');
+
+        function showTab(tabName) {
+            // Reset semua tampilan
+            contentEdit.classList.add('hidden', 'opacity-0');
+            contentDownload.classList.add('hidden', 'opacity-0');
+            tabEdit.classList.remove('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
+            tabDownload.classList.remove('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
+            tabEdit.classList.add('text-gray-500', 'hover:text-gray-700');
+            tabDownload.classList.add('text-gray-500', 'hover:text-gray-700');
+
+            // Tampilkan tab yang dipilih
+            if (tabName === 'edit') {
+                contentEdit.classList.remove('hidden');
+                setTimeout(() => contentEdit.classList.remove('opacity-0'), 10);
+                tabEdit.classList.add('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
+                tabEdit.classList.remove('text-gray-500', 'hover:text-gray-700');
+                
+                // Pastikan elemen surat dapat diedit saat di mode edit
+                document.getElementById('letter-content').querySelectorAll('[contenteditable]').forEach(el => {
+                    el.setAttribute('contenteditable', 'true');
+                });
+            } else if (tabName === 'download') {
+                contentDownload.classList.remove('hidden');
+                setTimeout(() => contentDownload.classList.remove('opacity-0'), 10);
+                tabDownload.classList.add('border-blue-500', 'text-blue-600', 'font-semibold', 'border-b-2');
+                tabDownload.classList.remove('text-gray-500', 'hover:text-gray-700');
+            }
+        }
+
+        // --- Fungsi Penyimpanan dan Pemuatan Konten (LocalStorage) ---
+        function saveContent() {
+            document.querySelectorAll('.editable').forEach(el => {
+                localStorage.setItem(`letter-content-${el.id}`, el.innerHTML);
+            });
+        }
+
+        function loadContent() {
+            document.querySelectorAll('.editable').forEach(el => {
+                const savedContent = localStorage.getItem(`letter-content-${el.id}`);
+                if (savedContent) {
+                    el.innerHTML = savedContent;
+                }
+            });
+        }
+
+        // --- Fungsi Unduh PDF ---
+        function downloadPdf(paperSize) {
+            const content = document.getElementById('letter-content');
+            const loadingMessage = document.getElementById('loading-message');
+
+            // 1. Tampilkan indikator loading
+            loadingMessage.classList.remove('hidden');
+            
+            // 2. Nonaktifkan mode edit untuk cetak (penting!)
+            content.querySelectorAll('[contenteditable]').forEach(el => {
+                el.setAttribute('contenteditable', 'false');
+            });
+            
+            // 3. Atur konfigurasi PDF
+            let paperOptions;
+            let filename;
+
+            if (paperSize === 'a4') {
+                // A4: 210 x 297 mm
+                paperOptions = { width: 210, height: 297 };
+                filename = 'Surat-A4.pdf';
+            } else if (paperSize === 'f4') {
+                // F4/Folio: 215 x 330 mm (8.5in x 13in)
+                paperOptions = { width: 215, height: 330 };
+                filename = 'Surat-F4.pdf';
+            } else {
+                console.error("Ukuran kertas tidak valid.");
+                loadingMessage.classList.add('hidden');
+                return;
+            }
+
+            const opt = {
+                margin: 10,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, logging: false },
+                jsPDF: { unit: 'mm', format: paperOptions, orientation: 'portrait' }
+            };
+
+            // 4. Proses konversi ke PDF
+            html2pdf().set(opt).from(content).save().then(() => {
+                // 5. Sembunyikan indikator loading
+                loadingMessage.classList.add('hidden');
+                
+                // 6. Kembalikan mode edit
+                if (document.getElementById('content-edit').classList.contains('hidden') === false) {
+                     content.querySelectorAll('[contenteditable]').forEach(el => {
+                        el.setAttribute('contenteditable', 'true');
+                    });
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
