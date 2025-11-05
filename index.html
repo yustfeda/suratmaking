@@ -3,957 +3,1019 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Bisnis - Profesional</title>
-    <!-- Memuat Tailwind CSS -->
+    <title>Aplikasi Penilaian PBB (RTDB)</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Memuat html2pdf.js untuk membuat PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Inter Font -->
     <style>
-        /* Menggunakan font Inter secara default */
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #f0f4f8; 
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
         }
-
-        /* Konten utama mengisi ruang yang tersedia */
-        main {
-            flex-grow: 1; 
+        .score-cell {
+            padding: 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-
-        /* Kelas untuk mencegah scrolling saat sidebar aktif */
-        body.overflow-hidden {
-            overflow: hidden;
-        }
-        
-        /* Definisi font kustom */
-        .font-times { font-family: 'Times New Roman', serif; }
-        .font-calibri { font-family: 'Calibri', sans-serif; }
-
-        /* --- CSS PRATINJAU KERTAS FLUID (DESKTOP) --- */
-        #content-preview {
-            padding: 2rem 0; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        #letter-container {
-            /* Container menampung kertas, menentukan lebar maksimum */
-            max-width: 900px; 
-            width: 100%;
-            margin-bottom: 2rem;
-            padding: 0 1rem; /* Tambahkan sedikit padding horizontal */
-        }
-
-        /* Aspect ratio wrapper untuk menahan rasio A4/F4 */
-        #aspect-ratio-wrapper {
-            position: relative;
-            width: 100%;
-            /* padding-bottom akan diatur oleh JS untuk menjaga rasio (misalnya 141.42% untuk A4) */
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
-            background-color: white;
-            border: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-            border-radius: 0.75rem;
-            overflow: hidden; 
-        }
-
-        #letter-content {
-            /* Konten surat yang sebenarnya: posisikan absolut di dalam wrapper untuk aspek rasio */
-            position: absolute; 
-            top: 0;
-            left: 0;
-            width: 100%; 
-            height: 100%; 
-            padding: 25mm 20mm; /* Margin yang sesuai untuk cetak (2.5cm & 2cm) */
-            font-size: 12pt; 
-            transition: all 0.3s ease;
-            margin: 0;
-        }
-
-        /* Kop Surat Style - Disesuaikan agar mirip format resmi */
-        .kop-container {
-            margin-bottom: 5px; 
-        }
-        .kop-header {
-            /* GARIS TEBAL DI BAWAH KOP */
-            border-bottom: 3px solid #000; 
-            padding-bottom: 8px;
-            margin-bottom: 0; /* Jarak dibuat dari margin-top Tanggal Surat */
-        }
-        .kop-teks {
-            font-size: 12pt;
-            line-height: 1.2;
-            color: #1f2937; /* Gray-800 */
-        }
-        .kop-teks.utama {
-            font-weight: bold;
-        }
-        .kop-teks.instansi {
-            font-weight: bold;
-            font-size: 14pt;
-        }
-        .kop-teks.alamat {
-            font-size: 10pt;
-            font-weight: normal;
-        }
-
-        /* --- PENGATURAN TEKS SURAT --- */
-        .data-surat-row {
-            display: flex;
-            margin-bottom: 3px;
-        }
-        .data-surat-label {
-            width: 80px; /* Lebar label (Nomor, Lampiran, Perihal) */
-            flex-shrink: 0;
-            font-weight: normal;
-        }
-        .data-surat-separator {
-            width: 15px; /* Lebar untuk ':' */
-            text-align: center;
-            flex-shrink: 0;
-        }
-        
-        /* Style umum untuk input form */
-        .form-input-field {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 1px solid #cbd5e1;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            font-size: 1rem;
-            background-color: #ffffff;
-        }
-        .form-input-field:focus {
-            border-color: #10b981; 
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-            outline: none;
-        }
-
-        /* Style mewah untuk tombol utama (PDF/Tab Terpilih) */
-        .btn-primary {
-            background-image: linear-gradient(to right, #10b981 0%, #059669 100%);
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px -5px rgba(16, 185, 129, 0.5);
-        }
-        .btn-primary:hover {
-            box-shadow: 0 8px 20px -7px rgba(16, 185, 129, 0.7);
-            transform: translateY(-2px);
-            background-image: linear-gradient(to right, #059669 0%, #10b981 100%);
-        }
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        /* Style untuk Tab Button */
-        .tab-button {
-            border-bottom: 3px solid transparent;
-            color: #4b5563; 
-        }
-
-        .tab-button.active-preview {
-            color: #059669; 
-            border-bottom-color: #059669; 
-            font-weight: 600;
-        }
-
-        .tab-button.active-edit {
-            color: #ef4444; 
-            border-bottom-color: #ef4444; 
-            font-weight: 600;
-        }
-
-        /* Style khusus untuk overlay dan blur */
-        #sidebar-overlay.active {
-            opacity: 0.7;
-            pointer-events: auto;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            background-color: rgba(0, 0, 0, 0.7); 
-        }
-
-        /* Sidebar transition */
-        #mobile-sidebar {
-            transition: transform 0.3s ease-out; 
-        }
-
-        /* Notifikasi Toast (Pop-up) */
-        #toast-notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1000;
-            background-color: #10b981; /* bg-emerald-500 */
+        .score-radio:checked + label {
+            background-color: #10b981; /* Emerald 500 */
             color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-            display: flex;
-            align-items: center;
+            font-weight: 600;
         }
-        #toast-notification.show {
-            opacity: 1;
-            transform: translateY(0);
+        .score-radio:hover + label {
+            background-color: #d1fae5;
         }
-        
-        /* Responsif: Nonaktifkan aspect ratio hack di mobile */
-        @media (max-width: 1024px) {
-            #letter-container {
-                padding: 0; /* Hapus padding container di mobile */
-            }
-            #aspect-ratio-wrapper {
-                box-shadow: none;
-                border: none;
-                border-radius: 0;
-                padding-bottom: 0 !important; /* Hapus padding aspect ratio di mobile */
-                position: static;
-            }
-            #letter-content {
-                position: static; /* Kembali ke posisi statis */
-                width: 95%; 
-                height: auto; 
-                min-height: auto !important;
-                padding: 1.5rem 1rem; /* Padding yang lebih kecil */
-                font-size: 11pt;
-                margin: 0 auto;
-            }
-            .kop-teks { font-size: 11pt; }
-            .kop-teks.instansi { font-size: 13pt; }
-            /* Menyesuaikan margin untuk tanggal surat agar tidak terlalu jauh di mobile */
-            #preview-tanggal-surat {
-                margin-top: 5px; 
-                margin-bottom: 1.5rem;
-            }
+        /* Style untuk Tabel Penilaian Sesuai Gambar */
+        .header-cell {
+            @apply px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-white;
         }
     </style>
+    <!-- JS Libraries for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
-<body class="min-h-screen flex flex-col">
+<body>
 
-    <!-- Mobile Sidebar Overlay (70% Opacity Blur) -->
-    <div id="sidebar-overlay" class="fixed inset-0 opacity-0 pointer-events-none transition-opacity duration-300 z-40" onclick="toggleSidebar(false)"></div>
-
-    <!-- Mobile Sidebar Content -->
-    <div id="mobile-sidebar" class="fixed right-0 top-0 h-full w-64 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 ease-out p-6 z-50">
-        <div class="flex justify-between items-center pb-4 mb-4 border-b">
-            <h3 class="text-lg font-semibold text-gray-800">Navigasi</h3>
-            <button onclick="toggleSidebar(false)" class="text-gray-500 hover:text-gray-900 p-1 rounded-full">
-                <!-- Close Icon (X) -->
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        
-        <div class="flex flex-col space-y-4">
-            <button id="mobile-tab-edit" onclick="showTab('edit')" class="tab-button w-full text-left active-edit px-4 py-2 rounded-lg hover:bg-red-50 text-red-500 border-b-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                Edit Data Surat
-            </button>
-            <button id="mobile-tab-preview" onclick="showTab('preview')" class="tab-button w-full text-left px-4 py-2 rounded-lg hover:bg-emerald-50 text-gray-500 border-b-0">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                Pratinjau & Unduh PDF
-            </button>
-        </div>
-    </div>
-    <!-- End Mobile Sidebar -->
-
-
-    <!-- HEADER APLIKASI PROFESIONAL -->
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-lg">
-        <div class="container mx-auto max-w-6xl flex justify-between items-center py-4 px-4 sm:px-8">
+<div id="app" class="min-h-screen flex flex-col">
+    <!-- Main Header -->
+    <header class="bg-indigo-700 shadow-lg sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
             <div class="flex items-center">
-                <svg class="w-6 h-6 text-emerald-500 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                <h1 class="text-xl font-bold text-gray-800">SuratPro</h1>
-            </div>
-
-            <!-- DESKTOP TABS (Visible on sm and larger) -->
-            <div id="desktop-tabs" class="hidden sm:flex space-x-2 border-b-2 border-gray-300">
-                 <button id="desktop-tab-edit" onclick="showTab('edit')" class="tab-button active-edit px-4 py-3 text-sm font-medium transition-colors duration-200 focus:outline-none text-red-500 border-red-500 hover:bg-red-50" aria-current="page">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    Edit Data Surat
+                <button id="hamburger-menu" class="text-white p-2 rounded-lg lg:hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
-                <button id="desktop-tab-preview" onclick="showTab('preview')" class="tab-button px-4 py-3 text-sm font-medium text-gray-500 hover:text-emerald-700 transition-colors duration-200 focus:outline-none hover:bg-emerald-50">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    Pratinjau & Unduh PDF
-                </button>
+                <h1 class="text-xl font-bold text-white ml-3">Aplikasi Penilaian PBB (RTDB)</h1>
             </div>
-
-            <!-- MOBILE MENU (Visible on small screens) -->
-            <div class="flex items-center space-x-4">
-                <div id="auth-status" class="text-xs text-gray-500 hidden sm:block">
-                    <!-- Status User ID akan ditampilkan di sini -->
-                </div>
-                <button id="hamburger-menu" class="sm:hidden text-gray-700 p-2 focus:outline-none rounded-lg hover:bg-gray-100 transition" onclick="toggleSidebar(true)">
-                    <!-- Hamburger Icon -->
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-            </div>
+            <nav id="desktop-menu" class="hidden lg:flex space-x-4">
+                <button onclick="navigate('score')" class="text-white hover:text-indigo-200 px-3 py-2 rounded-md font-medium transition duration-150">Penilaian</button>
+                <button onclick="navigate('admin')" id="admin-menu-btn" class="text-white hover:text-indigo-200 px-3 py-2 rounded-md font-medium transition duration-150 hidden">Admin Panel</button>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition duration-150">Logout</button>
+            </nav>
         </div>
     </header>
 
-    <main class="flex-grow container mx-auto max-w-6xl p-4 sm:p-8">
-        <div class="max-w-4xl mx-auto">
-            
-            <!-- Konten Aplikasi: Mode Edit (Form Input) -->
-            <div id="content-edit" class="tab-content transition-opacity duration-300 bg-white p-6 sm:p-8 rounded-lg shadow-xl border border-gray-100">
-                <div id="data-status" class="mb-4 p-3 rounded-lg text-center text-sm font-medium border bg-gray-50 border-gray-200">
-                    <span id="save-status" class="text-gray-600">Status: Memuat data...</span>
-                </div>
+    <!-- Sidebar (Mobile View) -->
+    <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 transform -translate-x-full transition duration-300 ease-in-out z-20 lg:hidden shadow-2xl">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-3">Menu</h2>
+            <nav class="space-y-2">
+                <button onclick="closeSidebar(); navigate('score')" class="block w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md font-medium transition duration-150">Penilaian</button>
+                <button onclick="closeSidebar(); navigate('admin')" id="sidebar-admin-btn" class="block w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md font-medium transition duration-150 hidden">Admin Panel</button>
+                <button onclick="closeSidebar(); logout()" class="block w-full text-left bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md font-semibold mt-4 transition duration-150">Logout</button>
+            </nav>
+        </div>
+    </div>
+    <div id="overlay" class="fixed inset-0 bg-black opacity-0 pointer-events-none transition-opacity duration-300 z-10 lg:hidden"></div>
 
-                <div class="space-y-8">
-                     <!-- Pilihan Font -->
-                    <div class="p-4 border-l-4 border-purple-500 bg-purple-50 rounded-lg shadow-inner">
-                        <h3 class="font-semibold text-xl text-gray-800 mb-4">0. Pengaturan Tampilan Dokumen</h3>
-                        <div>
-                            <label for="input-font-choice" class="block text-sm font-medium text-gray-700 mb-1">Pilih Jenis Font Dokumen</label>
-                            <select id="input-font-choice" data-field="fontChoice" onchange="handleInputChange(this)" class="form-input-field">
-                                <option value="font-times">Times New Roman (Serif, Formal)</option>
-                                <option value="font-calibri">Calibri (Sans-serif, Modern)</option>
-                            </select>
-                        </div>
-                    </div>
-
-
-                    <!-- Bagian Kop Surat -->
-                    <div class="space-y-4 p-4 border-l-4 border-emerald-500 bg-gray-50 rounded-lg shadow-inner">
-                        <h3 class="font-semibold text-xl text-gray-800">1. Data Instansi & Logo</h3>
-                        
-                        <!-- NEW LOGO INPUTS -->
-                        <div class="grid sm:grid-cols-2 gap-4 border-b pb-4 mb-4">
-                            <div>
-                                <label for="input-logo-kiri" class="block text-sm font-medium text-gray-700 mb-1">URL Logo Kiri</label>
-                                <input type="url" id="input-logo-kiri" data-field="logoUrlKiri" oninput="handleInputChange(this)" class="form-input-field" placeholder="Masukkan URL gambar logo kiri...">
-                            </div>
-                            <div>
-                                <label for="input-logo-kanan" class="block text-sm font-medium text-gray-700 mb-1">URL Logo Kanan</label>
-                                <input type="url" id="input-logo-kanan" data-field="logoUrlKanan" oninput="handleInputChange(this)" class="form-input-field" placeholder="Masukkan URL gambar logo kanan...">
-                            </div>
-                        </div>
-
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="input-kop-utama" class="block text-sm font-medium text-gray-700 mb-1">Kop Utama (Baris 1)</label>
-                                <input type="text" id="input-kop-utama" data-field="kopUtama" oninput="handleInputChange(this)" class="form-input-field" value="PEMERINTAH KABUPATEN LEBAK">
-                            </div>
-                            <div>
-                                <label for="input-kop-sub2" class="block text-sm font-medium text-gray-700 mb-1">Nama Instansi</label>
-                                <input type="text" id="input-kop-sub2" data-field="namaInstansi" oninput="handleInputChange(this)" class="form-input-field" value="SMP NEGERI 2 CILELES">
-                            </div>
-                        </div>
-                        <div>
-                            <label for="input-tanggal-surat" class="block text-sm font-medium text-gray-700 mb-1">Tempat, Tanggal Surat</label>
-                            <input type="text" id="input-tanggal-surat" data-field="tanggalSurat" oninput="handleInputChange(this)" class="form-input-field" value="Cileles, 25 Nopember 2025">
-                        </div>
-                         <div>
-                            <label for="input-kop-alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat Instansi</label>
-                            <input type="text" id="input-kop-alamat" data-field="kopAlamat" oninput="handleInputChange(this)" class="form-input-field" value="Alamat: Kp. Pasir Galatik Desa Gumuruh Kec. Cileles-Lebak">
-                        </div>
-                    </div>
-
-                    <!-- Bagian Detail Surat -->
-                    <div class="space-y-4 p-4 border-l-4 border-amber-500 bg-white rounded-lg shadow">
-                        <h3 class="font-semibold text-xl text-gray-800">2. Detail Surat</h3>
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="input-nomor" class="block text-sm font-medium text-gray-700 mb-1">Nomor</label>
-                                <input type="text" id="input-nomor" data-field="nomor" oninput="handleInputChange(this)" class="form-input-field" value="421. /SMP/Filal/CLLS/XI/2025">
-                            </div>
-                            <div>
-                                <label for="input-lampiran" class="block text-sm font-medium text-gray-700 mb-1">Lampiran</label>
-                                <input type="text" id="input-lampiran" data-field="lampiran" oninput="handleInputChange(this)" class="form-input-field" value="-">
-                            </div>
-                        </div>
-                        <div>
-                            <label for="input-perihal" class="block text-sm font-medium text-gray-700 mb-1">Perihal</label>
-                            <input type="text" id="input-perihal" data-field="perihal" oninput="handleInputChange(this)" class="form-input-field" value="Pemberitahuan Kegiatan PERJUSAMI">
-                        </div>
-                         <div>
-                            <label for="input-tujuan-nama" class="block text-sm font-medium text-gray-700 mb-1">Tujuan (Kepada Yth.)</label>
-                            <input type="text" id="input-tujuan-nama" data-field="tujuanNama" oninput="handleInputChange(this)" class="form-input-field" value="Bapak Kepala SMP Negeri 2 Cileles">
-                        </div>
-                    </div>
-
-                    <!-- Bagian Isi Surat -->
-                    <div class="space-y-4 p-4 border-l-4 border-emerald-500 bg-gray-50 rounded-lg shadow-inner">
-                        <h3 class="font-semibold text-xl text-gray-800">3. Isi & Rincian Kegiatan</h3>
-                        <div>
-                            <label for="input-isi-utama-1" class="block text-sm font-medium text-gray-700 mb-1">Paragraf Pembuka/Utama</label>
-                            <textarea id="input-isi-utama-1" data-field="isiUtama" oninput="handleInputChange(this)" rows="4" class="form-input-field">Dalam rangka meningkatkan kedisiplinan, kemandirian, serta kemampuan kepramukaan peserta didik sebagai generasi muda yang berkarakter dan berjiwa Pancasila, kami bermaksud akan melaksanakan kegiatan Perkembangan Jumat Sabtu Minggu (Perjusami). Sehubungan dengan hal tersebut, bersama ini kami memberitahukan bahwa kegiatan akan dilaksanakan pada:</textarea>
-                        </div>
-                        <div>
-                            <label for="input-detail-kegiatan" class="block text-sm font-medium text-gray-700 mb-1">Rincian Kegiatan (Gunakan baris baru untuk setiap detail)</label>
-                            <textarea id="input-detail-kegiatan" data-field="detailKegiatan" oninput="handleInputChange(this)" rows="4" class="form-input-field">Hari/Tanggal: Jumat s.d. minggu (7-9 Nopember 2025)
-Pukul: 08.00 s.d Selesai
-Tempat: Lapangan</textarea>
-                        </div>
-                        <div>
-                            <label for="input-isi-penutup" class="block text-sm font-medium text-gray-700 mb-1">Paragraf Penutup</label>
-                            <textarea id="input-isi-penutup" data-field="isiPenutup" oninput="handleInputChange(this)" rows="3" class="form-input-field">Demikian pemberitahuan ini kami sampaikan. Besar harapan kami Bapak Kepala Sekolah memberikan izin pelaksanaan kegiatan tersebut. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.</textarea>
-                        </div>
-                    </div>
-
-                     <!-- Bagian Tanda Tangan -->
-                    <div class="space-y-4 p-4 border-l-4 border-amber-500 bg-white rounded-lg shadow">
-                        <h3 class="font-semibold text-xl text-gray-800">4. Penandatangan</h3>
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="input-jabatan-kiri" class="block text-sm font-medium text-gray-700 mb-1">Jabatan Kiri</label>
-                                <input type="text" id="input-jabatan-kiri" data-field="jabatanKiri" oninput="handleInputChange(this)" class="form-input-field" value="Ketua Pelaksana Kegiatan">
-                            </div>
-                            <div>
-                                <label for="input-jabatan-kanan" class="block text-sm font-medium text-gray-700 mb-1">Jabatan Kanan</label>
-                                <input type="text" id="input-jabatan-kanan" data-field="jabatanKanan" oninput="handleInputChange(this)" class="form-input-field" value="Sekretaris">
-                            </div>
-                        </div>
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <div>
-                                <label for="input-nama-kiri" class="block text-sm font-medium text-gray-700 my-1">Nama Kiri</label>
-                                <input type="text" id="input-nama-kiri" data-field="namaKiri" oninput="handleInputChange(this)" class="form-input-field" value="M. Nur Ikhwan, S. Pd.">
-                            </div>
-                            <div>
-                                <label for="input-nama-kanan" class="block text-sm font-medium text-gray-700 my-1">Nama Kanan</label>
-                                <input type="text" id="input-nama-kanan" data-field="namaKanan" oninput="handleInputChange(this)" class="form-input-field" value="Danu Septiana, S. Pd.">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- Akhir Konten Aplikasi: Mode Edit -->
-
-            <!-- Konten Aplikasi: Pratinjau & Unduh PDF -->
-            <div id="content-preview" class="tab-content hidden transition-opacity duration-300">
-
-                 <!-- Kontrol Unduh PDF -->
-                <div class="max-w-4xl w-full p-6 bg-white rounded-lg shadow-xl mb-8 border border-gray-100 flex flex-col sm:flex-row justify-between items-center relative">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 sm:mb-0">Unduh Dokumen sebagai PDF</h2>
-                    
-                    <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                         <div class="w-full sm:w-auto">
-                            <select id="paper-size-select" onchange="updatePreviewPaperSize(this.value)" class="form-input-field p-2 text-sm">
-                                <option value="a4">Ukuran Kertas: A4 (Standar)</option>
-                                <option value="f4">Ukuran Kertas: F4 / Folio (Panjang)</option>
-                            </select>
-                        </div>
-                        <button onclick="prepareAndDownloadPdf()" class="btn-primary text-white px-6 py-2.5 rounded-lg text-sm font-semibold w-full sm:w-auto shadow-lg hover:shadow-xl">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                            Unduh PDF Sekarang
-                        </button>
-                    </div>
-
-                    <div id="loading-message" class="hidden absolute top-0 left-0 w-full h-full bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
-                        <svg class="animate-spin h-8 w-8 text-emerald-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="text-emerald-700 font-semibold">Memproses PDF...</span>
-                    </div>
-                </div>
-
-                <div id="letter-container">
-                    <!-- NEW WRAPPER untuk menahan Aspect Ratio di Desktop -->
-                    <div id="aspect-ratio-wrapper"> 
-                        <div id="letter-content" class="font-times overflow-hidden">
-                            
-                            <!-- Kop Surat (Header) - Disesuaikan agar mirip format resmi -->
-                            <div class="kop-container">
-                                <div id="header-section" class="kop-header">
-                                    <div class="flex items-center justify-between text-center">
-                                        <!-- Logo Kiri -->
-                                        <div class="w-1/10 flex justify-start">
-                                            <img id="logo-kiri" src="" class="w-16 h-20 object-contain" alt="Logo Kiri" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KIRI';">
-                                        </div>
-
-                                        <!-- Teks Kop (80% Lebar) -->
-                                        <div class="w-8/10 flex-grow text-center flex flex-col justify-center items-center">
-                                            <p class="kop-teks utama" id="preview-kop-utama"></p>
-                                            <p class="kop-teks" id="preview-kop-sub1"></p>
-                                            <p class="kop-teks instansi" id="preview-kop-sub2"></p>
-                                            <p class="kop-teks alamat" id="preview-kop-alamat"></p>
-                                        </div>
-
-                                         <!-- Logo Kanan -->
-                                         <div class="w-1/10 flex justify-end">
-                                            <img id="logo-kanan" src="" class="w-16 h-20 object-contain" alt="Logo Kanan" onerror="this.onerror=null; this.src='https://placehold.co/60x80/ffffff/000000?text=LOGO+KANAN';">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Tempat dan Tanggal (DI BAWAH GARIS) -->
-                                <!-- Margin-top 5px agar lebih rapat ke garis -->
-                                <p class="text-right text-base text-gray-800 pt-1" id="preview-tanggal-surat"></p>
-                            </div>
-                            <!-- Akhir Kop Surat -->
-
-                            <!-- Informasi Surat (Nomor, Lampiran, Perihal) - Jarak 1.5 spasi -->
-                            <div class="text-base mt-6 mb-8 leading-relaxed">
-                                <div class="data-surat-row">
-                                    <span class="data-surat-label">Nomor</span>
-                                    <span class="data-surat-separator">:</span>
-                                    <span id="preview-nomor"></span>
-                                </div>
-                                <div class="data-surat-row">
-                                    <span class="data-surat-label">Lampiran</span>
-                                    <span class="data-surat-separator">:</span>
-                                    <span id="preview-lampiran"></span>
-                                </div>
-                                <div class="data-surat-row">
-                                    <span class="data-surat-label">Perihal</span>
-                                    <span class="data-surat-separator">:</span>
-                                    <span id="preview-perihal"></span>
-                                </div>
-                            </div>
-
-                            <!-- Alamat Tujuan -->
-                            <div class="mb-6">
-                                <p class="text-base mb-2">Kepada</p>
-                                <p class="text-base font-semibold" id="preview-tujuan-nama"></p>
-                                <p class="text-base">di Tempat</p>
-                            </div>
-                            
-                            <!-- Salam Pembuka -->
-                            <p class="text-base text-gray-800 mb-4">Dengan hormat,</p>
-
-                            <!-- Isi Surat -->
-                            <div class="text-gray-800 space-y-4 text-base leading-normal">
-                                <p class="text-justify indent-10" id="preview-isi-utama-1"></p>
-
-                                <!-- Detail Kegiatan (Diparsing dari textarea dengan baris baru) -->
-                                <div class="ml-10 text-base space-y-1" id="preview-detail-kegiatan">
-                                    <!-- Konten akan diisi oleh JS -->
-                                </div>
-                                
-                                <p class="text-justify indent-10 mt-6" id="preview-isi-penutup"></p>
-                            </div>
-
-                            <!-- Penutup dan Tanda Tangan (Format Dua Kolom) -->
-                            <div class="mt-20 text-base flex">
-                                <!-- Kolom Kiri -->
-                                <div class="w-1/2 flex flex-col items-start pr-12">
-                                    <p class="font-normal mb-1">Hormat kami,</p> 
-                                    
-                                    <!-- Jabatan Kiri -->
-                                    <p class="font-medium text-base mb-16" id="preview-jabatan-kiri"></p>
-                                    
-                                    <!-- Nama Kiri -->
-                                    <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kiri"></p>
-                                    <p class="text-xs text-transparent">.</p> <!-- Menjaga jarak baris -->
-                                </div>
-
-                                <!-- Kolom Kanan -->
-                                <div class="w-1/2 flex flex-col items-start pl-12">
-                                    <p class="font-normal mb-1">&nbsp;</p> 
-
-                                    <!-- Jabatan Kanan -->
-                                    <p class="font-medium text-base mb-16" id="preview-jabatan-kanan"></p>
-                                    
-                                    <!-- Nama Kanan -->
-                                    <p class="font-bold border-b-2 border-gray-700 inline-block px-1" id="preview-nama-kanan"></p>
-                                    <p class="text-xs text-transparent">.</p> <!-- Menjaga jarak baris -->
-                                </div>
-                            </div>
-                            <!-- Catatan: Untuk penandatangan mengetahui/menyetujui, biasanya ditambahkan di kiri atas, namun saya hanya mengikuti layout dua kolom di gambar Anda. -->
-
-                        </div>
-                    </div> <!-- END ASPECT RATIO WRAPPER -->
-                </div>
-            </div>
-            <!-- Akhir Konten Aplikasi: Pratinjau & Unduh PDF -->
-
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+        <div id="content-container">
+            <!-- Content will be rendered here based on state (login, score, admin) -->
         </div>
     </main>
 
-    <!-- Notifikasi Toast (Pop-up) -->
-    <div id="toast-notification" class="transition-all duration-300">
-        <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-        <span id="toast-message">Surat berhasil diunduh sebagai PDF!</span>
-    </div>
-
-    <!-- Footer Simple - Jarak Diperpendek menjadi mt-8 -->
-    <footer class="bg-gray-800 text-white mt-8 p-4 text-center">
-        <div class="container mx-auto max-w-4xl text-sm opacity-80">
-            <p>Sistem Generator Dokumen (Versi Lokal) | Data Disimpan di LocalStorage</p>
+    <!-- Custom Modal for Alerts/Confirmations -->
+    <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all">
+            <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-3">Pesan</h3>
+            <p id="modal-message" class="text-gray-600 mb-6"></p>
+            <div id="modal-actions" class="flex justify-end space-x-3">
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 hidden">Batal</button>
+                <button id="modal-ok-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150">OK</button>
+            </div>
         </div>
-    </footer>
+    </div>
+</div>
 
-    <script type="module">
-        // --- DATA LOKAL (PENGGANTI FIREBASE) ---
-        
-        // Data default untuk surat
-        const DEFAULT_DATA = {
-            fontChoice: "font-times", 
-            logoUrlKiri: "https://placehold.co/60x80/ffffff/000000?text=LOGO+KIRI", 
-            logoUrlKanan: "https://placehold.co/60x80/ffffff/000000?text=LOGO+KANAN",
-            kopUtama: "PEMERINTAH KABUPATEN LEBAK",
-            kopSub1: "DINAS PENDIDIKAN DAN KEBUDAYAAN",
-            namaInstansi: "SMP NEGERI 2 CILELES",
-            kopAlamat: "Alamat: Kp. Pasir Galatik Desa Gumuruh Kec. Cileles-Lebak",
-            tanggalSurat: "Cileles, 25 Nopember 2025",
-            nomor: "421. /SMP/Filal/CLLS/XI/2025",
-            lampiran: "-",
-            perihal: "Pemberitahuan Kegiatan PERJUSAMI",
-            tujuanNama: "Bapak Kepala SMP Negeri 2 Cileles",
-            isiUtama: "Dalam rangka meningkatkan kedisiplinan, kemandirian, serta kemampuan kepramukaan peserta didik sebagai generasi muda yang berkarakter dan berjiwa Pancasila, kami bermaksud akan melaksanakan kegiatan Perkembangan Jumat Sabtu Minggu (Perjusami). Sehubungan dengan hal tersebut, bersama ini kami memberitahukan bahwa kegiatan akan dilaksanakan pada:",
-            detailKegiatan: "Hari/Tanggal: Jumat s.d. minggu (7-9 Nopember 2025)\nPukul: 08.00 s.d Selesai\nTempat: Lapangan",
-            isiPenutup: "Demikian pemberitahuan ini kami sampaikan. Besar harapan kami Bapak Kepala Sekolah memberikan izin pelaksanaan kegiatan tersebut. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.",
-            jabatanKiri: "Ketua Pelaksana Kegiatan",
-            namaKiri: "M. Nur Ikhwan, S. Pd.",
-            jabatanKanan: "Sekretaris",
-            namaKanan: "Danu Septiana, S. Pd.",
-        };
+<!-- Firebase CDN Imports -->
+<script type="module">
+    // Import modul Firebase yang diperlukan
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getDatabase, ref, set, get, onValue, off, push } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    
+    // --- PENGATURAN FIREBASE/APLIKASI GLOBAL (WAJIB UNTUK PERSISTENSI MULTI-USER) ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-pbb-app-id';
+    
+    // Menggunakan konfigurasi yang disediakan oleh lingkungan, namun dengan fokus ke RTDB
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+         apiKey: "AIzaSyBg2MxCa9WR14J2Wc5iQyumFxVJIJd84Vs",
+         authDomain: "surat-903c5.firebaseapp.com",
+         databaseURL: "https://surat-903c5-default-rtdb.firebaseio.com",
+         projectId: "surat-903c5",
+         storageBucket: "surat-903c5.firebasestorage.app",
+         messagingSenderId: "50937404473",
+         appId: "1:50937404473:web:7d35356ec87735026481e8"
+    };
 
-        let letterData = { ...DEFAULT_DATA };
-        let saveTimeout = null;
-        let currentTab = 'edit'; 
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // Fungsi untuk menyimpan data ke LocalStorage dengan debounce
-        function saveDataToLocalStorage(data) {
-            if (saveTimeout) clearTimeout(saveTimeout);
+    if (!firebaseConfig.databaseURL) {
+        document.getElementById('content-container').innerHTML = '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert"><strong class="font-bold">Error!</strong><span class="block sm:inline"> Konfigurasi Realtime Database URL tidak ditemukan.</span></div>';
+        throw new Error('Firebase RTDB Config Missing');
+    }
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app); // Menggunakan Realtime Database
+    const auth = getAuth(app);
+    
+    // State global aplikasi
+    window.appState = {
+        view: 'login', // 'login', 'score', 'admin'
+        role: null,    // 'admin', 'jury'
+        userId: null,
+        participants: [], // Daftar peserta
+        scores: {},       // { participantId: { userId: { scores: {...}, total: N, locked: B } } }
+        editToken: null,  // Token admin untuk membuka kunci
+        isAuthReady: false,
+        selectedParticipantId: null,
+        scoreListeners: {}, // Untuk menyimpan referensi onValue RTDB
+    };
+
+    // --- PATHS FIREBASE RTDB & KONSTANTA ---
+    // Menggunakan path untuk RTDB
+    const BASE_PATH = `/artifacts/${appId}/pbb_data`;
+    const PATHS = {
+        PARTICIPANTS: `${BASE_PATH}/participants`,
+        SCORES: (participantId, userId) => 
+            userId 
+            ? `${BASE_PATH}/scores/${participantId}/${userId}` 
+            : `${BASE_PATH}/scores/${participantId}`,
+        ADMIN_TOKEN: `${BASE_PATH}/admin/editToken`,
+    };
+
+    const ADMIN_PASS = 'Piring123';
+    const JURY_PASS = 'Danukasep';
+    
+    // Konfigurasi Kriteria Penilaian (Sama seperti sebelumnya)
+    const CRITERIA = [
+        { group: "Gerakan Di Tempat", type: "header" },
+        { id: "sika", name: "1. Sikap Sempurna" },
+        { id: "horm", name: "2. Hormat" },
+        { id: "isti", name: "3. Istirahat Ditempat" },
+        { id: "peri", name: "4. Periksa Kerapihan" },
+        { id: "hit", name: "5. Hitung" },
+        { id: "seten", name: "6. Setengah Lengan Lencang Kanan" },
+        { id: "lenc", name: "7. Lencang Kanan" },
+        { id: "hadaR", name: "8. Hadap Kanan" },
+        { id: "hadaL", name: "9. Hadap Kiri" },
+        { id: "balR", name: "10. Balik Kanan" },
+        { id: "jalan", name: "11. Jalan Ditempat" },
+        { id: "balL", name: "12. Balik Kanan" },
+        { group: "Gerakan Berpindah Tempat", type: "header" },
+        { id: "4kanan", name: "18. 4 langkah ke kanan" },
+        { id: "4kiri", name: "19. 4 langkah ke kiri" },
+        { id: "3belakang", name: "20. 3 langkah ke belakang" },
+        { id: "2depan", name: "21. 2 langkah ke depan" },
+        { id: "bubar", name: "22. Bubar" }
+    ];
+    
+    // Opsi Skor
+    const SCORE_OPTIONS = {
+        CUKUP: [40, 45, 50],
+        BAIK: [60, 65, 70],
+        BAIK_SEKALI: [75, 80, 85]
+    };
+
+    // --- FUNGSI UTILITY & UI ---
+    
+    // Sidebar
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const hamburger = document.getElementById('hamburger-menu');
+
+    hamburger.addEventListener('click', () => {
+        sidebar.classList.toggle('-translate-x-full');
+        overlay.classList.toggle('opacity-0');
+        overlay.classList.toggle('pointer-events-none');
+        overlay.classList.toggle('opacity-50');
+    });
+
+    overlay.addEventListener('click', closeSidebar);
+
+    window.closeSidebar = function() {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+        overlay.classList.remove('opacity-50');
+    }
+
+    // Custom Modal (Menggantikan alert/confirm)
+    function showModal(title, message, isConfirmation = false) {
+        return new Promise(resolve => {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-message').innerHTML = message;
             
-            document.getElementById('save-status').textContent = 'Status: Menyimpan... (Lokal)';
+            const okBtn = document.getElementById('modal-ok-btn');
+            const cancelBtn = document.getElementById('modal-cancel-btn');
 
-            saveTimeout = setTimeout(() => {
-                try {
-                    // Simpan data ke localStorage
-                    localStorage.setItem('suratPro_data', JSON.stringify(data)); 
-                    document.getElementById('save-status').textContent = 'Status: Tersimpan di penyimpanan lokal (LocalStorage).';
-                    // Reset styling status
-                    document.getElementById('data-status').classList.remove('bg-red-100', 'border-red-400', 'bg-yellow-100', 'border-yellow-400');
-                    document.getElementById('save-status').classList.remove('text-red-700', 'text-yellow-700');
-                    document.getElementById('data-status').classList.add('bg-gray-50', 'border-gray-200');
-                    document.getElementById('save-status').classList.add('text-gray-600');
-                } catch (error) {
-                    console.error("Error saving data to LocalStorage:", error);
-                    document.getElementById('save-status').textContent = 'Error: Gagal menyimpan data lokal! (LocalStorage penuh?)';
-                    document.getElementById('data-status').classList.add('bg-red-100', 'border-red-400');
-                    document.getElementById('save-status').classList.add('text-red-700');
-                }
-            }, 500); 
-        }
-        window.saveDataToLocalStorage = saveDataToLocalStorage; 
-
-        // Fungsi untuk memuat data dari LocalStorage
-        function loadDataFromLocalStorage() {
-            document.getElementById('save-status').textContent = 'Status: Memuat data dari penyimpanan lokal...';
-            try {
-                const storedData = localStorage.getItem('suratPro_data');
-                if (storedData) {
-                    letterData = { ...DEFAULT_DATA, ...JSON.parse(storedData) }; 
-                    document.getElementById('save-status').textContent = 'Status: Data dimuat dari LocalStorage.';
-                } else {
-                    document.getElementById('save-status').textContent = 'Status: Data baru. Menggunakan default.';
-                    saveDataToLocalStorage(letterData); 
-                }
-                document.getElementById('auth-status').textContent = `Penyimpanan: Lokal (Browser)`; 
-                
-            } catch (error) {
-                console.error("Error loading data from LocalStorage:", error);
-                document.getElementById('save-status').textContent = 'Error: Gagal memuat data dari LocalStorage.';
-                document.getElementById('data-status').classList.add('bg-red-100', 'border-red-400');
-                document.getElementById('save-status').classList.add('text-red-700');
-            }
-
-            syncDataToForms();
-            synchronizePreview();
-        }
-
-        // --- INISIALISASI APLIKASI ---
-        function initApp() {
-            loadDataFromLocalStorage();
-        }
-
-        // --- HANDLERS DOM ---
-        
-        function handleInputChange(element) {
-            const field = element.getAttribute('data-field');
-            const value = element.value;
-            
-            if (field) {
-                letterData[field] = value;
-                saveDataToLocalStorage(letterData); // Ganti RTDB dengan LocalStorage
-                synchronizePreview(); 
-            }
-        }
-        window.handleInputChange = handleInputChange; 
-
-        function syncDataToForms() {
-            document.querySelectorAll('[data-field]').forEach(el => {
-                const field = el.getAttribute('data-field');
-                if (letterData[field] !== undefined && el.value !== letterData[field]) {
-                    el.value = letterData[field];
-                }
-            });
-        }
-        
-        // Fungsi untuk menyesuaikan tinggi pratinjau sesuai ukuran kertas (mempertahankan aspek rasio)
-        function updatePreviewPaperSize(size) {
-            const aspectRatioWrapper = document.getElementById('aspect-ratio-wrapper');
-            const isMobile = window.innerWidth < 1024;
-            
-            // Di mobile, kita tidak perlu aspect ratio hack karena layoutnya responsif penuh
-            if (isMobile) {
-                aspectRatioWrapper.style.paddingBottom = '0';
-                return;
-            }
-
-            let paddingPercentage;
-            if (size === 'f4') {
-                // F4/Folio (215mm x 330mm) Ratio: 330/215 ≈ 153.49%
-                paddingPercentage = '153.49%';
-            } else {
-                // A4 (210mm x 297mm) Ratio: 297/210 ≈ 141.42%
-                paddingPercentage = '141.42%';
-            }
-            
-            // Set padding-bottom untuk menahan aspect ratio
-            aspectRatioWrapper.style.paddingBottom = paddingPercentage;
-        }
-        window.updatePreviewPaperSize = updatePreviewPaperSize;
-
-        function synchronizePreview() {
-            const contentElement = document.getElementById('letter-content');
-
-            // 1. Terapkan Pilihan Font
-            contentElement.classList.remove('font-times', 'font-calibri');
-            contentElement.classList.add(letterData.fontChoice);
-            updatePreviewPaperSize(document.getElementById('paper-size-select').value);
-
-            // 2. Sinkronkan Logo
-            document.getElementById('logo-kiri').src = letterData.logoUrlKiri;
-            document.getElementById('logo-kanan').src = letterData.logoUrlKanan;
-
-            // 3. Sinkronkan konten teks
-            document.getElementById('preview-kop-utama').textContent = letterData.kopUtama;
-            document.getElementById('preview-kop-sub1').textContent = letterData.kopSub1;
-            document.getElementById('preview-kop-sub2').textContent = letterData.namaInstansi;
-            document.getElementById('preview-kop-alamat').textContent = letterData.kopAlamat;
-            document.getElementById('preview-tanggal-surat').textContent = letterData.tanggalSurat;
-            
-            // Detail Surat
-            document.getElementById('preview-nomor').textContent = letterData.nomor;
-            document.getElementById('preview-lampiran').textContent = letterData.lampiran;
-            document.getElementById('preview-perihal').textContent = letterData.perihal;
-            
-            // Tujuan
-            let tujuanNama = letterData.tujuanNama;
-            document.getElementById('preview-tujuan-nama').textContent = tujuanNama;
-
-            document.getElementById('preview-isi-utama-1').textContent = letterData.isiUtama;
-            document.getElementById('preview-isi-penutup').textContent = letterData.isiPenutup;
-
-            // Detail Kegiatan (parsing baris baru)
-            const detailKegiatanContainer = document.getElementById('preview-detail-kegiatan');
-            const detailText = letterData.detailKegiatan || '';
-            detailKegiatanContainer.innerHTML = ''; 
-            
-            detailText.split('\n').forEach(line => {
-                const parts = line.split(':');
-                if (parts.length >= 2) {
-                    const key = parts[0].trim();
-                    const value = parts.slice(1).join(':').trim(); 
-                    
-                    const div = document.createElement('div');
-                    div.className = 'flex data-surat-row'; 
-                    div.innerHTML = `
-                        <span class="data-surat-label">${key}</span>
-                        <span class="data-surat-separator">:</span>
-                        <span class="flex-grow">${value}</span>
-                    `;
-                    detailKegiatanContainer.appendChild(div);
-                }
-            });
-            
-            // Tanda Tangan
-            document.getElementById('preview-jabatan-kiri').textContent = letterData.jabatanKiri;
-            document.getElementById('preview-nama-kiri').textContent = letterData.namaKiri;
-            document.getElementById('preview-jabatan-kanan').textContent = letterData.jabatanKanan;
-            document.getElementById('preview-nama-kanan').textContent = letterData.namaKanan;
-        }
-
-        // --- Fungsi Notifikasi Toast ---
-        function showToast(message, isError = false) {
-            const toast = document.getElementById('toast-notification');
-            const toastMessage = document.getElementById('toast-message');
-            
-            toastMessage.textContent = message;
-            
-            // Mengubah warna dan ikon jika terjadi error
-            if (isError) {
-                toast.classList.remove('bg-emerald-500');
-                toast.classList.add('bg-red-600');
-                // Mengganti ikon menjadi peringatan (X atau alert)
-                toast.querySelector('svg').outerHTML = `
-                    <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                `;
-            } else {
-                toast.classList.add('bg-emerald-500');
-                toast.classList.remove('bg-red-600');
-                // Mengganti ikon kembali menjadi centang
-                toast.querySelector('svg').outerHTML = `
-                    <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                `;
-            }
-
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000); // Notifikasi akan hilang setelah 3 detik
-        }
-        window.showToast = showToast;
-
-
-        // --- Fungsi Pengaturan Tampilan (Tabs & Sidebar) ---
-        
-        function toggleSidebar(open) {
-            const sidebar = document.getElementById('mobile-sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-
-            if (open) {
-                sidebar.classList.remove('translate-x-full');
-                sidebar.classList.add('translate-x-0');
-                overlay.classList.add('active'); 
-                document.body.classList.add('overflow-hidden');
-            } else {
-                sidebar.classList.remove('translate-x-0');
-                sidebar.classList.add('translate-x-full');
-                overlay.classList.remove('active');
-                document.body.classList.remove('overflow-hidden');
-            }
-        }
-        window.toggleSidebar = toggleSidebar;
-
-        function showTab(tabName) {
-            currentTab = tabName;
-            
-            if (window.innerWidth < 640) {
-                toggleSidebar(false);
-            }
-
-            // Atur tampilan Konten
-            const contents = [document.getElementById('content-edit'), document.getElementById('content-preview')];
-            contents.forEach(c => c.classList.add('hidden', 'opacity-0'));
-            
-            const selectedContent = document.getElementById(`content-${tabName}`);
-            if (selectedContent) {
-                selectedContent.classList.remove('hidden');
-                setTimeout(() => selectedContent.classList.remove('opacity-0'), 10);
-            }
-
-            // Atur tampilan Tombol (Desktop & Mobile)
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active-preview', 'active-edit');
-                btn.classList.add('text-gray-500');
-            });
-            
-            const tabElements = [`#desktop-tab-${tabName}`, `#mobile-tab-${tabName}`];
-            
-            tabElements.forEach(selector => {
-                const selectedTab = document.querySelector(selector);
-                if (selectedTab) {
-                    if (tabName === 'preview') {
-                        selectedTab.classList.add('active-preview');
-                        selectedTab.classList.remove('text-gray-500');
-                    } else {
-                        selectedTab.classList.add('active-edit');
-                        selectedTab.classList.remove('text-gray-500');
-                    }
-                }
-            });
-
-            const otherTabName = tabName === 'edit' ? 'preview' : 'edit';
-            const otherTabElements = [`#desktop-tab-${otherTabName}`, `#mobile-tab-${otherTabName}`];
-
-            otherTabElements.forEach(selector => {
-                const otherTab = document.querySelector(selector);
-                if (otherTab) {
-                    otherTab.classList.remove('active-edit', 'active-preview');
-                    otherTab.classList.add('text-gray-500');
-                }
-            });
-
-            if (tabName === 'preview') synchronizePreview();
-        }
-        window.showTab = showTab; 
-
-        // --- Fungsi Unduh PDF ---
-        function prepareAndDownloadPdf() {
-            const paperSize = document.getElementById('paper-size-select').value;
-            const content = document.getElementById('letter-content');
-            const loadingMessage = document.getElementById('loading-message');
-
-            loadingMessage.classList.remove('hidden');
-            
-            let paperOptions;
-            let filename;
-
-            if (paperSize === 'a4') {
-                // A4: 210mm x 297mm
-                paperOptions = { width: 210, height: 297 };
-                filename = 'Surat-A4-Profesional.pdf';
-            } else if (paperSize === 'f4') {
-                // F4/Folio: 215mm x 330mm (Ukuran umum di Indonesia)
-                paperOptions = { width: 215, height: 330 }; 
-                filename = 'Surat-F4-Profesional.pdf';
-            } else {
-                console.error("Ukuran kertas tidak valid.");
-                showToast("Error: Ukuran kertas tidak valid.", true);
-                loadingMessage.classList.add('hidden');
-                return;
-            }
-
-            // Opsi html2pdf
-            const opt = {
-                // Mengatur margin default (misalnya 15mm)
-                margin: [15, 15, 15, 15], 
-                filename: filename,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2, 
-                    logging: false,
-                },
-                jsPDF: { unit: 'mm', format: paperOptions, orientation: 'portrait' }
+            const hideModal = () => {
+                modal.classList.add('hidden');
             };
 
-            // Ambil elemen yang akan dicetak (letter-content)
-            const elementToPrint = document.getElementById('letter-content');
+            okBtn.onclick = () => { hideModal(); resolve(true); };
+
+            if (isConfirmation) {
+                cancelBtn.classList.remove('hidden');
+                cancelBtn.onclick = () => { hideModal(); resolve(false); };
+            } else {
+                cancelBtn.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        });
+    }
+
+    // Pembuatan PDF (Sama seperti sebelumnya)
+    window.generatePDF = async function (participantId, participantName, totalScore, scoreData) {
+        await showModal('Proses Cetak', 'Mempersiapkan dokumen PDF. Mohon tunggu...');
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            let y = 10;
+            const margin = 10;
+            const pageHeight = doc.internal.pageSize.height;
             
-            // Gunakan promise chain dengan .finally() untuk memastikan loading indicator disembunyikan
-            html2pdf().set(opt).from(elementToPrint).save()
-                .then(() => {
-                    // Tampilkan notifikasi berhasil unduh
-                    showToast(`Berhasil mengunduh dokumen: ${filename}`, false);
-                })
-                .catch(error => {
-                    console.error("PDF generation failed:", error);
-                    showToast("Gagal mengunduh PDF. Cek konsol untuk detail.", true);
-                })
-                .finally(() => {
-                    // Pastikan loading message disembunyikan, baik berhasil atau gagal
-                    loadingMessage.classList.add('hidden');
-                });
+            const tableWidth = 180;
+            const scoreColCombinedWidth = 80;
+
+            // Judul dan Info
+            doc.setFontSize(16);
+            doc.text(`Rekap Penilaian PBB`, margin, y);
+            y += 8;
+            doc.setFontSize(12);
+            doc.text(`Peserta: ${participantName}`, margin, y);
+            y += 6;
+            doc.text(`ID Juri: ${appState.userId.substring(0, 8)}...`, margin, y);
+            y += 10;
+
+            // Header Tabel
+            const drawHeader = (startY) => {
+                doc.setFontSize(10);
+                doc.setFillColor(30, 58, 138); // Dark Blue
+                doc.setTextColor(255, 255, 255);
+                
+                doc.rect(margin, startY, 15, 7, 'F');
+                doc.text('NO', margin + 15 / 2, startY + 4.5, { align: 'center' });
+
+                doc.rect(margin + 15, startY, 85, 7, 'F');
+                doc.text('KRITERIA PENILAIAN', margin + 15 + 85 / 2, startY + 4.5, { align: 'center' });
+                
+                doc.rect(margin + 15 + 85, startY, scoreColCombinedWidth, 7, 'F');
+                doc.text('NILAI YANG DIPILIH', margin + 15 + 85 + scoreColCombinedWidth / 2, startY + 4.5, { align: 'center' });
+                
+                doc.setTextColor(0, 0, 0);
+                return startY + 7;
+            };
+
+            y = drawHeader(y);
+            
+            // Body Tabel
+            doc.setFontSize(9);
+            doc.setTextColor(0, 0, 0);
+            let rowHeight = 6;
+            let counter = 1;
+
+            CRITERIA.forEach((criteria) => {
+                if (y > pageHeight - 30) {
+                    doc.addPage();
+                    y = margin;
+                    y = drawHeader(y);
+                }
+
+                if (criteria.type === 'header') {
+                    doc.setFillColor(209, 213, 219); // Gray 300
+                    doc.rect(margin, y, tableWidth, rowHeight, 'F');
+                    doc.setFontSize(10);
+                    doc.text(criteria.group, margin + 2, y + rowHeight / 2, { align: 'left', baseline: 'middle' });
+                    y += rowHeight;
+                } else {
+                    const chosenScore = scoreData[criteria.id] || '-';
+                    const isScored = chosenScore !== '-';
+
+                    doc.setFillColor(255, 255, 255);
+                    doc.rect(margin, y, tableWidth, rowHeight, 'F');
+
+                    // NO
+                    doc.text(String(counter++), margin + 15 / 2, y + rowHeight / 2, { align: 'center', baseline: 'middle' });
+                    // Kriteria
+                    doc.text(criteria.name, margin + 15 + 2, y + rowHeight / 2, { align: 'left', baseline: 'middle' });
+                    
+                    // Skor Terpilih
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(isScored ? 22, 163, 74 : 107, 114, 128);
+                    doc.text(String(chosenScore), margin + 15 + 85 + scoreColCombinedWidth / 2, y + rowHeight / 2, { align: 'center', baseline: 'middle' });
+                    doc.setFont(undefined, 'normal');
+                    doc.setTextColor(0, 0, 0);
+
+                    // Garis batas
+                    doc.setDrawColor(200, 200, 200);
+                    doc.line(margin, y + rowHeight, margin + tableWidth, y + rowHeight);
+
+                    y += rowHeight;
+                }
+            });
+
+            // Total Skor
+            if (y > pageHeight - 20) {
+                doc.addPage();
+                y = margin;
+            }
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('TOTAL SKOR AKHIR:', margin + 15 + 85 - 20, y + 5, { align: 'right' });
+            doc.text(String(totalScore), margin + 15 + 85 + 2, y + 5, { align: 'left' });
+            y += 8;
+
+            doc.save(`${participantName}_PBB_Penilaian_${appState.userId.substring(0, 4)}.pdf`);
+            showModal('Selesai', 'Dokumen PDF telah berhasil dibuat.');
+        } catch (e) {
+            console.error(e);
+            showModal('Error Cetak', 'Gagal membuat PDF. Periksa konsol untuk detail error.');
         }
-        window.prepareAndDownloadPdf = prepareAndDownloadPdf; 
+    }
 
-        // --- START APLIKASI ---
-        initApp(); // Ganti dari initFirebase ke initApp
 
-        document.addEventListener('DOMContentLoaded', () => {
-             showTab('edit');
-             // Panggil updatePreviewPaperSize untuk pertama kali dengan default A4
-             updatePreviewPaperSize('a4'); 
-        });
+    // --- INISIALISASI DAN AUTENTIKASI FIREBASE ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            appState.userId = user.uid;
+            
+            await syncEditToken();
+
+            if (!appState.isAuthReady) {
+                appState.isAuthReady = true;
+                setupDataListeners();
+            }
+
+            if (appState.role) {
+                renderApp();
+            } else {
+                // Biarkan di login sampai user memilih peran
+                appState.view = 'login'; 
+                renderApp();
+            }
+
+        } else {
+            // State tidak diautentikasi, kembali ke login
+            appState.userId = null;
+            appState.role = null;
+            appState.view = 'login';
+            appState.isAuthReady = true;
+            renderApp();
+        }
+    });
+
+    window.onload = async function() {
+        if (initialAuthToken) {
+            await signInWithCustomToken(auth, initialAuthToken).catch(e => {
+                console.error("Custom token sign in failed, signing in anonymously.", e);
+                signInAnonymously(auth);
+            });
+        } else {
+            // Login anonim jika tidak ada custom token
+            await signInAnonymously(auth);
+        }
+    };
+    
+    // --- LISTENER DATA FIREBASE RTDB ---
+    function setupDataListeners() {
+        if (!appState.userId) return;
+
+        // 1. Listener untuk Peserta
+        const participantsRef = ref(db, PATHS.PARTICIPANTS);
+        onValue(participantsRef, (snapshot) => {
+            const data = snapshot.val();
+            const list = [];
+            if (data) {
+                // RTDB returns an object of objects, convert to array
+                Object.keys(data).forEach(id => {
+                    list.push({ id, ...data[id] });
+                });
+            }
+            appState.participants = list.sort((a, b) => a.no - b.no);
+
+            // Jika peserta sebelumnya terhapus, set ulang selectedParticipantId
+            if (appState.selectedParticipantId && !appState.participants.find(p => p.id === appState.selectedParticipantId)) {
+                appState.selectedParticipantId = null;
+            }
+
+            // Jika di admin view, kita perlu rekap ulang
+            if (appState.view === 'admin') {
+                getRecapData().then(renderContent);
+            } else {
+                renderContent();
+            }
+
+        }, (error) => console.error("Error listening to participants:", error));
+
+        // 2. Listener untuk Token Edit
+        const tokenRef = ref(db, PATHS.ADMIN_TOKEN);
+        onValue(tokenRef, (snapshot) => {
+            appState.editToken = snapshot.val();
+            renderContent();
+        }, (error) => console.error("Error listening to token:", error));
+    }
+
+    async function syncEditToken() {
+        const tokenRef = ref(db, PATHS.ADMIN_TOKEN);
+        try {
+            const snapshot = await get(tokenRef);
+            appState.editToken = snapshot.exists() ? snapshot.val() : null;
+        } catch (e) {
+            console.error("Gagal sinkronisasi token edit:", e);
+        }
+    }
+
+    // --- LOGIKA APLIKASI ---
+
+    window.login = async function(role) {
+        const passwordInput = document.getElementById('password-input').value;
+        let correctPassword;
+        let nextRole;
+
+        if (role === 'admin') {
+            correctPassword = ADMIN_PASS;
+            nextRole = 'admin';
+        } else if (role === 'jury') {
+            correctPassword = JURY_PASS;
+            nextRole = 'jury';
+        }
+
+        if (passwordInput === correctPassword) {
+            appState.role = nextRole;
+            appState.view = nextRole === 'admin' ? 'admin' : 'score';
+            showModal('Login Berhasil', `Selamat datang, ${nextRole.toUpperCase()}! ID Juri Anda: ${appState.userId}`);
+            renderApp();
+        } else {
+            showModal('Login Gagal', 'Password salah. Silakan coba lagi.');
+        }
+    }
+
+    window.logout = async function() {
+        const confirm = await showModal('Konfirmasi Logout', 'Apakah Anda yakin ingin keluar?', true);
+        if (!confirm) return;
         
-        // Listener untuk menyesuaikan aspect ratio ketika jendela diubah ukurannya (Desktop <-> Mobile)
-        window.addEventListener('resize', () => {
-             updatePreviewPaperSize(document.getElementById('paper-size-select').value);
+        // Hapus semua listener skor peserta yang spesifik
+        Object.keys(appState.scoreListeners).forEach(id => {
+            off(ref(db, PATHS.SCORES(id)), 'value', appState.scoreListeners[id]);
         });
+        appState.scoreListeners = {};
 
-    </script>
+        await signOut(auth);
+        appState.role = null;
+        appState.view = 'login';
+        appState.scores = {};
+        appState.selectedParticipantId = null;
+        renderApp();
+    }
+    
+    window.navigate = function(view) {
+        if (!appState.role && view !== 'login') {
+            appState.view = 'login';
+            showModal('Akses Ditolak', 'Anda harus login terlebih dahulu.');
+            renderApp();
+            return;
+        }
+        if (view === 'admin' && appState.role !== 'admin') {
+            showModal('Akses Ditolak', 'Hanya Admin yang dapat mengakses halaman ini.');
+            return;
+        }
+        appState.view = view;
+        if (view === 'admin') {
+            getRecapData().then(renderContent);
+        } else {
+            renderContent();
+        }
+        renderApp();
+    }
+    
+    // --- FUNGSI ADMIN ---
 
+    window.addParticipant = async function() {
+        const nameInput = document.getElementById('new-participant-name');
+        const numberInput = document.getElementById('new-participant-number');
+        const name = nameInput.value.trim();
+        const number = parseInt(numberInput.value.trim());
+
+        if (!name || isNaN(number)) {
+            showModal('Input Invalid', 'Nama peserta dan Nomor urut harus diisi dengan benar.');
+            return;
+        }
+
+        // Cek duplikasi nomor urut (RTDB tidak mendukung query yang efisien, cek lokal setelah sync)
+        if (appState.participants.some(p => p.no === number)) {
+            showModal('Input Invalid', `Nomor urut ${number} sudah digunakan.`);
+            return;
+        }
+
+        const participantsRef = ref(db, PATHS.PARTICIPANTS);
+        const newParticipantRef = push(participantsRef); // Menggunakan push untuk ID unik
+        
+        try {
+            await set(newParticipantRef, {
+                no: number,
+                name: name,
+                createdAt: new Date().toISOString()
+            });
+            showModal('Sukses', `Peserta ${name} berhasil ditambahkan!`);
+            nameInput.value = '';
+            numberInput.value = '';
+        } catch (e) {
+            console.error("Error adding participant:", e);
+            showModal('Error', 'Gagal menambahkan peserta. ' + e.message);
+        }
+    }
+
+    window.generateNewToken = async function() {
+        const confirm = await showModal('Konfirmasi', 'Apakah Anda yakin ingin mengganti token edit saat ini?', true);
+        if (!confirm) return;
+        
+        const newToken = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const tokenRef = ref(db, PATHS.ADMIN_TOKEN);
+
+        try {
+            await set(tokenRef, newToken);
+            showModal('Token Baru', `Token edit baru berhasil dibuat: <span class="font-bold text-lg text-red-600">${newToken}</span>. Salin token ini!`);
+        } catch (e) {
+            console.error("Error generating token:", e);
+            showModal('Error', 'Gagal membuat token baru. ' + e.message);
+        }
+    }
+
+    // Fungsi untuk mengambil dan merekap semua skor
+    async function getRecapData() {
+        const recap = [];
+        
+        const scoresRef = ref(db, `${BASE_PATH}/scores`);
+        const scoresSnapshot = await get(scoresRef);
+        const allScoresData = scoresSnapshot.val() || {};
+
+        // Loop melalui setiap peserta
+        for (const participant of appState.participants) {
+            const judgements = [];
+            let totalJuries = 0;
+            let sumTotalScores = 0;
+            
+            const participantScores = allScoresData[participant.id] || {};
+
+            // Loop melalui juri yang menilai peserta ini
+            Object.keys(participantScores).forEach(userId => {
+                const data = participantScores[userId];
+                judgements.push(data);
+                sumTotalScores += data.total || 0;
+                totalJuries++;
+            });
+
+            recap.push({
+                id: participant.id,
+                no: participant.no,
+                name: participant.name,
+                totalJuries: totalJuries,
+                averageScore: totalJuries > 0 ? (sumTotalScores / totalJuries).toFixed(2) : 0,
+                judgements: judgements, // Simpan detail penilaian
+            });
+        }
+
+        return recap.sort((a, b) => b.averageScore - a.averageScore || a.no - b.no); // Urutkan berdasarkan skor tertinggi
+    }
+    
+    // --- FUNGSI PENILAIAN JURI ---
+
+    window.selectParticipant = function(selectElement) {
+        const participantId = selectElement.value;
+        
+        // Hapus listener peserta sebelumnya
+        if (appState.selectedParticipantId && appState.scoreListeners[appState.selectedParticipantId]) {
+            off(ref(db, PATHS.SCORES(appState.selectedParticipantId)), 'value', appState.scoreListeners[appState.selectedParticipantId]);
+            delete appState.scoreListeners[appState.selectedParticipantId];
+        }
+
+        appState.selectedParticipantId = participantId;
+
+        if (participantId) {
+            // Setup listener untuk *semua* skor juri untuk peserta yang dipilih
+            const scoresRef = ref(db, PATHS.SCORES(participantId));
+            
+            const listenerCallback = (snapshot) => {
+                const participantScores = snapshot.val() || {};
+                
+                // Perbarui appState.scores untuk peserta ini
+                appState.scores[participantId] = participantScores;
+                renderContent(); 
+            };
+            
+            // Simpan callback agar bisa dihapus (off) nanti
+            onValue(scoresRef, listenerCallback, (error) => console.error(`Error listening to scores for ${participantId}:`, error));
+            appState.scoreListeners[participantId] = listenerCallback;
+
+        }
+        renderContent();
+    }
+
+    window.updateScore = function(criterionId, scoreValue) {
+        const participantId = appState.selectedParticipantId;
+        if (!participantId) return showModal('Perhatian', 'Pilih peserta terlebih dahulu.');
+
+        let currentScoreData = appState.scores[participantId]?.[appState.userId];
+        
+        if (!currentScoreData) {
+            // Inisialisasi data jika belum ada
+            currentScoreData = { scores: {}, total: 0, locked: false };
+            if (!appState.scores[participantId]) appState.scores[participantId] = {};
+            appState.scores[participantId][appState.userId] = currentScoreData;
+        }
+
+        // Cek status kunci
+        if (currentScoreData.locked) {
+            showModal('Aksi Ditolak', 'Nilai sudah dikunci. Masukkan token edit untuk merubah nilai.');
+            
+            // Kembalikan radio button ke nilai yang tersimpan
+            const oldScoreValue = currentScoreData.scores[criterionId];
+            if (oldScoreValue) {
+                const oldRadio = document.getElementById(`radio-${criterionId}-${oldScoreValue}`);
+                if (oldRadio) oldRadio.checked = true;
+            } else {
+                 // Jika tidak ada nilai lama, pastikan radio button yang baru diklik tidak terpilih
+                 const clickedRadio = document.getElementById(`radio-${criterionId}-${scoreValue}`);
+                 if (clickedRadio) clickedRadio.checked = false;
+            }
+            return;
+        }
+
+        // Perbarui skor
+        const oldScore = currentScoreData.scores[criterionId] || 0;
+        const newScoreValue = parseInt(scoreValue);
+        const newTotal = currentScoreData.total - oldScore + newScoreValue;
+        
+        currentScoreData.scores[criterionId] = newScoreValue;
+        currentScoreData.total = newTotal;
+
+        // Perbarui tampilan total secara langsung (tanpa renderContent penuh)
+        const totalEl = document.getElementById('current-total-score');
+        if (totalEl) totalEl.textContent = newTotal;
+    }
+
+    window.saveScore = async function(isLocking = true) {
+        const participantId = appState.selectedParticipantId;
+        if (!participantId) return showModal('Perhatian', 'Pilih peserta terlebih dahulu.');
+
+        const scoreData = appState.scores[participantId]?.[appState.userId];
+        if (!scoreData || Object.keys(scoreData.scores).length === 0) {
+            return showModal('Perhatian', 'Anda belum memberikan penilaian.');
+        }
+
+        const currentTotalCriteria = CRITERIA.filter(c => c.type !== 'header').length;
+        
+        if (Object.keys(scoreData.scores).length !== currentTotalCriteria) {
+            const confirm = await showModal('Nilai Belum Lengkap', `Anda baru menilai ${Object.keys(scoreData.scores).length} dari ${currentTotalCriteria} kriteria. Tetap simpan?`, true);
+            if (!confirm) return;
+        }
+
+        const tokenInput = document.getElementById('edit-token-input');
+        
+        let finalLockedState = isLocking;
+        
+        // Jika status nilai saat ini TERKUNCI dan user ingin menyimpannya
+        if (scoreData.locked) {
+            if (!tokenInput || !tokenInput.value || tokenInput.value.toUpperCase() !== appState.editToken) {
+                return showModal('Aksi Ditolak', 'Nilai dikunci. Masukkan token edit admin yang valid untuk merubah nilai.');
+            }
+            // Jika token benar, kita izinkan save dengan status kunci baru (tergantung tombol)
+        }
+        
+        const scoreRef = ref(db, PATHS.SCORES(participantId, appState.userId));
+        
+        const dataToSave = {
+            userId: appState.userId,
+            scores: scoreData.scores,
+            total: scoreData.total,
+            locked: finalLockedState,
+            lastUpdated: new Date().toISOString()
+        };
+
+        try {
+            await set(scoreRef, dataToSave);
+            showModal('Sukses', `Nilai untuk peserta ini berhasil disimpan dan ${finalLockedState ? 'dikunci' : 'diperbarui (tidak dikunci)'}.`);
+            
+            if (tokenInput) tokenInput.value = ''; // Hapus input token
+            
+            // onValue akan menangani pembaruan appState dan UI
+        } catch (e) {
+            console.error("Error saving score:", e);
+            showModal('Error', 'Gagal menyimpan nilai. ' + e.message);
+        }
+    }
+
+
+    // --- FUNGSI RENDERING UTAMA ---
+
+    function renderLoginView() {
+        return `
+            <div class="max-w-md mx-auto mt-10 bg-white p-8 rounded-xl shadow-2xl border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-700 text-center mb-6">Pilih Peran Login</h2>
+                <div class="space-y-4">
+                    <button onclick="document.getElementById('role-select').value='jury'; document.getElementById('login-form').classList.remove('hidden');" 
+                            class="w-full py-3 bg-green-500 text-white rounded-lg font-semibold text-lg hover:bg-green-600 transition duration-300 shadow-lg">
+                        Login Sebagai Juri
+                    </button>
+                    <button onclick="document.getElementById('role-select').value='admin'; document.getElementById('login-form').classList.remove('hidden');" 
+                            class="w-full py-3 bg-red-500 text-white rounded-lg font-semibold text-lg hover:bg-red-600 transition duration-300 shadow-lg">
+                        Login Sebagai Admin
+                    </button>
+                </div>
+
+                <div id="login-form" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                    <input type="hidden" id="role-select" value="">
+                    <input type="password" id="password-input" placeholder="Masukkan Password" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-4" required>
+                    <button onclick="login(document.getElementById('role-select').value)" 
+                            class="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold text-lg hover:bg-indigo-700 transition duration-300 shadow-md">
+                        Masuk
+                    </button>
+                    <p class="text-sm text-gray-500 mt-4 text-center">ID Sesi Anda: ${appState.userId || 'Belum Terautentikasi'}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderScoreView() {
+        const participantsHtml = appState.participants.map(p => 
+            `<option value="${p.id}" ${appState.selectedParticipantId === p.id ? 'selected' : ''}>${p.no}. ${p.name}</option>`
+        ).join('');
+
+        const selectedParticipantId = appState.selectedParticipantId;
+        const currentScore = appState.scores[selectedParticipantId]?.[appState.userId];
+        const isLocked = currentScore && currentScore.locked;
+        const currentTotal = currentScore ? currentScore.total : 0;
+
+        const disabledAttr = isLocked ? 'disabled' : '';
+
+        const criteriaRows = CRITERIA.map(c => {
+            if (c.type === 'header') {
+                return `
+                    <tr class="bg-indigo-100">
+                        <td colspan="10" class="px-4 py-2 font-bold text-indigo-800 text-left">${c.group}</td>
+                    </tr>
+                `;
+            }
+
+            const currentVal = currentScore ? currentScore.scores[c.id] : null;
+            
+            const renderScoreOptions = (group, options) => options.map(score => `
+                <td class="score-cell w-1/12">
+                    <input type="radio" id="radio-${c.id}-${score}" name="score-${c.id}" value="${score}" 
+                           class="score-radio hidden" 
+                           onclick="updateScore('${c.id}', this.value)" 
+                           ${currentVal === score ? 'checked' : ''} ${disabledAttr}>
+                    <label for="radio-${c.id}-${score}" class="block w-full h-full text-center py-2 text-sm rounded-lg transition duration-100">
+                        ${score}
+                    </label>
+                </td>
+            `).join('');
+
+            return `
+                <tr class="border-b hover:bg-gray-50 transition duration-100">
+                    <td class="px-4 py-2 text-gray-700 font-medium w-1/4">${c.name}</td>
+                    ${renderScoreOptions('CUKUP', SCORE_OPTIONS.CUKUP)}
+                    ${renderScoreOptions('BAIK', SCORE_OPTIONS.BAIK)}
+                    ${renderScoreOptions('BAIK_SEKALI', SCORE_OPTIONS.BAIK_SEKALI)}
+                </tr>
+            `;
+        }).join('');
+
+
+        return `
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Penilaian Juri</h2>
+            <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex-grow">
+                        <label for="participant-select" class="block text-sm font-medium text-gray-700 mb-1">Pilih Peserta:</label>
+                        <select id="participant-select" onchange="selectParticipant(this)" class="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">-- Pilih Peserta --</option>
+                            ${participantsHtml}
+                        </select>
+                    </div>
+                    <div class="bg-indigo-100 p-3 rounded-lg flex items-center justify-between w-full md:w-auto">
+                        <span class="text-lg font-semibold text-indigo-800 mr-4">Total Skor Anda:</span>
+                        <span id="current-total-score" class="text-3xl font-extrabold text-indigo-700">${currentTotal}</span>
+                    </div>
+                </div>
+            </div>
+
+            ${selectedParticipantId ? `
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+                        Tabel Penilaian
+                        ${isLocked ? `<span class="ml-3 px-3 py-1 text-sm font-medium text-red-800 bg-red-100 rounded-full">TERKUNCI</span>` : `<span class="ml-3 px-3 py-1 text-sm font-medium text-green-800 bg-green-100 rounded-full">DAPAT DIEDIT</span>`}
+                    </h3>
+                    
+                    <!-- Tabel Penilaian -->
+                    <div class="overflow-x-auto mb-6">
+                        <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                            <thead class="bg-indigo-600">
+                                <tr>
+                                    <th rowspan="2" class="header-cell w-1/4 rounded-tl-lg">Kriteria Penilaian</th>
+                                    <th colspan="3" class="header-cell w-3/4 border-l border-indigo-700">Skor Pilihan CUKUP (40-50)</th>
+                                    <th colspan="3" class="header-cell w-3/4 border-l border-indigo-700">Skor Pilihan BAIK (60-70)</th>
+                                    <th colspan="3" class="header-cell w-3/4 border-l border-indigo-700 rounded-tr-lg">Skor Pilihan BAIK SEKALI (75-85)</th>
+                                </tr>
+                                <tr>
+                                    ${Object.values(SCORE_OPTIONS).flat().sort((a,b)=> a-b).map(s => `<th class="header-cell bg-indigo-500 border-t border-indigo-700">${s}</th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${criteriaRows}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Tombol Aksi dan Token -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-t border-gray-200">
+                        <div class="flex flex-col space-y-2 w-full md:w-auto">
+                            <input type="text" id="edit-token-input" placeholder="Masukkan Token Edit Admin (Jika Terkunci)" 
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-red-500 focus:border-red-500">
+                            ${isLocked ? `<p class="text-xs text-red-500">Nilai saat ini terkunci. Masukkan token admin di atas untuk menyimpan perubahan.</p>` : ''}
+                        </div>
+                        <div class="flex space-x-3 w-full md:w-auto">
+                            <button onclick="saveScore(false)" 
+                                    class="flex-1 py-3 px-6 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition shadow-md ${!isLocked ? 'hidden' : ''}">
+                                Buka Kunci & Simpan Ulang
+                            </button>
+                            <button onclick="saveScore(true)" 
+                                    class="flex-1 py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition shadow-md ${isLocked ? 'hidden' : ''}">
+                                Simpan & Kunci Nilai
+                            </button>
+                            <button onclick="generatePDF(appState.selectedParticipantId, appState.participants.find(p => p.id === appState.selectedParticipantId)?.name || 'Peserta', currentTotal, currentScore.scores)"
+                                    class="py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">
+                                Cetak PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ` : `<div class="p-8 bg-yellow-50 rounded-xl border border-yellow-300 text-yellow-800 text-center font-medium">Silakan pilih peserta dari daftar di atas untuk memulai penilaian.</div>`}
+        `;
+    }
+
+    function renderAdminView(recapData) {
+        const participantListHtml = recapData.map((p, index) => {
+            const background = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            const participantName = p.name || 'N/A';
+            
+            // Hitung total nilai kriteria yang seharusnya ada
+            const totalCriteriaCount = CRITERIA.filter(c => c.type !== 'header').length;
+
+            const juryJudgements = p.judgements.map(j => {
+                const criteriaScored = Object.keys(j.scores || {}).length;
+                const lockIcon = j.locked 
+                    ? `<svg class="w-4 h-4 text-red-500 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>`
+                    : `<svg class="w-4 h-4 text-green-500 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0v4m-1.5 8H9.5M19 11v9a2 2 0 01-2 2H7a2 2 0 01-2-2v-9a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>`;
+
+                return `
+                    <div class="text-xs text-gray-600 border-b last:border-b-0 py-1 flex justify-between items-center">
+                        <span class="font-medium">Juri ${j.userId.substring(0, 6)}...:</span> 
+                        <span class="text-indigo-600 font-bold">${j.total}</span>
+                        ${lockIcon}
+                        <span class="text-gray-400">(${criteriaScored}/${totalCriteriaCount})</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <tr class="${background} hover:bg-indigo-50 transition duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.no}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">${participantName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-lg font-bold text-green-600">${p.averageScore}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.totalJuries}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 w-1/4">
+                        <div class="max-h-20 overflow-y-auto pr-2">
+                            ${juryJudgements || '<span class="text-red-500">Belum ada penilaian</span>'}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        const recapTableHtml = recapData.length === 0 
+            ? `<tr><td colspan="6" class="text-center py-8 text-gray-500">Belum ada peserta yang terdaftar atau dinilai.</td></tr>`
+            : participantListHtml;
+
+        return `
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Admin Panel & Rekapitulasi Skor</h2>
+
+            <!-- Admin Tools -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Tambah Peserta -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-200">
+                    <h3 class="text-xl font-semibold text-indigo-700 mb-4">Kelola Peserta</h3>
+                    <div class="space-y-3">
+                        <input type="number" id="new-participant-number" placeholder="Nomor Urut Peserta" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="text" id="new-participant-name" placeholder="Nama/Tim Peserta" 
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        <button onclick="addParticipant()" 
+                                class="w-full py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md">
+                            Tambahkan Peserta
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Token & Info -->
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-red-200">
+                    <h3 class="text-xl font-semibold text-red-700 mb-4">Token Edit (Kunci Nilai)</h3>
+                    <p class="text-sm text-gray-600 mb-3">Token ini diperlukan juri untuk membuka kunci nilai yang sudah final.</p>
+                    <div class="bg-red-50 p-3 rounded-lg flex justify-between items-center mb-4">
+                        <span class="text-red-800 font-mono font-bold text-lg">${appState.editToken || 'BELUM ADA TOKEN'}</span>
+                        <button onclick="navigator.clipboard.writeText(appState.editToken || '').then(() => showModal('Sukses', 'Token berhasil disalin!'))" 
+                                class="text-red-600 hover:text-red-800 transition">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m-3 7h3m-3 3v-3m-3 3v-3m-3 3v-3m-3 3v-3"></path></svg>
+                        </button>
+                    </div>
+                    <button onclick="generateNewToken()" 
+                            class="w-full py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition shadow-md">
+                        Generate Token Baru
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabel Rekapitulasi Skor -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Rekap Skor Akhir</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peringkat</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. Urut</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Peserta</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Rata-rata Skor</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Juri Penilai</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail Skor Juri</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            ${recapTableHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
+    async function renderContent() {
+        const container = document.getElementById('content-container');
+        if (!appState.isAuthReady) {
+            container.innerHTML = '<div class="text-center py-20 text-gray-500">Memuat autentikasi dan data...</div>';
+            return;
+        }
+
+        switch (appState.view) {
+            case 'login':
+                container.innerHTML = renderLoginView();
+                break;
+            case 'score':
+                // Pastikan admin tidak sengaja masuk ke view juri tanpa peran juri
+                if (appState.role === 'jury' || appState.role === 'admin') { 
+                    container.innerHTML = renderScoreView();
+                } else {
+                    appState.view = 'login';
+                    renderContent();
+                }
+                break;
+            case 'admin':
+                if (appState.role === 'admin') {
+                    // Ambil data rekap sebelum merender
+                    const recapData = await getRecapData(); 
+                    container.innerHTML = renderAdminView(recapData);
+                } else {
+                    appState.view = 'login';
+                    renderContent();
+                }
+                break;
+            default:
+                container.innerHTML = renderLoginView();
+        }
+        
+        // Memastikan dropdown peserta tetap disinkronkan saat data peserta berubah
+        if (appState.view === 'score') {
+            const selectEl = document.getElementById('participant-select');
+            if (selectEl && appState.selectedParticipantId && selectEl.value !== appState.selectedParticipantId) {
+                selectEl.value = appState.selectedParticipantId;
+            }
+        }
+    }
+
+    function renderApp() {
+        // Update menu navigasi
+        const isAdmin = appState.role === 'admin';
+        document.getElementById('admin-menu-btn').classList.toggle('hidden', !isAdmin);
+        document.getElementById('sidebar-admin-btn').classList.toggle('hidden', !isAdmin);
+        
+        // Render content utama
+        renderContent();
+    }
+</script>
 </body>
 </html>
