@@ -1,1021 +1,1766 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-gray-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Penilaian PBB (RTDB)</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Dashboard Penilaian PBB</title>
+    <!-- 1. TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
+    <!-- 2. Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- 3. PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- 4. Konfigurasi Kustom Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    transitionProperty: {
+                        'width': 'width',
+                        'transform': 'transform',
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f7f9;
+        /* Styling untuk scrollbar yang lebih elegan */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .score-cell {
-            padding: 0;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a8a8a8;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7a7a7a;
+        }
+
+        /* Styling untuk tabel penilaian */
+        .scoring-table th, .scoring-table td {
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            padding: 8px; /* p-2 */
+            text-align: center;
+            vertical-align: middle;
+        }
+        .scoring-table thead th {
+            background-color: #f3f4f6; /* bg-gray-100 */
+            font-weight: 600; /* font-semibold */
+        }
+        /* PERBAIKAN: Pastikan warna kolom sesuai permintaan */
+        .col-cukup { background-color: #fef9c3; } /* bg-yellow-100 */
+        .col-baik { background-color: #dbeafe; } /* bg-blue-100 */
+        .col-sangat-baik { background-color: #dcfce7; } /* bg-green-100 */
+
+        .scoring-table input[type="radio"] {
+            width: 1.25rem; /* w-5 */
+            height: 1.25rem; /* h-5 */
+            margin: 0 auto;
+            display: block;
             cursor: pointer;
-            transition: background-color 0.2s;
         }
-        .score-radio:checked + label {
-            background-color: #10b981; /* Emerald 500 */
-            color: white;
-            font-weight: 600;
+        
+        /* State untuk radio button kustom */
+        .radio-cell {
+            position: relative;
         }
-        .score-radio:hover + label {
-            background-color: #d1fae5;
+        .radio-cell input[type="radio"]:checked + label {
+            opacity: 1;
+            transform: scale(1.1);
         }
-        /* Style untuk Tabel Penilaian Sesuai Gambar */
-        .header-cell {
-            @apply px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-white;
+        .radio-cell label {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            transition: all 0.2s ease-in-out;
+            background-color: rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            cursor: pointer;
+        }
+        .radio-cell input[type="radio"] {
+            position: relative;
+            z-index: 20;
+        }
+        
+        /* Helper class */
+        .hidden {
+            display: none;
+        }
+
+        /* Styling Modal */
+        #modal-backdrop {
+            transition: opacity 0.3s ease;
+        }
+        #modal-container {
+            transition: transform 0.3s ease, opacity 0.3s ease;
         }
     </style>
-    <!-- JS Libraries for PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
-<body>
+<body class="h-full font-sans antialiased">
 
-<div id="app" class="min-h-screen flex flex-col">
-    <!-- Main Header -->
-    <header class="bg-indigo-700 shadow-lg sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
-            <div class="flex items-center">
-                <button id="hamburger-menu" class="text-white p-2 rounded-lg lg:hidden focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-                </button>
-                <h1 class="text-xl font-bold text-white ml-3">Aplikasi Penilaian PBB (RTDB)</h1>
+    <!-- [1] Halaman Login -->
+    <div id="login-page" class="flex items-center justify-center min-h-screen bg-gray-100">
+        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl">
+            <h2 class="text-3xl font-bold text-center text-gray-900">Login Penilaian</h2>
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password...">
             </div>
-            <nav id="desktop-menu" class="hidden lg:flex space-x-4">
-                <button onclick="navigate('score')" class="text-white hover:text-indigo-200 px-3 py-2 rounded-md font-medium transition duration-150">Penilaian</button>
-                <button onclick="navigate('admin')" id="admin-menu-btn" class="text-white hover:text-indigo-200 px-3 py-2 rounded-md font-medium transition duration-150 hidden">Admin Panel</button>
-                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md transition duration-150">Logout</button>
-            </nav>
-        </div>
-    </header>
-
-    <!-- Sidebar (Mobile View) -->
-    <div id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-gray-800 transform -translate-x-full transition duration-300 ease-in-out z-20 lg:hidden shadow-2xl">
-        <div class="p-6">
-            <h2 class="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-3">Menu</h2>
-            <nav class="space-y-2">
-                <button onclick="closeSidebar(); navigate('score')" class="block w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md font-medium transition duration-150">Penilaian</button>
-                <button onclick="closeSidebar(); navigate('admin')" id="sidebar-admin-btn" class="block w-full text-left text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md font-medium transition duration-150 hidden">Admin Panel</button>
-                <button onclick="closeSidebar(); logout()" class="block w-full text-left bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md font-semibold mt-4 transition duration-150">Logout</button>
-            </nav>
+            <button id="login-button" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition duration-300">Login</button>
+            <p id="login-error" class="text-red-500 text-sm mt-3 text-center hidden">Password salah!</p>
         </div>
     </div>
-    <div id="overlay" class="fixed inset-0 bg-black opacity-0 pointer-events-none transition-opacity duration-300 z-10 lg:hidden"></div>
 
-    <!-- Main Content Area -->
-    <main class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
-        <div id="content-container">
-            <!-- Content will be rendered here based on state (login, score, admin) -->
-        </div>
-    </main>
+    <!-- [2] Dashboard Aplikasi Utama (Hidden by default) -->
+    <div id="app-dashboard" class="relative flex h-full hidden">
 
-    <!-- Custom Modal for Alerts/Confirmations -->
-    <div id="custom-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform transition-all">
-            <h3 id="modal-title" class="text-xl font-bold text-gray-800 mb-3">Pesan</h3>
-            <p id="modal-message" class="text-gray-600 mb-6"></p>
-            <div id="modal-actions" class="flex justify-end space-x-3">
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150 hidden">Batal</button>
-                <button id="modal-ok-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150">OK</button>
+        <!-- Sidebar Backdrop (Mobile) -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-gray-900/50 z-30 lg:hidden hidden" onclick="toggleSidebar(false)"></div>
+
+        <!-- Sidebar -->
+        <nav id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-slate-900 text-gray-300 flex flex-col z-40 transition-transform -translate-x-full lg:translate-x-0">
+            <!-- Sidebar Header -->
+            <div class="flex items-center justify-center h-16 px-4 shadow-md shadow-black/20">
+                <h1 class="text-xl font-bold text-white">Penilaian PBB</h1>
             </div>
-        </div>
-    </div>
-</div>
 
-<!-- Firebase CDN Imports -->
-<script type="module">
-    // Import modul Firebase yang diperlukan
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getDatabase, ref, set, get, onValue, off, push } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-    
-    // --- PENGATURAN FIREBASE/APLIKASI GLOBAL (WAJIB UNTUK PERSISTENSI MULTI-USER) ---
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-pbb-app-id';
-    
-    // Menggunakan konfigurasi yang disediakan oleh lingkungan, namun dengan fokus ke RTDB
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-         apiKey: "AIzaSyBg2MxCa9WR14J2Wc5iQyumFxVJIJd84Vs",
-         authDomain: "surat-903c5.firebaseapp.com",
-         databaseURL: "https://surat-903c5-default-rtdb.firebaseio.com",
-         projectId: "surat-903c5",
-         storageBucket: "surat-903c5.firebasestorage.app",
-         messagingSenderId: "50937404473",
-         appId: "1:50937404473:web:7d35356ec87735026481e8"
-    };
-
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-    if (!firebaseConfig.databaseURL) {
-        document.getElementById('content-container').innerHTML = '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert"><strong class="font-bold">Error!</strong><span class="block sm:inline"> Konfigurasi Realtime Database URL tidak ditemukan.</span></div>';
-        throw new Error('Firebase RTDB Config Missing');
-    }
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app); // Menggunakan Realtime Database
-    const auth = getAuth(app);
-    
-    // State global aplikasi
-    window.appState = {
-        view: 'login', // 'login', 'score', 'admin'
-        role: null,    // 'admin', 'jury'
-        userId: null,
-        participants: [], // Daftar peserta
-        scores: {},       // { participantId: { userId: { scores: {...}, total: N, locked: B } } }
-        editToken: null,  // Token admin untuk membuka kunci
-        isAuthReady: false,
-        selectedParticipantId: null,
-        scoreListeners: {}, // Untuk menyimpan referensi onValue RTDB
-    };
-
-    // --- PATHS FIREBASE RTDB & KONSTANTA ---
-    // Menggunakan path untuk RTDB
-    const BASE_PATH = `/artifacts/${appId}/pbb_data`;
-    const PATHS = {
-        PARTICIPANTS: `${BASE_PATH}/participants`,
-        SCORES: (participantId, userId) => 
-            userId 
-            ? `${BASE_PATH}/scores/${participantId}/${userId}` 
-            : `${BASE_PATH}/scores/${participantId}`,
-        ADMIN_TOKEN: `${BASE_PATH}/admin/editToken`,
-    };
-
-    const ADMIN_PASS = 'Piring123';
-    const JURY_PASS = 'Danukasep';
-    
-    // Konfigurasi Kriteria Penilaian (Sama seperti sebelumnya)
-    const CRITERIA = [
-        { group: "Gerakan Di Tempat", type: "header" },
-        { id: "sika", name: "1. Sikap Sempurna" },
-        { id: "horm", name: "2. Hormat" },
-        { id: "isti", name: "3. Istirahat Ditempat" },
-        { id: "peri", name: "4. Periksa Kerapihan" },
-        { id: "hit", name: "5. Hitung" },
-        { id: "seten", name: "6. Setengah Lengan Lencang Kanan" },
-        { id: "lenc", name: "7. Lencang Kanan" },
-        { id: "hadaR", name: "8. Hadap Kanan" },
-        { id: "hadaL", name: "9. Hadap Kiri" },
-        { id: "balR", name: "10. Balik Kanan" },
-        { id: "jalan", name: "11. Jalan Ditempat" },
-        { id: "balL", name: "12. Balik Kanan" },
-        { group: "Gerakan Berpindah Tempat", type: "header" },
-        { id: "4kanan", name: "18. 4 langkah ke kanan" },
-        { id: "4kiri", name: "19. 4 langkah ke kiri" },
-        { id: "3belakang", name: "20. 3 langkah ke belakang" },
-        { id: "2depan", name: "21. 2 langkah ke depan" },
-        { id: "bubar", name: "22. Bubar" }
-    ];
-    
-    // Opsi Skor
-    const SCORE_OPTIONS = {
-        CUKUP: [40, 45, 50],
-        BAIK: [60, 65, 70],
-        BAIK_SEKALI: [75, 80, 85]
-    };
-
-    // --- FUNGSI UTILITY & UI ---
-    
-    // Sidebar
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    const hamburger = document.getElementById('hamburger-menu');
-
-    hamburger.addEventListener('click', () => {
-        sidebar.classList.toggle('-translate-x-full');
-        overlay.classList.toggle('opacity-0');
-        overlay.classList.toggle('pointer-events-none');
-        overlay.classList.toggle('opacity-50');
-    });
-
-    overlay.addEventListener('click', closeSidebar);
-
-    window.closeSidebar = function() {
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('opacity-0', 'pointer-events-none');
-        overlay.classList.remove('opacity-50');
-    }
-
-    // Custom Modal (Menggantikan alert/confirm)
-    function showModal(title, message, isConfirmation = false) {
-        return new Promise(resolve => {
-            const modal = document.getElementById('custom-modal');
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').innerHTML = message;
-            
-            const okBtn = document.getElementById('modal-ok-btn');
-            const cancelBtn = document.getElementById('modal-cancel-btn');
-
-            const hideModal = () => {
-                modal.classList.add('hidden');
-            };
-
-            okBtn.onclick = () => { hideModal(); resolve(true); };
-
-            if (isConfirmation) {
-                cancelBtn.classList.remove('hidden');
-                cancelBtn.onclick = () => { hideModal(); resolve(false); };
-            } else {
-                cancelBtn.classList.add('hidden');
-            }
-
-            modal.classList.remove('hidden');
-        });
-    }
-
-    // Pembuatan PDF (Sama seperti sebelumnya)
-    window.generatePDF = async function (participantId, participantName, totalScore, scoreData) {
-        await showModal('Proses Cetak', 'Mempersiapkan dokumen PDF. Mohon tunggu...');
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            let y = 10;
-            const margin = 10;
-            const pageHeight = doc.internal.pageSize.height;
-            
-            const tableWidth = 180;
-            const scoreColCombinedWidth = 80;
-
-            // Judul dan Info
-            doc.setFontSize(16);
-            doc.text(`Rekap Penilaian PBB`, margin, y);
-            y += 8;
-            doc.setFontSize(12);
-            doc.text(`Peserta: ${participantName}`, margin, y);
-            y += 6;
-            doc.text(`ID Juri: ${appState.userId.substring(0, 8)}...`, margin, y);
-            y += 10;
-
-            // Header Tabel
-            const drawHeader = (startY) => {
-                doc.setFontSize(10);
-                doc.setFillColor(30, 58, 138); // Dark Blue
-                doc.setTextColor(255, 255, 255);
+            <!-- Menu Navigasi (Dinamis berdasarkan role) -->
+            <div id="sidebar-nav" class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <!-- Nav untuk Juri -->
+                <a href="#penilaian" class="nav-link nav-juri hidden" data-page="penilaian">
+                    <!-- Heroicon: Clipboard Document List -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 5.25 6h.008a2.25 2.25 0 0 1 2.242 2.135 48.423 48.423 0 0 0 1.123.08m-5.801 0c.065.21.1.433.1.664v.005c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.005a2.25 2.25 0 0 0-.1-.664M5.25 19.5h13.5a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 5.25 6h.008a2.25 2.25 0 0 1 2.242 2.135 48.423 48.423 0 0 0 1.123.08M5.25 19.5h13.5a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M18 19.5v-7.5" /></svg>
+                    <span>Penilaian</span>
+                </a>
                 
-                doc.rect(margin, startY, 15, 7, 'F');
-                doc.text('NO', margin + 15 / 2, startY + 4.5, { align: 'center' });
-
-                doc.rect(margin + 15, startY, 85, 7, 'F');
-                doc.text('KRITERIA PENILAIAN', margin + 15 + 85 / 2, startY + 4.5, { align: 'center' });
-                
-                doc.rect(margin + 15 + 85, startY, scoreColCombinedWidth, 7, 'F');
-                doc.text('NILAI YANG DIPILIH', margin + 15 + 85 + scoreColCombinedWidth / 2, startY + 4.5, { align: 'center' });
-                
-                doc.setTextColor(0, 0, 0);
-                return startY + 7;
-            };
-
-            y = drawHeader(y);
+                <!-- Nav untuk Admin -->
+                <a href="#dashboard" class="nav-link nav-admin hidden" data-page="dashboard">
+                    <!-- Heroicon: Home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#peserta" class="nav-link nav-admin hidden" data-page="peserta">
+                    <!-- Heroicon: Users -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.003c0 1.113.285 2.16.786 3.07M15 19.128a2.25 2.25 0 0 1-2.25-2.25c0-1.113.285-2.16.786-3.07M15 19.128v-.003a2.25 2.25 0 0 0-2.25-2.25c0 1.113-.285 2.16-.786 3.07M9 15a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 9 15Zm-6 0a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 3 15Z" /></svg>
+                    <span>Kelola Peserta</span>
+                </a>
+                <a href="#juri" class="nav-link nav-admin hidden" data-page="juri">
+                    <!-- Heroicon: User Circle -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                    <span>Kelola Juri</span>
+                </a>
+                <a href="#kriteria" class="nav-link nav-admin hidden" data-page="kriteria">
+                    <!-- Heroicon: List Bullet -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+                    <span>Kelola Kriteria</span>
+                </a>
+                <a href="#konfigurasi" class="nav-link nav-admin hidden" data-page="konfigurasi">
+                    <!-- Heroicon: Cog 6 Tooth -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.214 1.465l-.928.798c-.144.123-.24.29-.283.473l-.03.205c-.018.124-.018.25 0 .374l.03.206c.043.183.138.35.282.473l.928.798a1.125 1.125 0 0 1 .214 1.465l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.354-.133-.75-.072-1.075.124a6.57 6.57 0 0 1-.22.127c-.332.183-.582.496-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .214-1.465l.928-.798c.144-.123.24-.29.283-.473l.03-.205c.018-.124.018.25 0-.374l-.03-.206c-.043-.183-.138.35-.282.473l-.928-.798a1.125 1.125 0 0 1-.214-1.465l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.354.133.75.072 1.075.124.072-.044.146-.087.22-.127.332-.183.582.496.645-.87l.213-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                    <span>Konfigurasi Nilai</span>
+                </a>
+                <a href="#token" class="nav-link nav-admin hidden" data-page="token">
+                    <!-- Heroicon: Key -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.967-.63 1.563-.63H21Z" /></svg>
+                    <span>Token Edit</span>
+                </a>
+                <a href="#rekap" class="nav-link nav-admin hidden" data-page="rekap">
+                    <!-- Heroicon: Document Chart Bar -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h12A2.25 2.25 0 0 0 20.25 14.25V3M3.75 21h16.5M3.75 3h16.5M3.75 9h16.5M3.75 15h16.5M8.25 12h7.5M12 15h.008" /></svg>
+                    <span>Rekap Nilai</span>
+                </a>
+            </div>
             
-            // Body Tabel
-            doc.setFontSize(9);
-            doc.setTextColor(0, 0, 0);
-            let rowHeight = 6;
-            let counter = 1;
-
-            CRITERIA.forEach((criteria) => {
-                if (y > pageHeight - 30) {
-                    doc.addPage();
-                    y = margin;
-                    y = drawHeader(y);
+            <!-- CSS untuk link navigasi -->
+            <style>
+                .nav-link {
+                    display: flex;
+                    align-items: center;
+                    padding: 0.75rem 1rem;
+                    border-radius: 0.5rem;
+                    font-weight: 500;
+                    transition: background-color 0.2s, color 0.2s;
                 }
-
-                if (criteria.type === 'header') {
-                    doc.setFillColor(209, 213, 219); // Gray 300
-                    doc.rect(margin, y, tableWidth, rowHeight, 'F');
-                    doc.setFontSize(10);
-                    doc.text(criteria.group, margin + 2, y + rowHeight / 2, { align: 'left', baseline: 'middle' });
-                    y += rowHeight;
-                } else {
-                    const chosenScore = scoreData[criteria.id] || '-';
-                    const isScored = chosenScore !== '-';
-
-                    doc.setFillColor(255, 255, 255);
-                    doc.rect(margin, y, tableWidth, rowHeight, 'F');
-
-                    // NO
-                    doc.text(String(counter++), margin + 15 / 2, y + rowHeight / 2, { align: 'center', baseline: 'middle' });
-                    // Kriteria
-                    doc.text(criteria.name, margin + 15 + 2, y + rowHeight / 2, { align: 'left', baseline: 'middle' });
-                    
-                    // Skor Terpilih
-                    doc.setFont(undefined, 'bold');
-                    doc.setTextColor(isScored ? 22, 163, 74 : 107, 114, 128);
-                    doc.text(String(chosenScore), margin + 15 + 85 + scoreColCombinedWidth / 2, y + rowHeight / 2, { align: 'center', baseline: 'middle' });
-                    doc.setFont(undefined, 'normal');
-                    doc.setTextColor(0, 0, 0);
-
-                    // Garis batas
-                    doc.setDrawColor(200, 200, 200);
-                    doc.line(margin, y + rowHeight, margin + tableWidth, y + rowHeight);
-
-                    y += rowHeight;
+                .nav-link:hover {
+                    background-color: #334155; /* bg-slate-700 */
+                    color: #f1f5f9; /* text-slate-100 */
                 }
-            });
+                .nav-link.active {
+                    background-color: #0ea5e9; /* bg-sky-500 */
+                    color: white;
+                }
+                .nav-link svg {
+                    margin-right: 0.75rem; /* mr-3 */
+                    flex-shrink: 0;
+                }
+            </style>
+        </nav>
 
-            // Total Skor
-            if (y > pageHeight - 20) {
-                doc.addPage();
-                y = margin;
-            }
-            doc.setFontSize(12);
-            doc.setFont(undefined, 'bold');
-            doc.text('TOTAL SKOR AKHIR:', margin + 15 + 85 - 20, y + 5, { align: 'right' });
-            doc.text(String(totalScore), margin + 15 + 85 + 2, y + 5, { align: 'left' });
-            y += 8;
-
-            doc.save(`${participantName}_PBB_Penilaian_${appState.userId.substring(0, 4)}.pdf`);
-            showModal('Selesai', 'Dokumen PDF telah berhasil dibuat.');
-        } catch (e) {
-            console.error(e);
-            showModal('Error Cetak', 'Gagal membuat PDF. Periksa konsol untuk detail error.');
-        }
-    }
-
-
-    // --- INISIALISASI DAN AUTENTIKASI FIREBASE ---
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            appState.userId = user.uid;
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1 flex flex-col lg:ml-64">
             
-            await syncEditToken();
+            <!-- App Header -->
+            <header id="app-header" class="sticky top-0 bg-white shadow-md z-20">
+                <div class="flex items-center justify-between h-16 px-4 md:px-8">
+                    <!-- Tombol Hamburger (Mobile) -->
+                    <button id="hamburger-btn" class="text-gray-700 lg:hidden" onclick="toggleSidebar(true)">
+                        <!-- Heroicon: Bars 3 -->
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+                    </button>
+                    <!-- Spacer -->
+                    <div class="flex-1"></div>
+                    <!-- Info User & Logout -->
+                    <div class="flex items-center space-x-4">
+                        <span id="user-status" class="text-sm font-medium text-gray-600"></span>
+                        <button id="logout-button" class="text-sm font-medium text-red-500 hover:text-red-700 transition flex items-center">
+                            <!-- Heroicon: Arrow Right On Rectangle -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-            if (!appState.isAuthReady) {
-                appState.isAuthReady = true;
-                setupDataListeners();
-            }
-
-            if (appState.role) {
-                renderApp();
-            } else {
-                // Biarkan di login sampai user memilih peran
-                appState.view = 'login'; 
-                renderApp();
-            }
-
-        } else {
-            // State tidak diautentikasi, kembali ke login
-            appState.userId = null;
-            appState.role = null;
-            appState.view = 'login';
-            appState.isAuthReady = true;
-            renderApp();
-        }
-    });
-
-    window.onload = async function() {
-        if (initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken).catch(e => {
-                console.error("Custom token sign in failed, signing in anonymously.", e);
-                signInAnonymously(auth);
-            });
-        } else {
-            // Login anonim jika tidak ada custom token
-            await signInAnonymously(auth);
-        }
-    };
-    
-    // --- LISTENER DATA FIREBASE RTDB ---
-    function setupDataListeners() {
-        if (!appState.userId) return;
-
-        // 1. Listener untuk Peserta
-        const participantsRef = ref(db, PATHS.PARTICIPANTS);
-        onValue(participantsRef, (snapshot) => {
-            const data = snapshot.val();
-            const list = [];
-            if (data) {
-                // RTDB returns an object of objects, convert to array
-                Object.keys(data).forEach(id => {
-                    list.push({ id, ...data[id] });
-                });
-            }
-            appState.participants = list.sort((a, b) => a.no - b.no);
-
-            // Jika peserta sebelumnya terhapus, set ulang selectedParticipantId
-            if (appState.selectedParticipantId && !appState.participants.find(p => p.id === appState.selectedParticipantId)) {
-                appState.selectedParticipantId = null;
-            }
-
-            // Jika di admin view, kita perlu rekap ulang
-            if (appState.view === 'admin') {
-                getRecapData().then(renderContent);
-            } else {
-                renderContent();
-            }
-
-        }, (error) => console.error("Error listening to participants:", error));
-
-        // 2. Listener untuk Token Edit
-        const tokenRef = ref(db, PATHS.ADMIN_TOKEN);
-        onValue(tokenRef, (snapshot) => {
-            appState.editToken = snapshot.val();
-            renderContent();
-        }, (error) => console.error("Error listening to token:", error));
-    }
-
-    async function syncEditToken() {
-        const tokenRef = ref(db, PATHS.ADMIN_TOKEN);
-        try {
-            const snapshot = await get(tokenRef);
-            appState.editToken = snapshot.exists() ? snapshot.val() : null;
-        } catch (e) {
-            console.error("Gagal sinkronisasi token edit:", e);
-        }
-    }
-
-    // --- LOGIKA APLIKASI ---
-
-    window.login = async function(role) {
-        const passwordInput = document.getElementById('password-input').value;
-        let correctPassword;
-        let nextRole;
-
-        if (role === 'admin') {
-            correctPassword = ADMIN_PASS;
-            nextRole = 'admin';
-        } else if (role === 'jury') {
-            correctPassword = JURY_PASS;
-            nextRole = 'jury';
-        }
-
-        if (passwordInput === correctPassword) {
-            appState.role = nextRole;
-            appState.view = nextRole === 'admin' ? 'admin' : 'score';
-            showModal('Login Berhasil', `Selamat datang, ${nextRole.toUpperCase()}! ID Juri Anda: ${appState.userId}`);
-            renderApp();
-        } else {
-            showModal('Login Gagal', 'Password salah. Silakan coba lagi.');
-        }
-    }
-
-    window.logout = async function() {
-        const confirm = await showModal('Konfirmasi Logout', 'Apakah Anda yakin ingin keluar?', true);
-        if (!confirm) return;
-        
-        // Hapus semua listener skor peserta yang spesifik
-        Object.keys(appState.scoreListeners).forEach(id => {
-            off(ref(db, PATHS.SCORES(id)), 'value', appState.scoreListeners[id]);
-        });
-        appState.scoreListeners = {};
-
-        await signOut(auth);
-        appState.role = null;
-        appState.view = 'login';
-        appState.scores = {};
-        appState.selectedParticipantId = null;
-        renderApp();
-    }
-    
-    window.navigate = function(view) {
-        if (!appState.role && view !== 'login') {
-            appState.view = 'login';
-            showModal('Akses Ditolak', 'Anda harus login terlebih dahulu.');
-            renderApp();
-            return;
-        }
-        if (view === 'admin' && appState.role !== 'admin') {
-            showModal('Akses Ditolak', 'Hanya Admin yang dapat mengakses halaman ini.');
-            return;
-        }
-        appState.view = view;
-        if (view === 'admin') {
-            getRecapData().then(renderContent);
-        } else {
-            renderContent();
-        }
-        renderApp();
-    }
-    
-    // --- FUNGSI ADMIN ---
-
-    window.addParticipant = async function() {
-        const nameInput = document.getElementById('new-participant-name');
-        const numberInput = document.getElementById('new-participant-number');
-        const name = nameInput.value.trim();
-        const number = parseInt(numberInput.value.trim());
-
-        if (!name || isNaN(number)) {
-            showModal('Input Invalid', 'Nama peserta dan Nomor urut harus diisi dengan benar.');
-            return;
-        }
-
-        // Cek duplikasi nomor urut (RTDB tidak mendukung query yang efisien, cek lokal setelah sync)
-        if (appState.participants.some(p => p.no === number)) {
-            showModal('Input Invalid', `Nomor urut ${number} sudah digunakan.`);
-            return;
-        }
-
-        const participantsRef = ref(db, PATHS.PARTICIPANTS);
-        const newParticipantRef = push(participantsRef); // Menggunakan push untuk ID unik
-        
-        try {
-            await set(newParticipantRef, {
-                no: number,
-                name: name,
-                createdAt: new Date().toISOString()
-            });
-            showModal('Sukses', `Peserta ${name} berhasil ditambahkan!`);
-            nameInput.value = '';
-            numberInput.value = '';
-        } catch (e) {
-            console.error("Error adding participant:", e);
-            showModal('Error', 'Gagal menambahkan peserta. ' + e.message);
-        }
-    }
-
-    window.generateNewToken = async function() {
-        const confirm = await showModal('Konfirmasi', 'Apakah Anda yakin ingin mengganti token edit saat ini?', true);
-        if (!confirm) return;
-        
-        const newToken = Math.random().toString(36).substring(2, 10).toUpperCase();
-        const tokenRef = ref(db, PATHS.ADMIN_TOKEN);
-
-        try {
-            await set(tokenRef, newToken);
-            showModal('Token Baru', `Token edit baru berhasil dibuat: <span class="font-bold text-lg text-red-600">${newToken}</span>. Salin token ini!`);
-        } catch (e) {
-            console.error("Error generating token:", e);
-            showModal('Error', 'Gagal membuat token baru. ' + e.message);
-        }
-    }
-
-    // Fungsi untuk mengambil dan merekap semua skor
-    async function getRecapData() {
-        const recap = [];
-        
-        const scoresRef = ref(db, `${BASE_PATH}/scores`);
-        const scoresSnapshot = await get(scoresRef);
-        const allScoresData = scoresSnapshot.val() || {};
-
-        // Loop melalui setiap peserta
-        for (const participant of appState.participants) {
-            const judgements = [];
-            let totalJuries = 0;
-            let sumTotalScores = 0;
-            
-            const participantScores = allScoresData[participant.id] || {};
-
-            // Loop melalui juri yang menilai peserta ini
-            Object.keys(participantScores).forEach(userId => {
-                const data = participantScores[userId];
-                judgements.push(data);
-                sumTotalScores += data.total || 0;
-                totalJuries++;
-            });
-
-            recap.push({
-                id: participant.id,
-                no: participant.no,
-                name: participant.name,
-                totalJuries: totalJuries,
-                averageScore: totalJuries > 0 ? (sumTotalScores / totalJuries).toFixed(2) : 0,
-                judgements: judgements, // Simpan detail penilaian
-            });
-        }
-
-        return recap.sort((a, b) => b.averageScore - a.averageScore || a.no - b.no); // Urutkan berdasarkan skor tertinggi
-    }
-    
-    // --- FUNGSI PENILAIAN JURI ---
-
-    window.selectParticipant = function(selectElement) {
-        const participantId = selectElement.value;
-        
-        // Hapus listener peserta sebelumnya
-        if (appState.selectedParticipantId && appState.scoreListeners[appState.selectedParticipantId]) {
-            off(ref(db, PATHS.SCORES(appState.selectedParticipantId)), 'value', appState.scoreListeners[appState.selectedParticipantId]);
-            delete appState.scoreListeners[appState.selectedParticipantId];
-        }
-
-        appState.selectedParticipantId = participantId;
-
-        if (participantId) {
-            // Setup listener untuk *semua* skor juri untuk peserta yang dipilih
-            const scoresRef = ref(db, PATHS.SCORES(participantId));
-            
-            const listenerCallback = (snapshot) => {
-                const participantScores = snapshot.val() || {};
+            <!-- Page Container -->
+            <main id="page-container" class="flex-1 p-4 md:p-8 overflow-y-auto">
                 
-                // Perbarui appState.scores untuk peserta ini
-                appState.scores[participantId] = participantScores;
-                renderContent(); 
-            };
-            
-            // Simpan callback agar bisa dihapus (off) nanti
-            onValue(scoresRef, listenerCallback, (error) => console.error(`Error listening to scores for ${participantId}:`, error));
-            appState.scoreListeners[participantId] = listenerCallback;
-
-        }
-        renderContent();
-    }
-
-    window.updateScore = function(criterionId, scoreValue) {
-        const participantId = appState.selectedParticipantId;
-        if (!participantId) return showModal('Perhatian', 'Pilih peserta terlebih dahulu.');
-
-        let currentScoreData = appState.scores[participantId]?.[appState.userId];
-        
-        if (!currentScoreData) {
-            // Inisialisasi data jika belum ada
-            currentScoreData = { scores: {}, total: 0, locked: false };
-            if (!appState.scores[participantId]) appState.scores[participantId] = {};
-            appState.scores[participantId][appState.userId] = currentScoreData;
-        }
-
-        // Cek status kunci
-        if (currentScoreData.locked) {
-            showModal('Aksi Ditolak', 'Nilai sudah dikunci. Masukkan token edit untuk merubah nilai.');
-            
-            // Kembalikan radio button ke nilai yang tersimpan
-            const oldScoreValue = currentScoreData.scores[criterionId];
-            if (oldScoreValue) {
-                const oldRadio = document.getElementById(`radio-${criterionId}-${oldScoreValue}`);
-                if (oldRadio) oldRadio.checked = true;
-            } else {
-                 // Jika tidak ada nilai lama, pastikan radio button yang baru diklik tidak terpilih
-                 const clickedRadio = document.getElementById(`radio-${criterionId}-${scoreValue}`);
-                 if (clickedRadio) clickedRadio.checked = false;
-            }
-            return;
-        }
-
-        // Perbarui skor
-        const oldScore = currentScoreData.scores[criterionId] || 0;
-        const newScoreValue = parseInt(scoreValue);
-        const newTotal = currentScoreData.total - oldScore + newScoreValue;
-        
-        currentScoreData.scores[criterionId] = newScoreValue;
-        currentScoreData.total = newTotal;
-
-        // Perbarui tampilan total secara langsung (tanpa renderContent penuh)
-        const totalEl = document.getElementById('current-total-score');
-        if (totalEl) totalEl.textContent = newTotal;
-    }
-
-    window.saveScore = async function(isLocking = true) {
-        const participantId = appState.selectedParticipantId;
-        if (!participantId) return showModal('Perhatian', 'Pilih peserta terlebih dahulu.');
-
-        const scoreData = appState.scores[participantId]?.[appState.userId];
-        if (!scoreData || Object.keys(scoreData.scores).length === 0) {
-            return showModal('Perhatian', 'Anda belum memberikan penilaian.');
-        }
-
-        const currentTotalCriteria = CRITERIA.filter(c => c.type !== 'header').length;
-        
-        if (Object.keys(scoreData.scores).length !== currentTotalCriteria) {
-            const confirm = await showModal('Nilai Belum Lengkap', `Anda baru menilai ${Object.keys(scoreData.scores).length} dari ${currentTotalCriteria} kriteria. Tetap simpan?`, true);
-            if (!confirm) return;
-        }
-
-        const tokenInput = document.getElementById('edit-token-input');
-        
-        let finalLockedState = isLocking;
-        
-        // Jika status nilai saat ini TERKUNCI dan user ingin menyimpannya
-        if (scoreData.locked) {
-            if (!tokenInput || !tokenInput.value || tokenInput.value.toUpperCase() !== appState.editToken) {
-                return showModal('Aksi Ditolak', 'Nilai dikunci. Masukkan token edit admin yang valid untuk merubah nilai.');
-            }
-            // Jika token benar, kita izinkan save dengan status kunci baru (tergantung tombol)
-        }
-        
-        const scoreRef = ref(db, PATHS.SCORES(participantId, appState.userId));
-        
-        const dataToSave = {
-            userId: appState.userId,
-            scores: scoreData.scores,
-            total: scoreData.total,
-            locked: finalLockedState,
-            lastUpdated: new Date().toISOString()
-        };
-
-        try {
-            await set(scoreRef, dataToSave);
-            showModal('Sukses', `Nilai untuk peserta ini berhasil disimpan dan ${finalLockedState ? 'dikunci' : 'diperbarui (tidak dikunci)'}.`);
-            
-            if (tokenInput) tokenInput.value = ''; // Hapus input token
-            
-            // onValue akan menangani pembaruan appState dan UI
-        } catch (e) {
-            console.error("Error saving score:", e);
-            showModal('Error', 'Gagal menyimpan nilai. ' + e.message);
-        }
-    }
-
-
-    // --- FUNGSI RENDERING UTAMA ---
-
-    function renderLoginView() {
-        return `
-            <div class="max-w-md mx-auto mt-10 bg-white p-8 rounded-xl shadow-2xl border border-gray-100">
-                <h2 class="text-3xl font-extrabold text-indigo-700 text-center mb-6">Pilih Peran Login</h2>
-                <div class="space-y-4">
-                    <button onclick="document.getElementById('role-select').value='jury'; document.getElementById('login-form').classList.remove('hidden');" 
-                            class="w-full py-3 bg-green-500 text-white rounded-lg font-semibold text-lg hover:bg-green-600 transition duration-300 shadow-lg">
-                        Login Sebagai Juri
-                    </button>
-                    <button onclick="document.getElementById('role-select').value='admin'; document.getElementById('login-form').classList.remove('hidden');" 
-                            class="w-full py-3 bg-red-500 text-white rounded-lg font-semibold text-lg hover:bg-red-600 transition duration-300 shadow-lg">
-                        Login Sebagai Admin
-                    </button>
-                </div>
-
-                <div id="login-form" class="mt-8 pt-6 border-t border-gray-200 hidden">
-                    <input type="hidden" id="role-select" value="">
-                    <input type="password" id="password-input" placeholder="Masukkan Password" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-4" required>
-                    <button onclick="login(document.getElementById('role-select').value)" 
-                            class="w-full py-3 bg-indigo-600 text-white rounded-lg font-semibold text-lg hover:bg-indigo-700 transition duration-300 shadow-md">
-                        Masuk
-                    </button>
-                    <p class="text-sm text-gray-500 mt-4 text-center">ID Sesi Anda: ${appState.userId || 'Belum Terautentikasi'}</p>
-                </div>
-            </div>
-        `;
-    }
-
-    function renderScoreView() {
-        const participantsHtml = appState.participants.map(p => 
-            `<option value="${p.id}" ${appState.selectedParticipantId === p.id ? 'selected' : ''}>${p.no}. ${p.name}</option>`
-        ).join('');
-
-        const selectedParticipantId = appState.selectedParticipantId;
-        const currentScore = appState.scores[selectedParticipantId]?.[appState.userId];
-        const isLocked = currentScore && currentScore.locked;
-        const currentTotal = currentScore ? currentScore.total : 0;
-
-        const disabledAttr = isLocked ? 'disabled' : '';
-
-        const criteriaRows = CRITERIA.map(c => {
-            if (c.type === 'header') {
-                return `
-                    <tr class="bg-indigo-100">
-                        <td colspan="10" class="px-4 py-2 font-bold text-indigo-800 text-left">${c.group}</td>
-                    </tr>
-                `;
-            }
-
-            const currentVal = currentScore ? currentScore.scores[c.id] : null;
-            
-            const renderScoreOptions = (group, options) => options.map(score => `
-                <td class="score-cell w-1/12">
-                    <input type="radio" id="radio-${c.id}-${score}" name="score-${c.id}" value="${score}" 
-                           class="score-radio hidden" 
-                           onclick="updateScore('${c.id}', this.value)" 
-                           ${currentVal === score ? 'checked' : ''} ${disabledAttr}>
-                    <label for="radio-${c.id}-${score}" class="block w-full h-full text-center py-2 text-sm rounded-lg transition duration-100">
-                        ${score}
-                    </label>
-                </td>
-            `).join('');
-
-            return `
-                <tr class="border-b hover:bg-gray-50 transition duration-100">
-                    <td class="px-4 py-2 text-gray-700 font-medium w-1/4">${c.name}</td>
-                    ${renderScoreOptions('CUKUP', SCORE_OPTIONS.CUKUP)}
-                    ${renderScoreOptions('BAIK', SCORE_OPTIONS.BAIK)}
-                    ${renderScoreOptions('BAIK_SEKALI', SCORE_OPTIONS.BAIK_SEKALI)}
-                </tr>
-            `;
-        }).join('');
-
-
-        return `
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Penilaian Juri</h2>
-            <div class="bg-white p-6 rounded-xl shadow-lg mb-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex-grow">
-                        <label for="participant-select" class="block text-sm font-medium text-gray-700 mb-1">Pilih Peserta:</label>
-                        <select id="participant-select" onchange="selectParticipant(this)" class="w-full md:w-80 px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">-- Pilih Peserta --</option>
-                            ${participantsHtml}
-                        </select>
-                    </div>
-                    <div class="bg-indigo-100 p-3 rounded-lg flex items-center justify-between w-full md:w-auto">
-                        <span class="text-lg font-semibold text-indigo-800 mr-4">Total Skor Anda:</span>
-                        <span id="current-total-score" class="text-3xl font-extrabold text-indigo-700">${currentTotal}</span>
+                <!-- Halaman: Pilih Juri (Juri) -->
+                <div id="page-pilih-juri" class="page-content hidden max-w-lg mx-auto bg-white p-8 rounded-lg shadow-xl">
+                    <h2 class="text-2xl font-semibold text-center mb-6">Pilih Sesi Juri</h2>
+                    <p class="text-center text-gray-600 mb-6">Silakan pilih sesi juri yang akan Anda gunakan untuk menilai:</p>
+                    <div id="juri-selection-list" class="flex flex-col space-y-4">
+                        <!-- Pilihan Juri akan di-generate oleh JS -->
+                        <p class="text-center text-gray-500">Memuat daftar juri...</p>
                     </div>
                 </div>
-            </div>
-
-            ${selectedParticipantId ? `
-                <div class="bg-white p-6 rounded-xl shadow-lg">
-                    <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                        Tabel Penilaian
-                        ${isLocked ? `<span class="ml-3 px-3 py-1 text-sm font-medium text-red-800 bg-red-100 rounded-full">TERKUNCI</span>` : `<span class="ml-3 px-3 py-1 text-sm font-medium text-green-800 bg-green-100 rounded-full">DAPAT DIEDIT</span>`}
-                    </h3>
-                    
-                    <!-- Tabel Penilaian -->
-                    <div class="overflow-x-auto mb-6">
-                        <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg">
-                            <thead class="bg-indigo-600">
-                                <tr>
-                                    <th rowspan="2" class="header-cell w-1/4 rounded-tl-lg">Kriteria Penilaian</th>
-                                    <th colspan="3" class="header-cell w-3/4 border-l border-indigo-700">Skor Pilihan CUKUP (40-50)</th>
-                                    <th colspan="3" class="header-cell w-3/4 border-l border-indigo-700">Skor Pilihan BAIK (60-70)</th>
-                                    <th colspan="3" class="header-cell w-3/4 border-l border-indigo-700 rounded-tr-lg">Skor Pilihan BAIK SEKALI (75-85)</th>
-                                </tr>
-                                <tr>
-                                    ${Object.values(SCORE_OPTIONS).flat().sort((a,b)=> a-b).map(s => `<th class="header-cell bg-indigo-500 border-t border-indigo-700">${s}</th>`).join('')}
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                ${criteriaRows}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Tombol Aksi dan Token -->
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-t border-gray-200">
-                        <div class="flex flex-col space-y-2 w-full md:w-auto">
-                            <input type="text" id="edit-token-input" placeholder="Masukkan Token Edit Admin (Jika Terkunci)" 
-                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-red-500 focus:border-red-500">
-                            ${isLocked ? `<p class="text-xs text-red-500">Nilai saat ini terkunci. Masukkan token admin di atas untuk menyimpan perubahan.</p>` : ''}
+                
+                <!-- Halaman: Penilaian (Juri) -->
+                <div id="page-penilaian" class="page-content hidden">
+                    <div class="bg-white p-6 rounded-lg shadow-xl">
+                        <h2 id="penilaian-title" class="text-2xl font-bold text-gray-800 mb-6">Formulir Penilaian</h2>
+                        
+                        <div class="mb-6 max-w-sm">
+                            <label for="participant-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Peserta</label>
+                            <select id="participant-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Pilih Peserta --</option>
+                            </select>
                         </div>
-                        <div class="flex space-x-3 w-full md:w-auto">
-                            <button onclick="saveScore(false)" 
-                                    class="flex-1 py-3 px-6 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition shadow-md ${!isLocked ? 'hidden' : ''}">
-                                Buka Kunci & Simpan Ulang
-                            </button>
-                            <button onclick="saveScore(true)" 
-                                    class="flex-1 py-3 px-6 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition shadow-md ${isLocked ? 'hidden' : ''}">
+
+                        <div id="locked-warning" class="hidden p-4 mb-4 bg-yellow-100 border-l-4 border-yellow-500 rounded-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <!-- Heroicon: Exclamation Triangle -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-yellow-700"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="font-medium text-yellow-800">Nilai Terkunci!</p>
+                                    <p class="text-sm text-yellow-700">Nilai telah disimpan. Untuk mengubah, silakan minta token dari Admin.</p>
+                                    <button id="request-token-btn" class="mt-2 text-sm text-blue-600 font-medium hover:underline">Masukkan Token untuk Ubah Nilai</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <fieldset id="scoring-fieldset">
+                                <table id="scoring-table-container" class="w-full min-w-[900px] border-collapse scoring-table">
+                                    <!-- Header dan Body tabel akan di-generate oleh JS -->
+                                    <thead id="scoring-table-head"></thead>
+                                    <tbody id="scoring-table-body"></tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <th colspan="10" class="text-right font-bold text-lg">TOTAL NILAI</th>
+                                            <td id="total-score" class="font-bold text-lg">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </fieldset>
+                        </div>
+
+                        <div class="mt-8 flex flex-col md:flex-row gap-4">
+                            <button id="save-score-btn" class="bg-green-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition w-full md:w-auto flex items-center justify-center">
+                                <!-- Heroicon: Check Circle -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                                 Simpan & Kunci Nilai
                             </button>
-                            <button onclick="generatePDF(appState.selectedParticipantId, appState.participants.find(p => p.id === appState.selectedParticipantId)?.name || 'Peserta', currentTotal, currentScore.scores)"
-                                    class="py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md">
+                            <button id="print-score-btn" class="bg-blue-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition w-full md:w-auto flex items-center justify-center">
+                                <!-- Heroicon: Printer -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6 13.5m0 0l-.675.329a.75.75 0 0 0-.364 1.118l1.07 1.285a.75.75 0 0 0 1.118-.364l.675-.329M6 13.5l6 6m6-6l-6 6m0 0l-6-6m6 6l6-6M6 13.5l6-6m6 6l-6-6m0 0l-6 6m6-6l6 6m-6 6l6-6m-6 6l-6 6" /></svg>
                                 Cetak PDF
                             </button>
                         </div>
                     </div>
                 </div>
-            ` : `<div class="p-8 bg-yellow-50 rounded-xl border border-yellow-300 text-yellow-800 text-center font-medium">Silakan pilih peserta dari daftar di atas untuk memulai penilaian.</div>`}
-        `;
-    }
 
-    function renderAdminView(recapData) {
-        const participantListHtml = recapData.map((p, index) => {
-            const background = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-            const participantName = p.name || 'N/A';
-            
-            // Hitung total nilai kriteria yang seharusnya ada
-            const totalCriteriaCount = CRITERIA.filter(c => c.type !== 'header').length;
-
-            const juryJudgements = p.judgements.map(j => {
-                const criteriaScored = Object.keys(j.scores || {}).length;
-                const lockIcon = j.locked 
-                    ? `<svg class="w-4 h-4 text-red-500 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>`
-                    : `<svg class="w-4 h-4 text-green-500 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0v4m-1.5 8H9.5M19 11v9a2 2 0 01-2 2H7a2 2 0 01-2-2v-9a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>`;
-
-                return `
-                    <div class="text-xs text-gray-600 border-b last:border-b-0 py-1 flex justify-between items-center">
-                        <span class="font-medium">Juri ${j.userId.substring(0, 6)}...:</span> 
-                        <span class="text-indigo-600 font-bold">${j.total}</span>
-                        ${lockIcon}
-                        <span class="text-gray-400">(${criteriaScored}/${totalCriteriaCount})</span>
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <tr class="${background} hover:bg-indigo-50 transition duration-150">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.no}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">${participantName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-lg font-bold text-green-600">${p.averageScore}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.totalJuries}</td>
-                    <td class="px-6 py-4 text-sm text-gray-500 w-1/4">
-                        <div class="max-h-20 overflow-y-auto pr-2">
-                            ${juryJudgements || '<span class="text-red-500">Belum ada penilaian</span>'}
+                <!-- Halaman: Dashboard (Admin) -->
+                <div id="page-dashboard" class="page-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Admin</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
+                            <!-- Heroicon: Users -->
+                            <div class="p-3 bg-blue-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.003c0 1.113.285 2.16.786 3.07M15 19.128a2.25 2.25 0 0 1-2.25-2.25c0-1.113.285-2.16.786-3.07M15 19.128v-.003a2.25 2.25 0 0 0-2.25-2.25c0 1.113-.285 2.16-.786 3.07M9 15a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 9 15Zm-6 0a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 3 15Z" /></svg></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total Peserta</p>
+                                <p id="dash-total-peserta" class="text-2xl font-bold">0</p>
+                            </div>
                         </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
+                            <!-- Heroicon: User Circle -->
+                            <div class="p-3 bg-green-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-green-600"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total Juri</p>
+                                <p id="dash-total-juri" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
+                            <!-- Heroicon: List Bullet -->
+                            <div class="p-3 bg-yellow-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-yellow-600"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Total Kriteria</p>
+                                <p id="dash-total-kriteria" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
+                            <!-- Heroicon: Clipboard Document Check -->
+                            <div class="p-3 bg-indigo-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-indigo-600"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg></div>
+                            <div>
+                                <p class="text-sm text-gray-500">Nilai Masuk</p>
+                                <p id="dash-total-nilai" class="text-2xl font-bold">0</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        const recapTableHtml = recapData.length === 0 
-            ? `<tr><td colspan="6" class="text-center py-8 text-gray-500">Belum ada peserta yang terdaftar atau dinilai.</td></tr>`
-            : participantListHtml;
-
-        return `
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Admin Panel & Rekapitulasi Skor</h2>
-
-            <!-- Admin Tools -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- Tambah Peserta -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-200">
-                    <h3 class="text-xl font-semibold text-indigo-700 mb-4">Kelola Peserta</h3>
-                    <div class="space-y-3">
-                        <input type="number" id="new-participant-number" placeholder="Nomor Urut Peserta" 
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        <input type="text" id="new-participant-name" placeholder="Nama/Tim Peserta" 
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        <button onclick="addParticipant()" 
-                                class="w-full py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow-md">
-                            Tambahkan Peserta
+                <!-- Halaman: Kelola Peserta (Admin) -->
+                <div id="page-peserta" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Kelola Peserta</h2>
+                        <button id="add-peserta-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
+                            <!-- Heroicon: Plus -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                            Tambah Peserta
                         </button>
+                    </div>
+                    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Peserta / No. Undi</th>
+                                    <th class="p-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="peserta-table-body" class="divide-y divide-gray-200">
+                                <!-- Data di-generate JS -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 
-                <!-- Token & Info -->
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-red-200">
-                    <h3 class="text-xl font-semibold text-red-700 mb-4">Token Edit (Kunci Nilai)</h3>
-                    <p class="text-sm text-gray-600 mb-3">Token ini diperlukan juri untuk membuka kunci nilai yang sudah final.</p>
-                    <div class="bg-red-50 p-3 rounded-lg flex justify-between items-center mb-4">
-                        <span class="text-red-800 font-mono font-bold text-lg">${appState.editToken || 'BELUM ADA TOKEN'}</span>
-                        <button onclick="navigator.clipboard.writeText(appState.editToken || '').then(() => showModal('Sukses', 'Token berhasil disalin!'))" 
-                                class="text-red-600 hover:text-red-800 transition">
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m-3 7h3m-3 3v-3m-3 3v-3m-3 3v-3m-3 3v-3"></path></svg>
+                <!-- Halaman: Kelola Juri (Admin) -->
+                <div id="page-juri" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Kelola Juri</h2>
+                        <button id="add-juri-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
+                            <!-- Heroicon: Plus -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                            Tambah Juri
                         </button>
                     </div>
-                    <button onclick="generateNewToken()" 
-                            class="w-full py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition shadow-md">
-                        Generate Token Baru
-                    </button>
+                    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Juri</th>
+                                    <th class="p-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="juri-table-body" class="divide-y divide-gray-200">
+                                <!-- Data di-generate JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Tabel Rekapitulasi Skor -->
-            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                <h3 class="text-2xl font-semibold text-gray-800 mb-4">Rekap Skor Akhir</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peringkat</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No. Urut</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Peserta</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Rata-rata Skor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Juri Penilai</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail Skor Juri</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            ${recapTableHtml}
-                        </tbody>
-                    </table>
+                <!-- Halaman: Kelola Kriteria (Admin) -->
+                <div id="page-kriteria" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Kelola Kriteria Penilaian</h2>
+                        <button id="add-kriteria-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
+                            <!-- Heroicon: Plus -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                            Tambah Kriteria
+                        </button>
+                    </div>
+                    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Kriteria</th>
+                                    <th class="p-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kriteria-table-body" class="divide-y divide-gray-200">
+                                <!-- Data di-generate JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+                
+                <!-- Halaman: Konfigurasi Nilai (Admin) -->
+                <div id="page-konfigurasi" class="page-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Konfigurasi Nilai</h2>
+                    <div class="bg-white shadow-xl rounded-lg p-6">
+                        <p class="text-gray-600 mb-6">Atur nilai yang akan muncul di radio button pada formulir juri. Pastikan semua 9 nilai terisi dengan angka.</p>
+                        <form id="config-form" class="space-y-6">
+                            <!-- Grup Cukup -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Kelompok: Cukup (Warna Kuning)</h3>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label for="config-cukup-1" class="block text-sm font-medium text-gray-600">Nilai 1</label>
+                                        <input type="number" id="config-cukup-1" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="config-cukup-2" class="block text-sm font-medium text-gray-600">Nilai 2</label>
+                                        <input type="number" id="config-cukup-2" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="config-cukup-3" class="block text-sm font-medium text-gray-600">Nilai 3</label>
+                                        <input type="number" id="config-cukup-3" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Grup Baik -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Kelompok: Baik (Warna Biru)</h3>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label for="config-baik-1" class="block text-sm font-medium text-gray-600">Nilai 1</label>
+                                        <input type="number" id="config-baik-1" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="config-baik-2" class="block text-sm font-medium text-gray-600">Nilai 2</label>
+                                        <input type="number" id="config-baik-2" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="config-baik-3" class="block text-sm font-medium text-gray-600">Nilai 3</label>
+                                        <input type="number" id="config-baik-3" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Grup Sangat Baik -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Kelompok: Sangat Baik (Warna Hijau)</h3>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label for="config-sangat_baik-1" class="block text-sm font-medium text-gray-600">Nilai 1</label>
+                                        <input type="number" id="config-sangat_baik-1" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="config-sangat_baik-2" class="block text-sm font-medium text-gray-600">Nilai 2</label>
+                                        <input type="number" id="config-sangat_baik-2" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label for="config-sangat_baik-3" class="block text-sm font-medium text-gray-600">Nilai 3</label>
+                                        <input type="number" id="config-sangat_baik-3" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4">
+                                <button id="save-config-btn" type="submit" class="bg-green-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition flex items-center">
+                                    <!-- Heroicon: Check -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                                    Simpan Konfigurasi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Halaman: Token Edit (Admin) -->
+                <div id="page-token" class="page-content hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Token Izin Ubah Nilai</h2>
+                    <div class="bg-white shadow-xl rounded-lg p-6 max-w-lg">
+                         <p class="text-gray-600 mb-4">Gunakan tombol ini untuk membuat token baru. Berikan token ini kepada juri yang ingin mengubah nilai yang sudah terkunci.</p>
+                        <button id="generate-token-btn" class="bg-green-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition flex items-center">
+                            <!-- Heroicon: Sparkles -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
+                            Buat Token Baru
+                        </button>
+                        <div class="mt-6">
+                            <p class="text-gray-700">Token Aktif Saat Ini:</p>
+                            <p id="current-token-display" class="text-3xl font-bold text-blue-700 bg-gray-100 p-4 rounded-lg mt-2 text-center tracking-widest">Belum ada token</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Halaman: Rekap Nilai (Admin) -->
+                <div id="page-rekap" class="page-content hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Rekapitulasi Nilai</h2>
+                        <button id="print-recap-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
+                            <!-- Heroicon: Printer -->
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6 13.5m0 0l-.675.329a.75.75 0 0 0-.364 1.118l1.07 1.285a.75.75 0 0 0 1.118-.364l.675-.329M6 13.5l6 6m6-6l-6 6m0 0l-6-6m6 6l6-6M6 13.5l6-6m6 6l-6-6m0 0l-6 6m6-6l6 6m-6 6l6-6m-6 6l-6 6" /></svg>
+                            Cetak PDF Rekap
+                        </button>
+                    </div>
+                    <div class="bg-white shadow-xl rounded-lg overflow-x-auto">
+                        <table class="w-full min-w-[700px]">
+                            <thead id="recap-table-head" class="bg-gray-50">
+                                <!-- Header Rekap di-generate JS -->
+                            </thead>
+                            <tbody id="recap-table-body" class="divide-y divide-gray-200">
+                                <!-- Data Rekap di-generate JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- [3] Modal Generik untuk CRUD -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden opacity-0"></div>
+    <div id="modal-container" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden opacity-0 transform scale-95">
+        <div id="app-modal" class="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
+            <div class="flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200">
+                <h3 id="modal-title" class="text-xl font-semibold text-gray-800">Modal Title</h3>
+                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600">
+                    <!-- Heroicon: X Mark -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+                </button>
             </div>
-        `;
-    }
+            <div id="modal-body" class="p-6">
+                <!-- Konten Modal di-generate JS -->
+            </div>
+            <div id="modal-footer" class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                <button id="modal-cancel-btn" class_base="py-2 px-4 rounded-lg font-medium transition" class="bg-gray-200 text-gray-700 hover:bg-gray-300">Batal</button>
+                <button id="modal-save-btn" class_base="py-2 px-4 rounded-lg font-medium text-white transition shadow-sm" class="bg-blue-600 hover:bg-blue-700">Simpan</button>
+            </div>
+        </div>
+    </div>
 
-    async function renderContent() {
-        const container = document.getElementById('content-container');
-        if (!appState.isAuthReady) {
-            container.innerHTML = '<div class="text-center py-20 text-gray-500">Memuat autentikasi dan data...</div>';
-            return;
-        }
 
-        switch (appState.view) {
-            case 'login':
-                container.innerHTML = renderLoginView();
-                break;
-            case 'score':
-                // Pastikan admin tidak sengaja masuk ke view juri tanpa peran juri
-                if (appState.role === 'jury' || appState.role === 'admin') { 
-                    container.innerHTML = renderScoreView();
-                } else {
-                    appState.view = 'login';
-                    renderContent();
-                }
-                break;
-            case 'admin':
-                if (appState.role === 'admin') {
-                    // Ambil data rekap sebelum merender
-                    const recapData = await getRecapData(); 
-                    container.innerHTML = renderAdminView(recapData);
-                } else {
-                    appState.view = 'login';
-                    renderContent();
-                }
-                break;
-            default:
-                container.innerHTML = renderLoginView();
-        }
+    <!-- Firebase SDK -->
+    <script type="module">
+        // 5. Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            updateDoc, 
+            deleteDoc,
+            onSnapshot, 
+            collection, 
+            query,
+            addDoc,
+            serverTimestamp,
+            writeBatch,
+            getDocs
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Memastikan dropdown peserta tetap disinkronkan saat data peserta berubah
-        if (appState.view === 'score') {
-            const selectEl = document.getElementById('participant-select');
-            if (selectEl && appState.selectedParticipantId && selectEl.value !== appState.selectedParticipantId) {
-                selectEl.value = appState.selectedParticipantId;
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+          apiKey: "AIzaSyDVh9eNxlVaZFuun4SMbKs-PuBdSFCSVi4",
+          authDomain: "nilai-pbb.firebaseapp.com",
+          databaseURL: "https://nilai-pbb-default-rtdb.firebaseio.com",
+          projectId: "nilai-pbb",
+          storageBucket: "nilai-pbb.firebasestorage.app",
+          messagingSenderId: "905394178115",
+          appId: "1:905394178115:web:3d0ab13ccb144667b62cf6"
+        };
+        
+        // --- GLOBAL STATE ---
+        const state = {
+            app: {
+                db: null,
+                auth: null,
+                userId: null,
+                currentUserRole: null, // 'admin' or 'juri'
+                activePage: 'dashboard',
+                appId: typeof __app_id !== 'undefined' ? __app_id : 'nilai-pbb-default',
+                get publicDataPath() {
+                    return `/artifacts/${this.appId}/public/data`;
+                }
+            },
+            data: {
+                peserta: new Map(),
+                juri: new Map(),
+                kriteria: new Map(),
+                scores: new Map(),
+                config: {
+                    // --- PERUBAHAN ---
+                    // Nilai default diperbarui sesuai permintaan user
+                    cukup: [20, 30, 35],
+                    baik: [35, 40, 45],
+                    sangat_baik: [50, 55, 58]
+                    // --- AKHIR PERUBAHAN ---
+                },
+                token: null
+            },
+            ui: {
+                selectedJuriId: null,
+                selectedJuriName: null,
+                selectedPesertaId: null,
+                isFormLocked: false,
+                isSidebarOpen: false,
+                currentModal: {
+                    type: null, // 'peserta', 'juri', 'kriteria', 'delete', 'token'
+                    id: null,
+                    onSave: null
+                }
+            },
+            listeners: [] // Firebase listener unsubscribe functions
+        };
+
+        // --- DOM Elements ---
+        let DOMElements; // Akan diisi oleh setupDOMElements()
+
+        function setupDOMElements() {
+            DOMElements = {
+                loginPage: document.getElementById('login-page'),
+                appDashboard: document.getElementById('app-dashboard'),
+                loginButton: document.getElementById('login-button'),
+                passwordInput: document.getElementById('password'),
+                loginError: document.getElementById('login-error'),
+                logoutButton: document.getElementById('logout-button'),
+                userStatus: document.getElementById('user-status'),
+                
+                sidebar: document.getElementById('sidebar'),
+                sidebarBackdrop: document.getElementById('sidebar-backdrop'),
+                hamburgerBtn: document.getElementById('hamburger-btn'),
+                sidebarNav: document.getElementById('sidebar-nav'),
+                
+                pageContainer: document.getElementById('page-container'),
+                
+                // Halaman Juri
+                pagePilihJuri: document.getElementById('page-pilih-juri'),
+                juriSelectionList: document.getElementById('juri-selection-list'),
+                pagePenilaian: document.getElementById('page-penilaian'),
+                penilaianTitle: document.getElementById('penilaian-title'),
+                participantSelect: document.getElementById('participant-select'),
+                lockedWarning: document.getElementById('locked-warning'),
+                requestTokenBtn: document.getElementById('request-token-btn'),
+                scoringFieldset: document.getElementById('scoring-fieldset'),
+                scoringTableHead: document.getElementById('scoring-table-head'),
+                scoringTableBody: document.getElementById('scoring-table-body'),
+                totalScoreEl: document.getElementById('total-score'),
+                saveScoreBtn: document.getElementById('save-score-btn'),
+                printScoreBtn: document.getElementById('print-score-btn'),
+
+                // Halaman Admin
+                dashTotalPeserta: document.getElementById('dash-total-peserta'),
+                dashTotalJuri: document.getElementById('dash-total-juri'),
+                dashTotalKriteria: document.getElementById('dash-total-kriteria'),
+                dashTotalNilai: document.getElementById('dash-total-nilai'),
+
+                addPesertaBtn: document.getElementById('add-peserta-btn'),
+                pesertaTableBody: document.getElementById('peserta-table-body'),
+                
+                addJuriBtn: document.getElementById('add-juri-btn'),
+                juriTableBody: document.getElementById('juri-table-body'),
+
+                addKriteriaBtn: document.getElementById('add-kriteria-btn'),
+                kriteriaTableBody: document.getElementById('kriteria-table-body'),
+                
+                configForm: document.getElementById('config-form'),
+                saveConfigBtn: document.getElementById('save-config-btn'),
+                
+                generateTokenBtn: document.getElementById('generate-token-btn'),
+                currentTokenDisplay: document.getElementById('current-token-display'),
+                
+                recapTableHead: document.getElementById('recap-table-head'),
+                recapTableBody: document.getElementById('recap-table-body'),
+                printRecapBtn: document.getElementById('print-recap-btn'),
+
+                // Modal
+                modalBackdrop: document.getElementById('modal-backdrop'),
+                modalContainer: document.getElementById('modal-container'),
+                appModal: document.getElementById('app-modal'),
+                modalTitle: document.getElementById('modal-title'),
+                modalBody: document.getElementById('modal-body'),
+                modalFooter: document.getElementById('modal-footer'),
+                modalCloseBtn: document.getElementById('modal-close-btn'),
+                modalCancelBtn: document.getElementById('modal-cancel-btn'),
+                modalSaveBtn: document.getElementById('modal-save-btn'),
+            };
+        }
+
+        // --- Inisialisasi Aplikasi ---
+
+        function initApp() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                state.app.db = getFirestore(app);
+                state.app.auth = getAuth(app);
+                
+                setupDOMElements();
+                setupEventListeners();
+                initAuth();
+            } catch (error) {
+                console.error("Error initializing Firebase: ", error);
+                DOMElements.loginPage.innerHTML = '<h2 class="text-red-500 text-center">Gagal terhubung ke database. Coba muat ulang halaman.</h2>';
             }
         }
-    }
 
-    function renderApp() {
-        // Update menu navigasi
-        const isAdmin = appState.role === 'admin';
-        document.getElementById('admin-menu-btn').classList.toggle('hidden', !isAdmin);
-        document.getElementById('sidebar-admin-btn').classList.toggle('hidden', !isAdmin);
+        function initAuth() {
+            onAuthStateChanged(state.app.auth, async (user) => {
+                if (!user) {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(state.app.auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(state.app.auth);
+                        }
+                    } catch (error) {
+                        console.error("Auth error:", error);
+                    }
+                }
+                state.app.userId = user ? user.uid : 'anonymous';
+            });
+        }
         
-        // Render content utama
-        renderContent();
-    }
-</script>
+        function setupEventListeners() {
+            DOMElements.loginButton.addEventListener('click', handleLogin);
+            DOMElements.logoutButton.addEventListener('click', handleLogout);
+            DOMElements.hamburgerBtn.addEventListener('click', () => toggleSidebar(true));
+            DOMElements.sidebarBackdrop.addEventListener('click', () => toggleSidebar(false));
+            
+            // Navigasi
+            DOMElements.sidebarNav.addEventListener('click', (e) => {
+                const navLink = e.target.closest('.nav-link');
+                if (navLink) {
+                    e.preventDefault();
+                    const pageId = navLink.dataset.page;
+                    navigate(pageId);
+                    toggleSidebar(false);
+                }
+            });
+
+            // Aksi Juri
+            DOMElements.juriSelectionList.addEventListener('click', (e) => {
+                const juriButton = e.target.closest('.juri-select-btn');
+                if (juriButton) {
+                    selectJuri(juriButton.dataset.id, juriButton.dataset.name);
+                }
+            });
+            DOMElements.participantSelect.addEventListener('change', loadSelectedParticipantScore);
+            DOMElements.scoringFieldset.addEventListener('change', calculateTotalScore);
+            DOMElements.saveScoreBtn.addEventListener('click', saveScore);
+            DOMElements.printScoreBtn.addEventListener('click', printParticipantPDF);
+            DOMElements.requestTokenBtn.addEventListener('click', openTokenModal);
+            
+            // Aksi Admin
+            DOMElements.addPesertaBtn.addEventListener('click', () => openPesertaModal(null));
+            DOMElements.pesertaTableBody.addEventListener('click', (e) => handleTableAction(e, 'peserta'));
+            
+            DOMElements.addJuriBtn.addEventListener('click', () => openJuriModal(null));
+            DOMElements.juriTableBody.addEventListener('click', (e) => handleTableAction(e, 'juri'));
+            
+            DOMElements.addKriteriaBtn.addEventListener('click', () => openKriteriaModal(null));
+            DOMElements.kriteriaTableBody.addEventListener('click', (e) => handleTableAction(e, 'kriteria'));
+
+            DOMElements.configForm.addEventListener('submit', handleSaveConfig);
+            DOMElements.generateTokenBtn.addEventListener('click', generateToken);
+            DOMElements.printRecapBtn.addEventListener('click', printRecapPDF);
+
+            // Modal
+            DOMElements.modalCloseBtn.addEventListener('click', hideModal);
+            DOMElements.modalCancelBtn.addEventListener('click', hideModal);
+            DOMElements.modalSaveBtn.addEventListener('click', () => {
+                if (state.ui.currentModal.onSave) {
+                    state.ui.currentModal.onSave();
+                }
+            });
+        }
+        
+        // --- Logika Login & UI ---
+
+        function handleLogin() {
+            const pass = DOMElements.passwordInput.value;
+            DOMElements.loginError.classList.add('hidden');
+            
+            if (pass === 'Piring123') {
+                state.app.currentUserRole = 'admin';
+                setupUIForRole('admin');
+            } else if (pass === 'Danukasep') {
+                state.app.currentUserRole = 'juri';
+                setupUIForRole('juri');
+            } else {
+                DOMElements.loginError.classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            // Hentikan semua listener Firestore
+            state.listeners.forEach(unsub => unsub());
+            state.listeners = [];
+
+            // Reset state
+            state.app.currentUserRole = null;
+            state.ui.selectedJuriId = null;
+            state.ui.selectedPesertaId = null;
+            state.data.peserta.clear();
+            state.data.juri.clear();
+            state.data.kriteria.clear();
+            state.data.scores.clear();
+            
+            DOMElements.loginPage.classList.remove('hidden');
+            DOMElements.appDashboard.classList.add('hidden');
+            DOMElements.passwordInput.value = '';
+        }
+        
+        function setupUIForRole(role) {
+            DOMElements.loginPage.classList.add('hidden');
+            DOMElements.appDashboard.classList.remove('hidden');
+            
+            if (role === 'admin') {
+                DOMElements.userStatus.textContent = 'Role: Admin';
+                document.querySelectorAll('.nav-admin').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('.nav-juri').forEach(el => el.classList.add('hidden'));
+                navigate('dashboard');
+            } else { // juri
+                DOMElements.userStatus.textContent = 'Role: Juri';
+                document.querySelectorAll('.nav-admin').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.nav-juri').forEach(el => el.classList.remove('hidden'));
+                navigate('pilih-juri'); // Mulai dari pilih juri
+            }
+            
+            // Mulai listener data
+            attachDataListeners();
+        }
+        
+        function toggleSidebar(open) {
+            if (open) {
+                state.ui.isSidebarOpen = true;
+                DOMElements.sidebar.classList.remove('-translate-x-full');
+                DOMElements.sidebarBackdrop.classList.remove('hidden');
+            } else {
+                state.ui.isSidebarOpen = false;
+                DOMElements.sidebar.classList.add('-translate-x-full');
+                DOMElements.sidebarBackdrop.classList.add('hidden');
+            }
+        }
+        
+        // --- Router Sederhana ---
+        
+        function navigate(pageId) {
+            if (!pageId) pageId = (state.app.currentUserRole === 'admin' ? 'dashboard' : 'pilih-juri');
+            
+            state.app.activePage = pageId;
+            
+            // Sembunyikan semua halaman
+            DOMElements.pageContainer.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // Tampilkan halaman yang aktif
+            const activePageEl = document.getElementById(`page-${pageId}`);
+            if (activePageEl) {
+                activePageEl.classList.remove('hidden');
+            } else {
+                document.getElementById('page-dashboard').classList.remove('hidden'); // Fallback
+            }
+
+            // Update status aktif di sidebar
+            DOMElements.sidebarNav.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('active', link.dataset.page === pageId);
+            });
+            
+            // Panggil render khusus jika perlu
+            if (pageId === 'penilaian') {
+                renderScoringForm();
+            } else if (pageId === 'konfigurasi') {
+                renderConfigForm();
+            } else if (pageId === 'rekap') {
+                renderRecapTableHead(); // Update header tabel rekap
+            }
+        }
+        
+        // --- Listener Data (Firestore) ---
+        
+        function attachDataListeners() {
+            // Hentikan listener lama
+            state.listeners.forEach(unsub => unsub());
+            state.listeners = [];
+            const path = state.app.publicDataPath;
+
+            // 1. Peserta
+            const qPeserta = query(collection(state.app.db, `${path}/peserta`));
+            state.listeners.push(onSnapshot(qPeserta, (snapshot) => {
+                state.data.peserta.clear();
+                snapshot.forEach(doc => state.data.peserta.set(doc.id, { id: doc.id, ...doc.data() }));
+                renderPesertaList();
+                renderPesertaDropdown();
+                renderRecapTableBody();
+                DOMElements.dashTotalPeserta.textContent = state.data.peserta.size;
+            }));
+            
+            // 2. Juri
+            const qJuri = query(collection(state.app.db, `${path}/juri`));
+            state.listeners.push(onSnapshot(qJuri, (snapshot) => {
+                state.data.juri.clear();
+                snapshot.forEach(doc => state.data.juri.set(doc.id, { id: doc.id, ...doc.data() }));
+                renderJuriList();
+                renderJuriDropdown();
+                renderRecapTableHead(); // Header rekap perlu di-render ulang
+                renderRecapTableBody();
+                DOMElements.dashTotalJuri.textContent = state.data.juri.size;
+            }));
+
+            // 3. Kriteria
+            const qKriteria = query(collection(state.app.db, `${path}/kriteria`));
+            state.listeners.push(onSnapshot(qKriteria, (snapshot) => {
+                state.data.kriteria.clear();
+                snapshot.forEach(doc => state.data.kriteria.set(doc.id, { id: doc.id, ...doc.data() }));
+                renderKriteriaList();
+                renderScoringForm(); // Form penilaian bergantung pada ini
+                DOMElements.dashTotalKriteria.textContent = state.data.kriteria.size;
+            }));
+
+            // 4. Scores
+            const qScores = query(collection(state.app.db, `${path}/scores`));
+            state.listeners.push(onSnapshot(qScores, (snapshot) => {
+                state.data.scores.clear();
+                let totalNilaiMasuk = 0;
+                snapshot.forEach(doc => {
+                    state.data.scores.set(doc.id, doc.data());
+                    // Hitung total nilai yg sudah di-submit
+                    Object.keys(doc.data()).forEach(juriKey => {
+                        if (doc.data()[juriKey] && doc.data()[juriKey].locked) {
+                            totalNilaiMasuk++;
+                        }
+                    });
+                });
+                renderRecapTableBody();
+                loadSelectedParticipantScore(); // Refresh form jika sedang dibuka
+                DOMElements.dashTotalNilai.textContent = totalNilaiMasuk;
+            }));
+
+            // 5. Config
+            const configDocRef = doc(state.app.db, `${path}/config`, 'scoring');
+            state.listeners.push(onSnapshot(configDocRef, (doc) => {
+                if (doc.exists()) {
+                    state.data.config = doc.data();
+                } else {
+                    // Jika belum ada, buat default
+                    setDoc(configDocRef, state.data.config); // Ini akan menggunakan state.data.config BARU
+                }
+                renderConfigForm();
+                renderScoringForm(); // Form penilaian bergantung pada ini
+            }));
+            
+            // 6. Token
+            const tokenDocRef = doc(state.app.db, `${path}/config`, 'token');
+            state.listeners.push(onSnapshot(tokenDocRef, (doc) => {
+                if (doc.exists()) {
+                    state.data.token = doc.data().value;
+                    DOMElements.currentTokenDisplay.textContent = state.data.token;
+                } else {
+                    DOMElements.currentTokenDisplay.textContent = "Belum ada token";
+                    state.data.token = null;
+                }
+            }));
+        }
+        
+        // --- Logika Penilaian (Juri) ---
+
+        function selectJuri(juriId, juriName) {
+            state.ui.selectedJuriId = juriId;
+            state.ui.selectedJuriName = juriName;
+            
+            DOMElements.penilaianTitle.textContent = `Formulir Penilaian (${juriName})`;
+            DOMElements.userStatus.textContent = `Role: ${juriName}`;
+            
+            navigate('penilaian');
+            resetScoringForm();
+        }
+
+        function renderScoringForm() {
+            if (state.app.activePage !== 'penilaian' && state.app.activePage !== 'pilih-juri') return; // Hanya render jika di halaman penilaian
+            
+            const { config, kriteria } = state.data;
+            const kriteriaArray = Array.from(kriteria.values());
+            
+            // Buat Header Tabel
+            const scoreValues = [
+                ...config.cukup,
+                ...config.baik,
+                ...config.sangat_baik
+            ];
+            
+            DOMElements.scoringTableHead.innerHTML = `
+                <tr>
+                    <th rowspan="2" class="w-1/4">Aspek yang Dinilai</th>
+                    <th colspan="3">Cukup</th>
+                    <th colspan="3">Baik</th>
+                    <th colspan="3">Sangat Baik</th>
+                    <th rowspan="2" class="w-16">Skor</th>
+                </tr>
+                <tr>
+                    <th class="col-cukup">${config.cukup[0]}</th>
+                    <th class="col-cukup">${config.cukup[1]}</th>
+                    <th class="col-cukup">${config.cukup[2]}</th>
+                    <th class="col-baik">${config.baik[0]}</th>
+                    <th class="col-baik">${config.baik[1]}</th>
+                    <th class="col-baik">${config.baik[2]}</th>
+                    <th class="col-sangat-baik">${config.sangat_baik[0]}</th>
+                    <th class="col-sangat-baik">${config.sangat_baik[1]}</th>
+                    <th class="col-sangat-baik">${config.sangat_baik[2]}</th>
+                </tr>
+            `;
+            
+            // Buat Body Tabel
+            DOMElements.scoringTableBody.innerHTML = '';
+            if (kriteriaArray.length === 0) {
+                 DOMElements.scoringTableBody.innerHTML = `<tr><td colspan="${scoreValues.length + 2}" class="text-center p-4 text-gray-500">Admin belum menambahkan kriteria penilaian.</td></tr>`;
+            } else {
+                kriteriaArray.forEach(item => {
+                    const row = document.createElement('tr');
+                    let radioButtonsHTML = '';
+                    
+                    scoreValues.forEach((value, index) => {
+                        let colClass = 'col-cukup';
+                        if (index >= 3 && index < 6) colClass = 'col-baik';
+                        if (index >= 6) colClass = 'col-sangat-baik';
+                        
+                        radioButtonsHTML += `
+                            <td class="${colClass} radio-cell">
+                                <input type="radio" name="${item.id}" value="${value}" data-criterion="${item.id}">
+                                <label for="${item.id}"></label>
+                            </td>
+                        `;
+                    });
+                    
+                    row.innerHTML = `
+                        <td class="text-left p-3 font-medium">${item.name}</td>
+                        ${radioButtonsHTML}
+                        <td id="score-${item.id}" class="font-medium">0</td>
+                    `;
+                    DOMElements.scoringTableBody.appendChild(row);
+                });
+            }
+            
+            // Update total colspan di footer
+            DOMElements.totalScoreEl.parentElement.firstElementChild.setAttribute('colspan', scoreValues.length + 1);
+        }
+
+        function calculateTotalScore() {
+            let total = 0;
+            state.data.kriteria.forEach(item => {
+                const radios = document.getElementsByName(item.id);
+                let score = 0;
+                if (radios.length > 0) {
+                     for (const radio of radios) {
+                        if (radio.checked) {
+                            score = parseInt(radio.value) || 0;
+                            break;
+                        }
+                    }
+                    const scoreEl = document.getElementById(`score-${item.id}`);
+                    if (scoreEl) scoreEl.textContent = score;
+                    total += score;
+                }
+            });
+            DOMElements.totalScoreEl.textContent = total;
+        }
+
+        function loadSelectedParticipantScore() {
+            state.ui.selectedPesertaId = DOMElements.participantSelect.value;
+            resetScoringForm(); // Selalu reset dulu
+            
+            if (!state.ui.selectedPesertaId || !state.ui.selectedJuriId) return;
+
+            const participantScores = state.data.scores.get(state.ui.selectedPesertaId);
+            if (!participantScores) {
+                setFormLocked(false);
+                return;
+            }
+
+            const juriData = participantScores[state.ui.selectedJuriId];
+            if (juriData && juriData.details) {
+                // Isi form dengan data
+                state.data.kriteria.forEach(item => {
+                    const savedValue = juriData.details[item.id];
+                    if (savedValue) {
+                        const radio = document.querySelector(`input[name="${item.id}"][value="${savedValue}"]`);
+                        if (radio) radio.checked = true;
+                    }
+                });
+                calculateTotalScore();
+            }
+
+            const isLocked = juriData && juriData.locked;
+            setFormLocked(isLocked);
+        }
+
+        function resetScoringForm() {
+            DOMElements.scoringFieldset.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+            calculateTotalScore();
+            setFormLocked(false);
+            state.ui.selectedPesertaId = DOMElements.participantSelect.value;
+        }
+
+        function setFormLocked(isLocked) {
+            state.ui.isFormLocked = isLocked;
+            DOMElements.scoringFieldset.disabled = isLocked;
+            DOMElements.saveScoreBtn.disabled = isLocked;
+            DOMElements.lockedWarning.classList.toggle('hidden', !isLocked);
+            DOMElements.saveScoreBtn.classList.toggle('opacity-50', isLocked);
+            DOMElements.saveScoreBtn.classList.toggle('cursor-not-allowed', isLocked);
+            DOMElements.saveScoreBtn.innerHTML = isLocked ? `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
+                Nilai Terkunci` : `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                Simpan & Kunci Nilai`;
+        }
+
+        async function saveScore() {
+            const { selectedPesertaId, selectedJuriId } = state.ui;
+            if (!selectedPesertaId || !selectedJuriId) {
+                alert("Silakan pilih peserta dan juri terlebih dahulu.");
+                return;
+            }
+
+            const scoreDetails = {};
+            let total = 0;
+            state.data.kriteria.forEach(item => {
+                const radios = document.getElementsByName(item.id);
+                let score = 0;
+                for (const radio of radios) {
+                    if (radio.checked) {
+                        score = parseInt(radio.value) || 0;
+                        break;
+                    }
+                }
+                scoreDetails[item.id] = score;
+                total += score;
+            });
+
+            const scoreData = {
+                [selectedJuriId]: {
+                    total: total,
+                    details: scoreDetails,
+                    locked: true,
+                    juriName: state.ui.selectedJuriName,
+                    lastUpdated: serverTimestamp()
+                }
+            };
+            
+            try {
+                setFormLocked(true); // Langsung kunci UI
+                DOMElements.saveScoreBtn.textContent = "Menyimpan...";
+                
+                const scoreDocRef = doc(state.app.db, `${state.app.publicDataPath}/scores`, selectedPesertaId);
+                await setDoc(scoreDocRef, scoreData, { merge: true });
+
+                alert("Nilai berhasil disimpan dan dikunci.");
+                
+            } catch (error) {
+                console.error("Error saving score: ", error);
+                alert("Gagal menyimpan nilai. Coba lagi.");
+                setFormLocked(false); // Buka kunci lagi jika gagal
+            }
+        }
+        
+        // --- Logika Render Admin ---
+        
+        function renderPesertaList() {
+            const tableBody = DOMElements.pesertaTableBody;
+            tableBody.innerHTML = '';
+            if (state.data.peserta.size === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada peserta.</td></tr>';
+                return;
+            }
+            Array.from(state.data.peserta.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4 font-medium text-gray-900">${p.name}</td>
+                        <td class="p-4 text-right space-x-2">
+                            <button class="action-btn-edit text-blue-600 hover:text-blue-800" data-id="${p.id}" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                            </button>
+                            <button class="action-btn-delete text-red-600 hover:text-red-800" data-id="${p.id}" title="Hapus">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c-.34.052-.68.107-1.022.166m11.538 0-1.096-1.096A1.125 1.125 0 0 0 10.27 4.135H7.73a1.125 1.125 0 0 0-.796.328L6.838 5.79m11.538 0-3.809 1.9-3.809-1.9m3.809 1.9v9.115" /></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function renderPesertaDropdown() {
+            const select = DOMElements.participantSelect;
+            select.innerHTML = '<option value="">-- Pilih Peserta --</option>';
+            Array.from(state.data.peserta.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+            });
+            select.value = state.ui.selectedPesertaId;
+        }
+
+        function renderJuriList() {
+            const tableBody = DOMElements.juriTableBody;
+            tableBody.innerHTML = '';
+            if (state.data.juri.size === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada juri.</td></tr>';
+                return;
+            }
+            Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(j => {
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4 font-medium text-gray-900">${j.name}</td>
+                        <td class="p-4 text-right space-x-2">
+                            <button class="action-btn-edit text-blue-600 hover:text-blue-800" data-id="${j.id}" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                            </button>
+                            <button class="action-btn-delete text-red-600 hover:text-red-800" data-id="${j.id}" title="Hapus">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c-.34.052-.68.107-1.022.166m11.538 0-1.096-1.096A1.125 1.125 0 0 0 10.27 4.135H7.73a1.125 1.125 0 0 0-.796.328L6.838 5.79m11.538 0-3.809 1.9-3.809-1.9m3.809 1.9v9.115" /></svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function renderJuriDropdown() {
+            const list = DOMElements.juriSelectionList;
+            list.innerHTML = '';
+            if (state.data.juri.size === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500">Belum ada juri ditambahkan oleh Admin.</p>';
+                return;
+            }
+            Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(j => {
+                list.innerHTML += `
+                    <button class="juri-select-btn w-full bg-blue-500 text-white py-3 rounded-lg font-bold hover:bg-blue-600 transition" data-id="${j.id}" data-name="${j.name}">
+                        ${j.name}
+                    </button>
+                `;
+            });
+        }
+        
+        function renderKriteriaList() {
+            const tableBody = DOMElements.kriteriaTableBody;
+            tableBody.innerHTML = '';
+            if (state.data.kriteria.size === 0) {
+                tableBody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada kriteria.</td></tr>';
+                return;
+            }
+            Array.from(state.data.kriteria.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(k => {
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-4 font-medium text-gray-900">${k.name}</td>
+                        <td class="p-4 text-right space-x-2">
+                            <button class="action-btn-edit text-blue-600 hover:text-blue-800" data-id="${k.id}" title="Edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+                            </button>
+                            <!-- Hapus kriteria bisa berbahaya jika sudah ada nilai, jadi saya nonaktifkan -->
+                            <!--
+                            <button class="action-btn-delete text-red-600 hover:text-red-800" data-id="${k.id}" title="Hapus">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c-.34.052-.68.107-1.022.166m11.538 0-1.096-1.096A1.125 1.125 0 0 0 10.27 4.135H7.73a1.125 1.125 0 0 0-.796.328L6.838 5.79m11.538 0-3.809 1.9-3.809-1.9m3.809 1.9v9.115" /></svg>
+                            </button>
+                            -->
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function renderConfigForm() {
+            const { config } = state.data;
+            document.getElementById('config-cukup-1').value = config.cukup[0];
+            document.getElementById('config-cukup-2').value = config.cukup[1];
+            document.getElementById('config-cukup-3').value = config.cukup[2];
+            document.getElementById('config-baik-1').value = config.baik[0];
+            document.getElementById('config-baik-2').value = config.baik[1];
+            document.getElementById('config-baik-3').value = config.baik[2];
+            document.getElementById('config-sangat_baik-1').value = config.sangat_baik[0];
+            document.getElementById('config-sangat_baik-2').value = config.sangat_baik[1];
+            document.getElementById('config-sangat_baik-3').value = config.sangat_baik[2];
+        }
+
+        function renderRecapTableHead() {
+            const juriArray = Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name));
+            let ths = '<th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Peserta</th>';
+            juriArray.forEach(j => {
+                ths += `<th class="p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">${j.name}</th>`;
+            });
+            ths += '<th class="p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Total Akhir</th>';
+            DOMElements.recapTableHead.innerHTML = `<tr>${ths}</tr>`;
+        }
+
+        function renderRecapTableBody() {
+            const tableBody = DOMElements.recapTableBody;
+            const juriArray = Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name));
+            const pesertaArray = Array.from(state.data.peserta.values()).sort((a,b) => a.name.localeCompare(b.name));
+
+            tableBody.innerHTML = '';
+            if (pesertaArray.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${juriArray.length + 2}" class="p-4 text-center text-gray-500">Belum ada peserta.</td></tr>`;
+                return;
+            }
+
+            pesertaArray.forEach(p => {
+                const scores = state.data.scores.get(p.id) || {};
+                let total = 0;
+                let tds = `<td class="p-4 font-medium text-gray-900">${p.name}</td>`;
+                
+                juriArray.forEach(j => {
+                    const juriScore = scores[j.id] ? scores[j.id].total : 0;
+                    total += juriScore;
+                    tds += `<td class="p-4 text-center">${juriScore}</td>`;
+                });
+                
+                tds += `<td class="p-4 text-center font-bold">${total}</td>`;
+                tableBody.innerHTML += `<tr class="hover:bg-gray-50">${tds}</tr>`;
+            });
+        }
+        
+        // --- Logika Aksi Admin ---
+        
+        function handleTableAction(event, type) {
+            const target = event.target.closest('button');
+            if (!target) return;
+            
+            const id = target.dataset.id;
+            
+            if (target.classList.contains('action-btn-edit')) {
+                if (type === 'peserta') openPesertaModal(state.data.peserta.get(id));
+                if (type === 'juri') openJuriModal(state.data.juri.get(id));
+                if (type === 'kriteria') openKriteriaModal(state.data.kriteria.get(id));
+            }
+            if (target.classList.contains('action-btn-delete')) {
+                let path;
+                let name;
+                if (type === 'peserta') {
+                    path = `${state.app.publicDataPath}/peserta/${id}`;
+                    name = state.data.peserta.get(id)?.name;
+                }
+                if (type === 'juri') {
+                    path = `${state.app.publicDataPath}/juri/${id}`;
+                    name = state.data.juri.get(id)?.name;
+                }
+                // if (type === 'kriteria') path = `${state.app.publicDataPath}/kriteria/${id}`;
+                openDeleteModal(id, path, name, type);
+            }
+        }
+        
+        async function handleSaveConfig(e) {
+            e.preventDefault();
+            const newConfig = {
+                cukup: [
+                    parseInt(document.getElementById('config-cukup-1').value),
+                    parseInt(document.getElementById('config-cukup-2').value),
+                    parseInt(document.getElementById('config-cukup-3').value),
+                ],
+                baik: [
+                    parseInt(document.getElementById('config-baik-1').value),
+                    parseInt(document.getElementById('config-baik-2').value),
+                    parseInt(document.getElementById('config-baik-3').value),
+                ],
+                sangat_baik: [
+                    parseInt(document.getElementById('config-sangat_baik-1').value),
+                    parseInt(document.getElementById('config-sangat_baik-2').value),
+                    parseInt(document.getElementById('config-sangat_baik-3').value),
+                ]
+            };
+            
+            // Validasi
+            if (Object.values(newConfig).flat().some(isNaN)) {
+                alert("Semua nilai harus berupa angka.");
+                return;
+            }
+            
+            try {
+                DOMElements.saveConfigBtn.disabled = true;
+                DOMElements.saveConfigBtn.textContent = "Menyimpan...";
+                const configDocRef = doc(state.app.db, `${state.app.publicDataPath}/config`, 'scoring');
+                await setDoc(configDocRef, newConfig);
+                alert("Konfigurasi nilai berhasil disimpan.");
+            } catch (error) {
+                console.error("Error saving config:", error);
+                alert("Gagal menyimpan konfigurasi.");
+            } finally {
+                DOMElements.saveConfigBtn.disabled = false;
+                DOMElements.saveConfigBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                    Simpan Konfigurasi`;
+            }
+        }
+        
+        async function generateToken() {
+            try {
+                const newToken = Math.random().toString(36).substring(2, 8).toUpperCase();
+                const tokenDocRef = doc(state.app.db, `${state.app.publicDataPath}/config`, 'token');
+                await setDoc(tokenDocRef, {
+                    value: newToken,
+                    createdAt: serverTimestamp()
+                });
+                alert("Token baru telah dibuat: " + newToken);
+            } catch (error) {
+                console.error("Error generating token: ", error);
+                alert("Gagal membuat token.");
+            }
+        }
+        
+        // --- Logika Modal (CRUD) ---
+
+        function showModal(title, contentHTML, onSaveCallback) {
+            DOMElements.modalTitle.textContent = title;
+            DOMElements.modalBody.innerHTML = contentHTML;
+            state.ui.currentModal.onSave = onSaveCallback;
+            
+            DOMElements.modalBackdrop.classList.remove('hidden');
+            DOMElements.modalContainer.classList.remove('hidden');
+            setTimeout(() => {
+                DOMElements.modalBackdrop.classList.remove('opacity-0');
+                DOMElements.modalContainer.classList.remove('opacity-0', 'scale-95');
+            }, 10);
+            
+            // Set default button
+            DOMElements.modalSaveBtn.className = DOMElements.modalSaveBtn.getAttribute('class_base') + " bg-blue-600 hover:bg-blue-700";
+            DOMElements.modalSaveBtn.textContent = "Simpan";
+            DOMElements.modalCancelBtn.textContent = "Batal";
+        }
+        
+        function hideModal() {
+            DOMElements.modalBackdrop.classList.add('opacity-0');
+            DOMElements.modalContainer.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                DOMElements.modalBackdrop.classList.add('hidden');
+                DOMElements.modalContainer.classList.add('hidden');
+                DOMElements.modalBody.innerHTML = '';
+                state.ui.currentModal.onSave = null;
+                state.ui.currentModal.id = null;
+                state.ui.currentModal.type = null;
+            }, 300);
+        }
+        
+        // Modal: Peserta
+        function openPesertaModal(peserta) {
+            const isEdit = peserta !== null;
+            state.ui.currentModal.id = isEdit ? peserta.id : null;
+            state.ui.currentModal.type = 'peserta';
+            
+            const title = isEdit ? 'Edit Peserta' : 'Tambah Peserta Baru';
+            const name = isEdit ? peserta.name : '';
+            const content = `
+                <div>
+                    <label for="modal-input-name" class="block text-sm font-medium text-gray-700 mb-2">Nama Peserta / No. Undi</label>
+                    <input type="text" id="modal-input-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${name}" placeholder="Masukkan nama...">
+                </div>
+            `;
+            showModal(title, content, handleSavePeserta);
+        }
+        
+        async function handleSavePeserta() {
+            const name = document.getElementById('modal-input-name').value.trim();
+            if (!name) {
+                alert("Nama tidak boleh kosong.");
+                return;
+            }
+            
+            const id = state.ui.currentModal.id;
+            const collectionRef = collection(state.app.db, `${state.app.publicDataPath}/peserta`);
+            
+            try {
+                if (id) { // Edit
+                    const docRef = doc(state.app.db, `${state.app.publicDataPath}/peserta`, id);
+                    await setDoc(docRef, { name: name }, { merge: true });
+                } else { // Tambah
+                    await addDoc(collectionRef, { name: name, createdAt: serverTimestamp() });
+                }
+                hideModal();
+            } catch (error) {
+                console.error("Error saving peserta:", error);
+                alert("Gagal menyimpan data.");
+            }
+        }
+        
+        // Modal: Juri
+        function openJuriModal(juri) {
+            const isEdit = juri !== null;
+            state.ui.currentModal.id = isEdit ? juri.id : null;
+            state.ui.currentModal.type = 'juri';
+            
+            const title = isEdit ? 'Edit Juri' : 'Tambah Juri Baru';
+            const name = isEdit ? juri.name : '';
+            const content = `
+                <div>
+                    <label for="modal-input-name" class="block text-sm font-medium text-gray-700 mb-2">Nama Juri</label>
+                    <input type="text" id="modal-input-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${name}" placeholder="Cth: Juri 1, Juri Kehormatan">
+                </div>
+            `;
+            showModal(title, content, handleSaveJuri);
+        }
+
+        async function handleSaveJuri() {
+            const name = document.getElementById('modal-input-name').value.trim();
+            if (!name) {
+                alert("Nama tidak boleh kosong.");
+                return;
+            }
+            
+            const id = state.ui.currentModal.id;
+            const collectionRef = collection(state.app.db, `${state.app.publicDataPath}/juri`);
+            
+            try {
+                if (id) { // Edit
+                    const docRef = doc(state.app.db, `${state.app.publicDataPath}/juri`, id);
+                    await setDoc(docRef, { name: name }, { merge: true });
+                } else { // Tambah
+                    await addDoc(collectionRef, { name: name, createdAt: serverTimestamp() });
+                }
+                hideModal();
+            } catch (error) {
+                console.error("Error saving juri:", error);
+                alert("Gagal menyimpan data.");
+            }
+        }
+
+        // Modal: Kriteria
+        function openKriteriaModal(kriteria) {
+            const isEdit = kriteria !== null;
+            state.ui.currentModal.id = isEdit ? kriteria.id : null;
+            state.ui.currentModal.type = 'kriteria';
+            
+            const title = isEdit ? 'Edit Kriteria' : 'Tambah Kriteria Baru';
+            const name = isEdit ? kriteria.name : '';
+            const content = `
+                <div>
+                    <label for="modal-input-name" class="block text-sm font-medium text-gray-700 mb-2">Nama Kriteria</label>
+                    <input type="text" id="modal-input-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${name}" placeholder="Cth: Sikap Sempurna">
+                </div>
+            `;
+            showModal(title, content, handleSaveKriteria);
+        }
+        
+        async function handleSaveKriteria() {
+            const name = document.getElementById('modal-input-name').value.trim();
+            if (!name) {
+                alert("Nama tidak boleh kosong.");
+                return;
+            }
+            
+            const id = state.ui.currentModal.id;
+            const collectionRef = collection(state.app.db, `${state.app.publicDataPath}/kriteria`);
+            
+            try {
+                if (id) { // Edit
+                    const docRef = doc(state.app.db, `${state.app.publicDataPath}/kriteria`, id);
+                    await setDoc(docRef, { name: name }, { merge: true });
+                } else { // Tambah
+                    await addDoc(collectionRef, { name: name, createdAt: serverTimestamp() });
+                }
+                hideModal();
+            } catch (error) {
+                console.error("Error saving kriteria:", error);
+                alert("Gagal menyimpan data.");
+            }
+        }
+        
+        // Modal: Delete
+        function openDeleteModal(id, path, name, type) {
+            state.ui.currentModal.id = id;
+            state.ui.currentModal.type = 'delete';
+            
+            const title = `Hapus Data?`;
+            let warning = "";
+            if (type === 'peserta') {
+                warning = `<p class="text-sm text-red-600 mt-2">Aksi ini tidak dapat dibatalkan. Menghapus peserta juga akan menghapus semua nilai yang terkait.</p>`;
+            } else if (type === 'juri') {
+                warning = `<p class="text-sm text-red-600 mt-2">Aksi ini tidak dapat dibatalkan. Menghapus juri juga akan menghapus semua nilai yang terkait dengan juri ini dari semua peserta.</p>`;
+            }
+
+            const content = `
+                <p>Anda yakin ingin menghapus data <strong>${name}</strong>?</p>
+                ${warning}
+            `;
+            
+            showModal(title, content, async () => {
+                try {
+                    // Hapus dokumen utama
+                    await deleteDoc(doc(state.app.db, path));
+                    
+                    // Jika ini peserta, hapus juga nilainya
+                    if (type === 'peserta') {
+                        const scoreDocRef = doc(state.app.db, `${state.app.publicDataPath}/scores`, id);
+                        await deleteDoc(scoreDocRef);
+                    }
+                    
+                    // Jika ini juri, kita harus update semua dokumen nilai
+                    if (type === 'juri') {
+                        const batch = writeBatch(state.app.db);
+                        const q = query(collection(state.app.db, `${state.app.publicDataPath}/scores`));
+                        const snapshot = await getDocs(q);
+                        
+                        snapshot.forEach(docSnap => {
+                            // Hapus field juri dari dokumen nilai
+                            batch.update(docSnap.ref, { [id]: deleteField() });
+                        });
+                        await batch.commit();
+                    }
+                    
+                    hideModal();
+                } catch (error)
+ {
+                    console.error("Error deleting data:", error);
+                    alert("Gagal menghapus data.");
+                }
+            });
+            
+            // Ubah tombol simpan menjadi tombol hapus
+            DOMElements.modalSaveBtn.className = DOMElements.modalSaveBtn.getAttribute('class_base') + " bg-red-600 hover:bg-red-700";
+            DOMElements.modalSaveBtn.textContent = "Ya, Hapus";
+        }
+        
+        // Modal: Token
+        function openTokenModal() {
+            state.ui.currentModal.type = 'token';
+            const title = "Masukkan Token";
+            const content = `
+                <p class="text-gray-600 mb-4">Silakan masukkan token dari Admin untuk membuka kunci nilai.</p>
+                <div>
+                    <input type="text" id="modal-input-token" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Token...">
+                    <p id="modal-token-error" class="text-red-500 text-sm mt-2 hidden">Token salah!</p>
+                </div>
+            `;
+            showModal(title, content, handleSubmitToken);
+            DOMElements.modalSaveBtn.textContent = "Kirim";
+        }
+        
+        function handleSubmitToken() {
+            const token = document.getElementById('modal-input-token').value;
+            if (token && token === state.data.token) {
+                setFormLocked(false);
+                hideModal();
+                alert("Token diterima. Anda bisa mengubah nilai. Jangan lupa simpan kembali.");
+            } else {
+                document.getElementById('modal-token-error').classList.remove('hidden');
+            }
+        }
+
+        // --- Logika Cetak PDF ---
+        
+        function printParticipantPDF() {
+            const { selectedPesertaId, selectedJuriName } = state.ui;
+            if (!selectedPesertaId) {
+                alert("Silakan pilih peserta terlebih dahulu.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const participant = state.data.peserta.get(selectedPesertaId);
+            const participantName = participant ? participant.name : 'N/A';
+            const juriName = selectedJuriName || 'Juri';
+
+            doc.setFontSize(18);
+            doc.text(`Formulir Penilaian PBB`, 105, 20, { align: 'center' });
+            
+            doc.setFontSize(12);
+            doc.text(`Peserta: ${participantName}`, 14, 30);
+            doc.text(`Penilai: ${juriName}`, 14, 36);
+
+            const tableData = [];
+            let total = 0;
+
+            state.data.kriteria.forEach(item => {
+                const radios = document.getElementsByName(item.id);
+                let score = 0;
+                for (const radio of radios) {
+                    if (radio.checked) {
+                        score = parseInt(radio.value) || 0;
+                        break;
+                    }
+                }
+                tableData.push([item.name, score]);
+                total += score;
+            });
+            
+            doc.autoTable({
+                head: [['Aspek yang Dinilai', 'Nilai']],
+                body: tableData,
+                startY: 45,
+                headStyles: { fillColor: [45, 55, 72] }, // slate-800
+                foot: [[{ content: 'TOTAL', styles: { halign: 'right', fontStyle: 'bold'} }, { content: total, styles: { fontStyle: 'bold' } }]],
+                footStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0] }
+            });
+
+            doc.save(`Penilaian_${participantName}_${juriName}.pdf`);
+        }
+        
+        function printRecapPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFontSize(18);
+            doc.text(`Rekapitulasi Nilai PBB`, 105, 20, { align: 'center' });
+
+            const juriArray = Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name));
+            const pesertaArray = Array.from(state.data.peserta.values());
+
+            const tableHead = ['Nama Peserta'];
+            juriArray.forEach(j => tableHead.push(j.name));
+            tableHead.push('Total Akhir');
+            
+            const tableData = [];
+            pesertaArray.forEach(p => {
+                const scores = state.data.scores.get(p.id) || {};
+                let total = 0;
+                const row = [p.name];
+                
+                juriArray.forEach(j => {
+                    const juriScore = scores[j.id] ? scores[j.id].total : 0;
+                    total += juriScore;
+                    row.push(juriScore);
+                });
+                row.push(total);
+                tableData.push(row);
+            });
+            
+            // Urutkan berdasarkan total nilai tertinggi
+            tableData.sort((a, b) => b[b.length - 1] - a[a.length - 1]);
+
+            doc.autoTable({
+                head: [tableHead],
+                body: tableData,
+                startY: 30,
+                headStyles: { fillColor: [45, 55, 72] } // slate-800
+            });
+
+            doc.save(`Rekapitulasi_Nilai_PBB.pdf`);
+        }
+        
+        // --- Jalankan Aplikasi ---
+        window.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
 </body>
 </html>
