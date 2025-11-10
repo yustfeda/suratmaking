@@ -1,1766 +1,1022 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-gray-100">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Penilaian PBB</title>
-    <!-- 1. TailwindCSS -->
+    <title>Sistem Ujian Sekolah Realtime (Realtime Database)</title>
+    <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 2. Google Font: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- 3. PDF Generation Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
-    <!-- 4. Konfigurasi Kustom Tailwind -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    transitionProperty: {
-                        'width': 'width',
-                        'transform': 'transform',
-                    }
-                }
-            }
-        }
-    </script>
-
+    <!-- Konfigurasi Font Inter -->
     <style>
-        /* Styling untuk scrollbar yang lebih elegan */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Warna latar belakang abu-abu muda */
+        }
+        .card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        /* Custom scrollbar for better aesthetics */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 8px;
         }
         ::-webkit-scrollbar-track {
             background: #f1f1f1;
-            border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb {
-            background: #a8a8a8;
-            border-radius: 10px;
+            background: #cbd5e1;
+            border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #7a7a7a;
-        }
-
-        /* Styling untuk tabel penilaian */
-        .scoring-table th, .scoring-table td {
-            border: 1px solid #d1d5db; /* border-gray-300 */
-            padding: 8px; /* p-2 */
-            text-align: center;
-            vertical-align: middle;
-        }
-        .scoring-table thead th {
-            background-color: #f3f4f6; /* bg-gray-100 */
-            font-weight: 600; /* font-semibold */
-        }
-        /* PERBAIKAN: Pastikan warna kolom sesuai permintaan */
-        .col-cukup { background-color: #fef9c3; } /* bg-yellow-100 */
-        .col-baik { background-color: #dbeafe; } /* bg-blue-100 */
-        .col-sangat-baik { background-color: #dcfce7; } /* bg-green-100 */
-
-        .scoring-table input[type="radio"] {
-            width: 1.25rem; /* w-5 */
-            height: 1.25rem; /* h-5 */
-            margin: 0 auto;
-            display: block;
-            cursor: pointer;
-        }
-        
-        /* State untuk radio button kustom */
-        .radio-cell {
-            position: relative;
-        }
-        .radio-cell input[type="radio"]:checked + label {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-        .radio-cell label {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            opacity: 0;
-            transition: all 0.2s ease-in-out;
-            background-color: rgba(0, 0, 0, 0.1);
-            z-index: 10;
-            cursor: pointer;
-        }
-        .radio-cell input[type="radio"] {
-            position: relative;
-            z-index: 20;
-        }
-        
-        /* Helper class */
-        .hidden {
-            display: none;
-        }
-
-        /* Styling Modal */
-        #modal-backdrop {
-            transition: opacity 0.3s ease;
-        }
-        #modal-container {
-            transition: transform 0.3s ease, opacity 0.3s ease;
+            background: #94a3b8;
         }
     </style>
 </head>
-<body class="h-full font-sans antialiased">
+<body class="min-h-screen antialiased">
 
-    <!-- [1] Halaman Login -->
-    <div id="login-page" class="flex items-center justify-center min-h-screen bg-gray-100">
-        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl">
-            <h2 class="text-3xl font-bold text-center text-gray-900">Login Penilaian</h2>
-            <div>
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input type="password" id="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password...">
+    <!-- Kontainer Utama Aplikasi -->
+    <div id="app" class="max-w-7xl mx-auto p-4 md:p-8">
+        <header class="bg-white p-6 rounded-xl mb-8 card">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800">Sistem Ujian Sekolah Online</h1>
+                <div class="mt-4 md:mt-0 flex items-center space-x-4">
+                    <span id="user-display" class="text-sm font-medium text-gray-600 bg-gray-100 p-2 rounded-lg">Memuat...</span>
+                    <button id="logout-btn" onclick="app.logout()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">Ganti Peran</button>
+                </div>
             </div>
-            <button id="login-button" class="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition duration-300">Login</button>
-            <p id="login-error" class="text-red-500 text-sm mt-3 text-center hidden">Password salah!</p>
+            <p id="user-id-display" class="text-xs text-gray-500 mt-2">UID: -</p>
+        </header>
+
+        <!-- Loading State -->
+        <div id="loading" class="text-center p-12 bg-white rounded-xl card">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Memuat konfigurasi dan otentikasi...</p>
         </div>
-    </div>
 
-    <!-- [2] Dashboard Aplikasi Utama (Hidden by default) -->
-    <div id="app-dashboard" class="relative flex h-full hidden">
+        <!-- Role Selector (Hanya untuk demonstrasi sederhana) -->
+        <div id="role-selector" class="hidden max-w-md mx-auto p-8 bg-white rounded-xl card text-center">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Pilih Peran Anda</h2>
+            <div class="space-y-4">
+                <button onclick="app.setRole('admin1')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 transform hover:scale-[1.02]">Admin Utama (Kelola Jadwal & Rekap Nilai)</button>
+                <button onclick="app.setRole('admin2')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 transform hover:scale-[1.02]">Guru/Proktor (Kelola Soal & Rekap Mapel)</button>
+                <button onclick="app.setRole('student')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 transform hover:scale-[1.02]">Siswa (Ambil Ujian)</button>
+            </div>
+            <p class="text-sm text-gray-500 mt-6">Peran diatur secara lokal untuk demonstrasi. Di aplikasi nyata, ini diatur melalui proses masuk.</p>
+        </div>
 
-        <!-- Sidebar Backdrop (Mobile) -->
-        <div id="sidebar-backdrop" class="fixed inset-0 bg-gray-900/50 z-30 lg:hidden hidden" onclick="toggleSidebar(false)"></div>
+        <!-- Halaman Admin Utama (Admin 1) -->
+        <div id="admin1-panel" class="hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Panel Admin Utama</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Kelola Jadwal Ujian -->
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl card h-fit">
+                    <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Kelola Jadwal Ujian</h3>
+                    <form id="schedule-form" class="space-y-4">
+                        <input type="text" id="subject-id" placeholder="ID Mapel (misal: MTK)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <input type="text" id="subject-name" placeholder="Nama Mata Pelajaran" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <input type="date" id="subject-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <input type="time" id="subject-time-start" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <input type="time" id="subject-time-end" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <select id="subject-proctor" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Pilih Proktor/Admin 2 (Opsional)</option>
+                        </select>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition duration-150">Simpan Jadwal</button>
+                    </form>
+                </div>
 
-        <!-- Sidebar -->
-        <nav id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-slate-900 text-gray-300 flex flex-col z-40 transition-transform -translate-x-full lg:translate-x-0">
-            <!-- Sidebar Header -->
-            <div class="flex items-center justify-center h-16 px-4 shadow-md shadow-black/20">
-                <h1 class="text-xl font-bold text-white">Penilaian PBB</h1>
+                <!-- Daftar Jadwal & Proktor -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl card">
+                    <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Jadwal Ujian Aktif</h3>
+                    <div id="subjects-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <p class="text-gray-500">Memuat jadwal...</p>
+                    </div>
+
+                    <h3 class="text-xl font-semibold mt-8 mb-4 text-blue-700 border-b pb-2">Daftar Admin 2 / Proktor</h3>
+                    <div id="proctor-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                        <p class="text-gray-500">Memuat proktor...</p>
+                    </div>
+
+                    <button onclick="app.openProctorModal()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Tambah Admin 2 / Proktor Baru</button>
+                </div>
             </div>
 
-            <!-- Menu Navigasi (Dinamis berdasarkan role) -->
-            <div id="sidebar-nav" class="flex-1 p-4 space-y-2 overflow-y-auto">
-                <!-- Nav untuk Juri -->
-                <a href="#penilaian" class="nav-link nav-juri hidden" data-page="penilaian">
-                    <!-- Heroicon: Clipboard Document List -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 5.25 6h.008a2.25 2.25 0 0 1 2.242 2.135 48.423 48.423 0 0 0 1.123.08m-5.801 0c.065.21.1.433.1.664v.005c0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75v-.005a2.25 2.25 0 0 0-.1-.664M5.25 19.5h13.5a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 5.25 6h.008a2.25 2.25 0 0 1 2.242 2.135 48.423 48.423 0 0 0 1.123.08M5.25 19.5h13.5a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M18 19.5v-7.5" /></svg>
-                    <span>Penilaian</span>
-                </a>
-                
-                <!-- Nav untuk Admin -->
-                <a href="#dashboard" class="nav-link nav-admin hidden" data-page="dashboard">
-                    <!-- Heroicon: Home -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
-                    <span>Dashboard</span>
-                </a>
-                <a href="#peserta" class="nav-link nav-admin hidden" data-page="peserta">
-                    <!-- Heroicon: Users -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.003c0 1.113.285 2.16.786 3.07M15 19.128a2.25 2.25 0 0 1-2.25-2.25c0-1.113.285-2.16.786-3.07M15 19.128v-.003a2.25 2.25 0 0 0-2.25-2.25c0 1.113-.285 2.16-.786 3.07M9 15a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 9 15Zm-6 0a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 3 15Z" /></svg>
-                    <span>Kelola Peserta</span>
-                </a>
-                <a href="#juri" class="nav-link nav-admin hidden" data-page="juri">
-                    <!-- Heroicon: User Circle -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-                    <span>Kelola Juri</span>
-                </a>
-                <a href="#kriteria" class="nav-link nav-admin hidden" data-page="kriteria">
-                    <!-- Heroicon: List Bullet -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
-                    <span>Kelola Kriteria</span>
-                </a>
-                <a href="#konfigurasi" class="nav-link nav-admin hidden" data-page="konfigurasi">
-                    <!-- Heroicon: Cog 6 Tooth -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.214 1.465l-.928.798c-.144.123-.24.29-.283.473l-.03.205c-.018.124-.018.25 0 .374l.03.206c.043.183.138.35.282.473l.928.798a1.125 1.125 0 0 1 .214 1.465l-1.296 2.247a1.125 1.125 0 0 1-1.37.49l-1.217-.456c-.354-.133-.75-.072-1.075.124a6.57 6.57 0 0 1-.22.127c-.332.183-.582.496-.645.87l-.213 1.281c-.09.542-.56.94-1.11.94h-2.593c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.063-.374-.313-.686-.645-.87a6.52 6.52 0 0 1-.22-.127c-.324-.196-.72-.257-1.075-.124l-1.217.456a1.125 1.125 0 0 1-1.37-.49l-1.296-2.247a1.125 1.125 0 0 1 .214-1.465l.928-.798c.144-.123.24-.29.283-.473l.03-.205c.018-.124.018.25 0-.374l-.03-.206c-.043-.183-.138.35-.282.473l-.928-.798a1.125 1.125 0 0 1-.214-1.465l1.296-2.247a1.125 1.125 0 0 1 1.37-.49l1.217.456c.354.133.75.072 1.075.124.072-.044.146-.087.22-.127.332-.183.582.496.645-.87l.213-1.281Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-                    <span>Konfigurasi Nilai</span>
-                </a>
-                <a href="#token" class="nav-link nav-admin hidden" data-page="token">
-                    <!-- Heroicon: Key -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.967-.63 1.563-.63H21Z" /></svg>
-                    <span>Token Edit</span>
-                </a>
-                <a href="#rekap" class="nav-link nav-admin hidden" data-page="rekap">
-                    <!-- Heroicon: Document Chart Bar -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h12A2.25 2.25 0 0 0 20.25 14.25V3M3.75 21h16.5M3.75 3h16.5M3.75 9h16.5M3.75 15h16.5M8.25 12h7.5M12 15h.008" /></svg>
-                    <span>Rekap Nilai</span>
-                </a>
+            <!-- Rekap Nilai Keseluruhan -->
+            <div class="mt-8 bg-white p-6 rounded-xl card">
+                <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Rekap Nilai Siswa Keseluruhan</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Siswa (UID)</th>
+                                <th id="recap-header-subjects" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Mata Pelajaran</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recap-body" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="2" class="px-3 py-4 text-sm text-gray-500">Memuat rekap data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Guru/Proktor (Admin 2) -->
+        <div id="admin2-panel" class="hidden">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">Panel Guru / Proktor</h2>
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg" role="alert">
+                <p class="font-bold">Mapel Anda:</p>
+                <p id="proctor-subject-info">Silakan pilih mapel yang Anda kelola di Panel Admin Utama.</p>
             </div>
             
-            <!-- CSS untuk link navigasi -->
-            <style>
-                .nav-link {
-                    display: flex;
-                    align-items: center;
-                    padding: 0.75rem 1rem;
-                    border-radius: 0.5rem;
-                    font-weight: 500;
-                    transition: background-color 0.2s, color 0.2s;
-                }
-                .nav-link:hover {
-                    background-color: #334155; /* bg-slate-700 */
-                    color: #f1f5f9; /* text-slate-100 */
-                }
-                .nav-link.active {
-                    background-color: #0ea5e9; /* bg-sky-500 */
-                    color: white;
-                }
-                .nav-link svg {
-                    margin-right: 0.75rem; /* mr-3 */
-                    flex-shrink: 0;
-                }
-            </style>
-        </nav>
-
-        <!-- Main Content -->
-        <div id="main-content" class="flex-1 flex flex-col lg:ml-64">
-            
-            <!-- App Header -->
-            <header id="app-header" class="sticky top-0 bg-white shadow-md z-20">
-                <div class="flex items-center justify-between h-16 px-4 md:px-8">
-                    <!-- Tombol Hamburger (Mobile) -->
-                    <button id="hamburger-btn" class="text-gray-700 lg:hidden" onclick="toggleSidebar(true)">
-                        <!-- Heroicon: Bars 3 -->
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
-                    </button>
-                    <!-- Spacer -->
-                    <div class="flex-1"></div>
-                    <!-- Info User & Logout -->
-                    <div class="flex items-center space-x-4">
-                        <span id="user-status" class="text-sm font-medium text-gray-600"></span>
-                        <button id="logout-button" class="text-sm font-medium text-red-500 hover:text-red-700 transition flex items-center">
-                            <!-- Heroicon: Arrow Right On Rectangle -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" /></svg>
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <!-- Page Container -->
-            <main id="page-container" class="flex-1 p-4 md:p-8 overflow-y-auto">
-                
-                <!-- Halaman: Pilih Juri (Juri) -->
-                <div id="page-pilih-juri" class="page-content hidden max-w-lg mx-auto bg-white p-8 rounded-lg shadow-xl">
-                    <h2 class="text-2xl font-semibold text-center mb-6">Pilih Sesi Juri</h2>
-                    <p class="text-center text-gray-600 mb-6">Silakan pilih sesi juri yang akan Anda gunakan untuk menilai:</p>
-                    <div id="juri-selection-list" class="flex flex-col space-y-4">
-                        <!-- Pilihan Juri akan di-generate oleh JS -->
-                        <p class="text-center text-gray-500">Memuat daftar juri...</p>
-                    </div>
-                </div>
-                
-                <!-- Halaman: Penilaian (Juri) -->
-                <div id="page-penilaian" class="page-content hidden">
-                    <div class="bg-white p-6 rounded-lg shadow-xl">
-                        <h2 id="penilaian-title" class="text-2xl font-bold text-gray-800 mb-6">Formulir Penilaian</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Input Soal Ujian -->
+                <div class="bg-white p-6 rounded-xl card h-fit">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Input Soal Ujian (<span id="q-count">0</span>/55)</h3>
+                    <form id="question-form" class="space-y-4">
+                        <input type="number" id="q-number" placeholder="Nomor Soal (1-55)" min="1" max="55" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                        <textarea id="q-text" placeholder="Teks Soal" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required></textarea>
+                        <!-- Pilihan Jawaban (A-E) -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="opt-a" placeholder="Pilihan A" class="p-3 border rounded-lg" required>
+                            <input type="text" id="opt-b" placeholder="Pilihan B" class="p-3 border rounded-lg" required>
+                            <input type="text" id="opt-c" placeholder="Pilihan C" class="p-3 border rounded-lg" required>
+                            <input type="text" id="opt-d" placeholder="Pilihan D" class="p-3 border rounded-lg" required>
+                        </div>
+                        <input type="text" id="opt-e" placeholder="Pilihan E (Opsional)" class="p-3 border rounded-lg">
                         
-                        <div class="mb-6 max-w-sm">
-                            <label for="participant-select" class="block text-sm font-medium text-gray-700 mb-2">Pilih Peserta</label>
-                            <select id="participant-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">-- Pilih Peserta --</option>
-                            </select>
-                        </div>
-
-                        <div id="locked-warning" class="hidden p-4 mb-4 bg-yellow-100 border-l-4 border-yellow-500 rounded-lg">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <!-- Heroicon: Exclamation Triangle -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-yellow-700"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="font-medium text-yellow-800">Nilai Terkunci!</p>
-                                    <p class="text-sm text-yellow-700">Nilai telah disimpan. Untuk mengubah, silakan minta token dari Admin.</p>
-                                    <button id="request-token-btn" class="mt-2 text-sm text-blue-600 font-medium hover:underline">Masukkan Token untuk Ubah Nilai</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="overflow-x-auto">
-                            <fieldset id="scoring-fieldset">
-                                <table id="scoring-table-container" class="w-full min-w-[900px] border-collapse scoring-table">
-                                    <!-- Header dan Body tabel akan di-generate oleh JS -->
-                                    <thead id="scoring-table-head"></thead>
-                                    <tbody id="scoring-table-body"></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th colspan="10" class="text-right font-bold text-lg">TOTAL NILAI</th>
-                                            <td id="total-score" class="font-bold text-lg">0</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </fieldset>
-                        </div>
-
-                        <div class="mt-8 flex flex-col md:flex-row gap-4">
-                            <button id="save-score-btn" class="bg-green-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition w-full md:w-auto flex items-center justify-center">
-                                <!-- Heroicon: Check Circle -->
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                                Simpan & Kunci Nilai
-                            </button>
-                            <button id="print-score-btn" class="bg-blue-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition w-full md:w-auto flex items-center justify-center">
-                                <!-- Heroicon: Printer -->
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6 13.5m0 0l-.675.329a.75.75 0 0 0-.364 1.118l1.07 1.285a.75.75 0 0 0 1.118-.364l.675-.329M6 13.5l6 6m6-6l-6 6m0 0l-6-6m6 6l6-6M6 13.5l6-6m6 6l-6-6m0 0l-6 6m6-6l6 6m-6 6l6-6m-6 6l-6 6" /></svg>
-                                Cetak PDF
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Halaman: Dashboard (Admin) -->
-                <div id="page-dashboard" class="page-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Dashboard Admin</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
-                            <!-- Heroicon: Users -->
-                            <div class="p-3 bg-blue-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-blue-600"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.003c0 1.113.285 2.16.786 3.07M15 19.128a2.25 2.25 0 0 1-2.25-2.25c0-1.113.285-2.16.786-3.07M15 19.128v-.003a2.25 2.25 0 0 0-2.25-2.25c0 1.113-.285 2.16-.786 3.07M9 15a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 9 15Zm-6 0a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 3 15Z" /></svg></div>
-                            <div>
-                                <p class="text-sm text-gray-500">Total Peserta</p>
-                                <p id="dash-total-peserta" class="text-2xl font-bold">0</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
-                            <!-- Heroicon: User Circle -->
-                            <div class="p-3 bg-green-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-green-600"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg></div>
-                            <div>
-                                <p class="text-sm text-gray-500">Total Juri</p>
-                                <p id="dash-total-juri" class="text-2xl font-bold">0</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
-                            <!-- Heroicon: List Bullet -->
-                            <div class="p-3 bg-yellow-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-yellow-600"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12M8.25 17.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg></div>
-                            <div>
-                                <p class="text-sm text-gray-500">Total Kriteria</p>
-                                <p id="dash-total-kriteria" class="text-2xl font-bold">0</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-lg flex items-center space-x-4">
-                            <!-- Heroicon: Clipboard Document Check -->
-                            <div class="p-3 bg-indigo-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-indigo-600"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg></div>
-                            <div>
-                                <p class="text-sm text-gray-500">Nilai Masuk</p>
-                                <p id="dash-total-nilai" class="text-2xl font-bold">0</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Halaman: Kelola Peserta (Admin) -->
-                <div id="page-peserta" class="page-content hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Kelola Peserta</h2>
-                        <button id="add-peserta-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
-                            <!-- Heroicon: Plus -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                            Tambah Peserta
-                        </button>
-                    </div>
-                    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Peserta / No. Undi</th>
-                                    <th class="p-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="peserta-table-body" class="divide-y divide-gray-200">
-                                <!-- Data di-generate JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                        <select id="q-key" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Pilih Kunci Jawaban (A/B/C/D/E)</option>
+                            <option value="a">A</option><option value="b">B</option>
+                            <option value="c">C</option><option value="d">D</option>
+                            <option value="e">E</option>
+                        </select>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Simpan Soal</button>
+                    </form>
+                    <button onclick="app.clearQuestions()" class="w-full mt-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition duration-150">Hapus Semua Soal Mapel Ini</button>
                 </div>
                 
-                <!-- Halaman: Kelola Juri (Admin) -->
-                <div id="page-juri" class="page-content hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Kelola Juri</h2>
-                        <button id="add-juri-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
-                            <!-- Heroicon: Plus -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                            Tambah Juri
-                        </button>
+                <!-- Daftar Soal -->
+                <div class="bg-white p-6 rounded-xl card">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Daftar Soal (<span id="q-list-count">0</span>)</h3>
+                    <div id="questions-list" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        <p class="text-gray-500">Daftar soal akan muncul di sini.</p>
                     </div>
-                    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Juri</th>
-                                    <th class="p-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="juri-table-body" class="divide-y divide-gray-200">
-                                <!-- Data di-generate JS -->
-                            </tbody>
-                        </table>
+                </div>
+            </div>
+
+            <!-- Rekap Nilai Siswa per Mapel -->
+            <div class="mt-8 bg-white p-6 rounded-xl card">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Rekap Nilai Siswa Mapel: <span id="recap-mapel-title"></span></h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa (UID)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Submit</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jawaban Benar</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai (Skor/Total)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin2-recap-body" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500">Menunggu data hasil ujian...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Siswa (Student) -->
+        <div id="student-panel" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Profil & Pengumuman -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white p-6 rounded-xl card">
+                        <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Profil Siswa</h3>
+                        <p><strong>UID:</strong> <span id="student-profile-uid" class="text-xs text-gray-500"></span></p>
+                        <p class="mt-2"><strong>Nama:</strong> <input type="text" id="student-name-input" placeholder="Isi Nama Anda" class="w-full p-2 border rounded-lg mt-1 focus:ring-emerald-500 focus:border-emerald-500"></p>
+                        <button onclick="app.saveStudentName()" class="w-full mt-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 rounded-lg transition duration-150">Simpan Nama</button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl card">
+                        <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Pengumuman Hari Ini</h3>
+                        <div id="announcements-list" class="space-y-3 max-h-60 overflow-y-auto">
+                            <p class="text-sm text-gray-700">Tidak ada pengumuman hari ini.</p>
+                            <!-- Jadwal hari ini akan ditampilkan di sini -->
+                        </div>
                     </div>
                 </div>
 
-                <!-- Halaman: Kelola Kriteria (Admin) -->
-                <div id="page-kriteria" class="page-content hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Kelola Kriteria Penilaian</h2>
-                        <button id="add-kriteria-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
-                            <!-- Heroicon: Plus -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                            Tambah Kriteria
-                        </button>
+                <!-- Soal Per Hari (Ujian Aktif) -->
+                <div id="exam-container" class="lg:col-span-2 bg-white p-6 rounded-xl card">
+                    <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Ujian Hari Ini</h3>
+                    <div id="active-exams-list" class="space-y-4">
+                        <p class="text-gray-500">Memuat ujian yang tersedia hari ini...</p>
                     </div>
-                    <div class="bg-white shadow-xl rounded-lg overflow-hidden">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Kriteria</th>
-                                    <th class="p-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kriteria-table-body" class="divide-y divide-gray-200">
-                                <!-- Data di-generate JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- Halaman: Konfigurasi Nilai (Admin) -->
-                <div id="page-konfigurasi" class="page-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Konfigurasi Nilai</h2>
-                    <div class="bg-white shadow-xl rounded-lg p-6">
-                        <p class="text-gray-600 mb-6">Atur nilai yang akan muncul di radio button pada formulir juri. Pastikan semua 9 nilai terisi dengan angka.</p>
-                        <form id="config-form" class="space-y-6">
-                            <!-- Grup Cukup -->
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Kelompok: Cukup (Warna Kuning)</h3>
-                                <div class="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label for="config-cukup-1" class="block text-sm font-medium text-gray-600">Nilai 1</label>
-                                        <input type="number" id="config-cukup-1" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="config-cukup-2" class="block text-sm font-medium text-gray-600">Nilai 2</label>
-                                        <input type="number" id="config-cukup-2" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="config-cukup-3" class="block text-sm font-medium text-gray-600">Nilai 3</label>
-                                        <input type="number" id="config-cukup-3" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Grup Baik -->
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Kelompok: Baik (Warna Biru)</h3>
-                                <div class="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label for="config-baik-1" class="block text-sm font-medium text-gray-600">Nilai 1</label>
-                                        <input type="number" id="config-baik-1" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="config-baik-2" class="block text-sm font-medium text-gray-600">Nilai 2</label>
-                                        <input type="number" id="config-baik-2" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="config-baik-3" class="block text-sm font-medium text-gray-600">Nilai 3</label>
-                                        <input type="number" id="config-baik-3" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Grup Sangat Baik -->
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Kelompok: Sangat Baik (Warna Hijau)</h3>
-                                <div class="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label for="config-sangat_baik-1" class="block text-sm font-medium text-gray-600">Nilai 1</label>
-                                        <input type="number" id="config-sangat_baik-1" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="config-sangat_baik-2" class="block text-sm font-medium text-gray-600">Nilai 2</label>
-                                        <input type="number" id="config-sangat_baik-2" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                    <div>
-                                        <label for="config-sangat_baik-3" class="block text-sm font-medium text-gray-600">Nilai 3</label>
-                                        <input type="number" id="config-sangat_baik-3" class="config-input mt-1 w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="pt-4">
-                                <button id="save-config-btn" type="submit" class="bg-green-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition flex items-center">
-                                    <!-- Heroicon: Check -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                                    Simpan Konfigurasi
-                                </button>
-                            </div>
+
+                    <!-- Area Ujian -->
+                    <div id="exam-area" class="hidden mt-6 pt-4 border-t border-gray-200">
+                        <h4 id="exam-title" class="text-2xl font-bold mb-4 text-indigo-700"></h4>
+                        <p id="exam-timer" class="text-red-600 text-lg font-semibold mb-4"></p>
+                        <form id="quiz-form" class="space-y-6">
+                            <!-- Soal akan di-inject di sini -->
                         </form>
+                        <button onclick="app.submitExam()" id="submit-btn" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-150">Kumpulkan Jawaban</button>
+                    </div>
+                    
+                    <div id="exam-submitted" class="hidden mt-6 p-6 bg-green-50 text-green-700 rounded-lg">
+                        <h4 class="font-bold text-xl mb-2">Ujian Selesai!</h4>
+                        <p>Jawaban Anda telah berhasil dikumpulkan. Nilai akan diumumkan oleh Admin.</p>
                     </div>
                 </div>
-
-                <!-- Halaman: Token Edit (Admin) -->
-                <div id="page-token" class="page-content hidden">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6">Token Izin Ubah Nilai</h2>
-                    <div class="bg-white shadow-xl rounded-lg p-6 max-w-lg">
-                         <p class="text-gray-600 mb-4">Gunakan tombol ini untuk membuat token baru. Berikan token ini kepada juri yang ingin mengubah nilai yang sudah terkunci.</p>
-                        <button id="generate-token-btn" class="bg-green-600 text-white py-2.5 px-6 rounded-lg font-semibold shadow-lg hover:bg-green-700 transition flex items-center">
-                            <!-- Heroicon: Sparkles -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" /></svg>
-                            Buat Token Baru
-                        </button>
-                        <div class="mt-6">
-                            <p class="text-gray-700">Token Aktif Saat Ini:</p>
-                            <p id="current-token-display" class="text-3xl font-bold text-blue-700 bg-gray-100 p-4 rounded-lg mt-2 text-center tracking-widest">Belum ada token</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Halaman: Rekap Nilai (Admin) -->
-                <div id="page-rekap" class="page-content hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Rekapitulasi Nilai</h2>
-                        <button id="print-recap-btn" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold shadow-lg hover:bg-blue-700 transition flex items-center">
-                            <!-- Heroicon: Printer -->
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0 1 10.56 0m-10.56 0L6 13.5m0 0l-.675.329a.75.75 0 0 0-.364 1.118l1.07 1.285a.75.75 0 0 0 1.118-.364l.675-.329M6 13.5l6 6m6-6l-6 6m0 0l-6-6m6 6l6-6M6 13.5l6-6m6 6l-6-6m0 0l-6 6m6-6l6 6m-6 6l6-6m-6 6l-6 6" /></svg>
-                            Cetak PDF Rekap
-                        </button>
-                    </div>
-                    <div class="bg-white shadow-xl rounded-lg overflow-x-auto">
-                        <table class="w-full min-w-[700px]">
-                            <thead id="recap-table-head" class="bg-gray-50">
-                                <!-- Header Rekap di-generate JS -->
-                            </thead>
-                            <tbody id="recap-table-body" class="divide-y divide-gray-200">
-                                <!-- Data Rekap di-generate JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </main>
+            </div>
         </div>
+
     </div>
 
-    <!-- [3] Modal Generik untuk CRUD -->
-    <div id="modal-backdrop" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-40 hidden opacity-0"></div>
-    <div id="modal-container" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden opacity-0 transform scale-95">
-        <div id="app-modal" class="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden">
-            <div class="flex justify-between items-center p-5 bg-gray-50 border-b border-gray-200">
-                <h3 id="modal-title" class="text-xl font-semibold text-gray-800">Modal Title</h3>
-                <button id="modal-close-btn" class="text-gray-400 hover:text-gray-600">
-                    <!-- Heroicon: X Mark -->
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
-                </button>
-            </div>
-            <div id="modal-body" class="p-6">
-                <!-- Konten Modal di-generate JS -->
-            </div>
-            <div id="modal-footer" class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
-                <button id="modal-cancel-btn" class_base="py-2 px-4 rounded-lg font-medium transition" class="bg-gray-200 text-gray-700 hover:bg-gray-300">Batal</button>
-                <button id="modal-save-btn" class_base="py-2 px-4 rounded-lg font-medium text-white transition shadow-sm" class="bg-blue-600 hover:bg-blue-700">Simpan</button>
-            </div>
+    <!-- Modal untuk Menambah Admin 2 -->
+    <div id="proctor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white p-8 rounded-xl card max-w-lg w-full">
+            <h3 class="text-xl font-bold mb-4">Tambahkan Admin 2 (Proktor)</h3>
+            <form id="add-proctor-form" class="space-y-4">
+                <input type="text" id="proctor-uid" placeholder="UID Admin 2 (Untuk Demo: Random ID)" class="w-full p-3 border rounded-lg" required>
+                <input type="text" id="proctor-name" placeholder="Nama Proktor/Guru" class="w-full p-3 border rounded-lg" required>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">Tambahkan Proktor</button>
+            </form>
+            <button onclick="app.closeProctorModal()" class="w-full mt-4 text-gray-600 hover:text-gray-800 py-2">Batal</button>
         </div>
     </div>
 
 
-    <!-- Firebase SDK -->
     <script type="module">
-        // 5. Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            signInWithCustomToken, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            doc, 
-            getDoc, 
-            setDoc, 
-            updateDoc, 
-            deleteDoc,
-            onSnapshot, 
-            collection, 
-            query,
-            addDoc,
-            serverTimestamp,
-            writeBatch,
-            getDocs
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Konfigurasi Firebase Anda
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'projectone-4016f';
+        // Menggunakan konfigurasi default untuk demo Realtime Database
         const firebaseConfig = {
-          apiKey: "AIzaSyDVh9eNxlVaZFuun4SMbKs-PuBdSFCSVi4",
-          authDomain: "nilai-pbb.firebaseapp.com",
-          databaseURL: "https://nilai-pbb-default-rtdb.firebaseio.com",
-          projectId: "nilai-pbb",
-          storageBucket: "nilai-pbb.firebasestorage.app",
-          messagingSenderId: "905394178115",
-          appId: "1:905394178115:web:3d0ab13ccb144667b62cf6"
+            apiKey: "", // Disediakan oleh platform di runtime
+            authDomain: `${appId}.firebaseapp.com`,
+            databaseURL: `https://${appId}-default-rtdb.asia-southeast1.firebasedatabase.app`, // Contoh URL
+            projectId: appId,
         };
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
-        // --- GLOBAL STATE ---
-        const state = {
-            app: {
-                db: null,
-                auth: null,
-                userId: null,
-                currentUserRole: null, // 'admin' or 'juri'
-                activePage: 'dashboard',
-                appId: typeof __app_id !== 'undefined' ? __app_id : 'nilai-pbb-default',
-                get publicDataPath() {
-                    return `/artifacts/${this.appId}/public/data`;
-                }
-            },
-            data: {
-                peserta: new Map(),
-                juri: new Map(),
-                kriteria: new Map(),
-                scores: new Map(),
-                config: {
-                    // --- PERUBAHAN ---
-                    // Nilai default diperbarui sesuai permintaan user
-                    cukup: [20, 30, 35],
-                    baik: [35, 40, 45],
-                    sangat_baik: [50, 55, 58]
-                    // --- AKHIR PERUBAHAN ---
-                },
-                token: null
-            },
-            ui: {
-                selectedJuriId: null,
-                selectedJuriName: null,
-                selectedPesertaId: null,
-                isFormLocked: false,
-                isSidebarOpen: false,
-                currentModal: {
-                    type: null, // 'peserta', 'juri', 'kriteria', 'delete', 'token'
-                    id: null,
-                    onSave: null
-                }
-            },
-            listeners: [] // Firebase listener unsubscribe functions
+        // Menggunakan versi Firebase standar 11.6.1 untuk stabilitas platform
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, push, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        // Global Firebase instances
+        let appInstance, db, auth, userId = null;
+        let userRole = localStorage.getItem('userRole') || null;
+        let userName = localStorage.getItem('userName') || '';
+
+        // State global
+        let allSubjects = {};
+        let allUsers = {};
+        let allResults = {};
+        let proctorSubjectId = null; // Mapel yang dikelola Admin 2
+        let currentExam = null; // Mapel ujian yang sedang dikerjakan siswa
+        let examTimerInterval = null;
+
+        const DOM = {
+            loading: document.getElementById('loading'),
+            roleSelector: document.getElementById('role-selector'),
+            admin1Panel: document.getElementById('admin1-panel'),
+            admin2Panel: document.getElementById('admin2-panel'),
+            studentPanel: document.getElementById('student-panel'),
+            userDisplay: document.getElementById('user-display'),
+            userIdDisplay: document.getElementById('user-id-display'),
+            // Admin 1 elements
+            scheduleForm: document.getElementById('schedule-form'),
+            proctorSelect: document.getElementById('subject-proctor'),
+            subjectsList: document.getElementById('subjects-list'),
+            proctorList: document.getElementById('proctor-list'),
+            proctorModal: document.getElementById('proctor-modal'),
+            addProctorForm: document.getElementById('add-proctor-form'),
+            recapHeaderSubjects: document.getElementById('recap-header-subjects'),
+            recapBody: document.getElementById('recap-body'),
+            // Admin 2 elements
+            proctorSubjectInfo: document.getElementById('proctor-subject-info'),
+            questionForm: document.getElementById('question-form'),
+            qCount: document.getElementById('q-count'),
+            qListCount: document.getElementById('q-list-count'),
+            questionsList: document.getElementById('questions-list'),
+            recapMapelTitle: document.getElementById('recap-mapel-title'),
+            admin2RecapBody: document.getElementById('admin2-recap-body'),
+            // Student elements
+            studentProfileUid: document.getElementById('student-profile-uid'),
+            studentNameInput: document.getElementById('student-name-input'),
+            announcementsList: document.getElementById('announcements-list'),
+            activeExamsList: document.getElementById('active-exams-list'),
+            examContainer: document.getElementById('exam-container'),
+            examArea: document.getElementById('exam-area'),
+            examTitle: document.getElementById('exam-title'),
+            examTimer: document.getElementById('exam-timer'),
+            quizForm: document.getElementById('quiz-form'),
+            examSubmitted: document.getElementById('exam-submitted'),
         };
 
-        // --- DOM Elements ---
-        let DOMElements; // Akan diisi oleh setupDOMElements()
+        const API = {
+            async init() {
+                try {
+                    // 1. Inisialisasi Firebase
+                    appInstance = initializeApp(firebaseConfig);
+                    auth = getAuth(appInstance);
+                    db = getDatabase(appInstance);
 
-        function setupDOMElements() {
-            DOMElements = {
-                loginPage: document.getElementById('login-page'),
-                appDashboard: document.getElementById('app-dashboard'),
-                loginButton: document.getElementById('login-button'),
-                passwordInput: document.getElementById('password'),
-                loginError: document.getElementById('login-error'),
-                logoutButton: document.getElementById('logout-button'),
-                userStatus: document.getElementById('user-status'),
-                
-                sidebar: document.getElementById('sidebar'),
-                sidebarBackdrop: document.getElementById('sidebar-backdrop'),
-                hamburgerBtn: document.getElementById('hamburger-btn'),
-                sidebarNav: document.getElementById('sidebar-nav'),
-                
-                pageContainer: document.getElementById('page-container'),
-                
-                // Halaman Juri
-                pagePilihJuri: document.getElementById('page-pilih-juri'),
-                juriSelectionList: document.getElementById('juri-selection-list'),
-                pagePenilaian: document.getElementById('page-penilaian'),
-                penilaianTitle: document.getElementById('penilaian-title'),
-                participantSelect: document.getElementById('participant-select'),
-                lockedWarning: document.getElementById('locked-warning'),
-                requestTokenBtn: document.getElementById('request-token-btn'),
-                scoringFieldset: document.getElementById('scoring-fieldset'),
-                scoringTableHead: document.getElementById('scoring-table-head'),
-                scoringTableBody: document.getElementById('scoring-table-body'),
-                totalScoreEl: document.getElementById('total-score'),
-                saveScoreBtn: document.getElementById('save-score-btn'),
-                printScoreBtn: document.getElementById('print-score-btn'),
-
-                // Halaman Admin
-                dashTotalPeserta: document.getElementById('dash-total-peserta'),
-                dashTotalJuri: document.getElementById('dash-total-juri'),
-                dashTotalKriteria: document.getElementById('dash-total-kriteria'),
-                dashTotalNilai: document.getElementById('dash-total-nilai'),
-
-                addPesertaBtn: document.getElementById('add-peserta-btn'),
-                pesertaTableBody: document.getElementById('peserta-table-body'),
-                
-                addJuriBtn: document.getElementById('add-juri-btn'),
-                juriTableBody: document.getElementById('juri-table-body'),
-
-                addKriteriaBtn: document.getElementById('add-kriteria-btn'),
-                kriteriaTableBody: document.getElementById('kriteria-table-body'),
-                
-                configForm: document.getElementById('config-form'),
-                saveConfigBtn: document.getElementById('save-config-btn'),
-                
-                generateTokenBtn: document.getElementById('generate-token-btn'),
-                currentTokenDisplay: document.getElementById('current-token-display'),
-                
-                recapTableHead: document.getElementById('recap-table-head'),
-                recapTableBody: document.getElementById('recap-table-body'),
-                printRecapBtn: document.getElementById('print-recap-btn'),
-
-                // Modal
-                modalBackdrop: document.getElementById('modal-backdrop'),
-                modalContainer: document.getElementById('modal-container'),
-                appModal: document.getElementById('app-modal'),
-                modalTitle: document.getElementById('modal-title'),
-                modalBody: document.getElementById('modal-body'),
-                modalFooter: document.getElementById('modal-footer'),
-                modalCloseBtn: document.getElementById('modal-close-btn'),
-                modalCancelBtn: document.getElementById('modal-cancel-btn'),
-                modalSaveBtn: document.getElementById('modal-save-btn'),
-            };
-        }
-
-        // --- Inisialisasi Aplikasi ---
-
-        function initApp() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                state.app.db = getFirestore(app);
-                state.app.auth = getAuth(app);
-                
-                setupDOMElements();
-                setupEventListeners();
-                initAuth();
-            } catch (error) {
-                console.error("Error initializing Firebase: ", error);
-                DOMElements.loginPage.innerHTML = '<h2 class="text-red-500 text-center">Gagal terhubung ke database. Coba muat ulang halaman.</h2>';
-            }
-        }
-
-        function initAuth() {
-            onAuthStateChanged(state.app.auth, async (user) => {
-                if (!user) {
-                    try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(state.app.auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(state.app.auth);
-                        }
-                    } catch (error) {
-                        console.error("Auth error:", error);
+                    // 2. Otentikasi (menggunakan token kustom/anonim dari lingkungan)
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
                     }
-                }
-                state.app.userId = user ? user.uid : 'anonymous';
-            });
-        }
-        
-        function setupEventListeners() {
-            DOMElements.loginButton.addEventListener('click', handleLogin);
-            DOMElements.logoutButton.addEventListener('click', handleLogout);
-            DOMElements.hamburgerBtn.addEventListener('click', () => toggleSidebar(true));
-            DOMElements.sidebarBackdrop.addEventListener('click', () => toggleSidebar(false));
-            
-            // Navigasi
-            DOMElements.sidebarNav.addEventListener('click', (e) => {
-                const navLink = e.target.closest('.nav-link');
-                if (navLink) {
-                    e.preventDefault();
-                    const pageId = navLink.dataset.page;
-                    navigate(pageId);
-                    toggleSidebar(false);
-                }
-            });
 
-            // Aksi Juri
-            DOMElements.juriSelectionList.addEventListener('click', (e) => {
-                const juriButton = e.target.closest('.juri-select-btn');
-                if (juriButton) {
-                    selectJuri(juriButton.dataset.id, juriButton.dataset.name);
-                }
-            });
-            DOMElements.participantSelect.addEventListener('change', loadSelectedParticipantScore);
-            DOMElements.scoringFieldset.addEventListener('change', calculateTotalScore);
-            DOMElements.saveScoreBtn.addEventListener('click', saveScore);
-            DOMElements.printScoreBtn.addEventListener('click', printParticipantPDF);
-            DOMElements.requestTokenBtn.addEventListener('click', openTokenModal);
-            
-            // Aksi Admin
-            DOMElements.addPesertaBtn.addEventListener('click', () => openPesertaModal(null));
-            DOMElements.pesertaTableBody.addEventListener('click', (e) => handleTableAction(e, 'peserta'));
-            
-            DOMElements.addJuriBtn.addEventListener('click', () => openJuriModal(null));
-            DOMElements.juriTableBody.addEventListener('click', (e) => handleTableAction(e, 'juri'));
-            
-            DOMElements.addKriteriaBtn.addEventListener('click', () => openKriteriaModal(null));
-            DOMElements.kriteriaTableBody.addEventListener('click', (e) => handleTableAction(e, 'kriteria'));
-
-            DOMElements.configForm.addEventListener('submit', handleSaveConfig);
-            DOMElements.generateTokenBtn.addEventListener('click', generateToken);
-            DOMElements.printRecapBtn.addEventListener('click', printRecapPDF);
-
-            // Modal
-            DOMElements.modalCloseBtn.addEventListener('click', hideModal);
-            DOMElements.modalCancelBtn.addEventListener('click', hideModal);
-            DOMElements.modalSaveBtn.addEventListener('click', () => {
-                if (state.ui.currentModal.onSave) {
-                    state.ui.currentModal.onSave();
-                }
-            });
-        }
-        
-        // --- Logika Login & UI ---
-
-        function handleLogin() {
-            const pass = DOMElements.passwordInput.value;
-            DOMElements.loginError.classList.add('hidden');
-            
-            if (pass === 'Piring123') {
-                state.app.currentUserRole = 'admin';
-                setupUIForRole('admin');
-            } else if (pass === 'Danukasep') {
-                state.app.currentUserRole = 'juri';
-                setupUIForRole('juri');
-            } else {
-                DOMElements.loginError.classList.remove('hidden');
-            }
-        }
-
-        function handleLogout() {
-            // Hentikan semua listener Firestore
-            state.listeners.forEach(unsub => unsub());
-            state.listeners = [];
-
-            // Reset state
-            state.app.currentUserRole = null;
-            state.ui.selectedJuriId = null;
-            state.ui.selectedPesertaId = null;
-            state.data.peserta.clear();
-            state.data.juri.clear();
-            state.data.kriteria.clear();
-            state.data.scores.clear();
-            
-            DOMElements.loginPage.classList.remove('hidden');
-            DOMElements.appDashboard.classList.add('hidden');
-            DOMElements.passwordInput.value = '';
-        }
-        
-        function setupUIForRole(role) {
-            DOMElements.loginPage.classList.add('hidden');
-            DOMElements.appDashboard.classList.remove('hidden');
-            
-            if (role === 'admin') {
-                DOMElements.userStatus.textContent = 'Role: Admin';
-                document.querySelectorAll('.nav-admin').forEach(el => el.classList.remove('hidden'));
-                document.querySelectorAll('.nav-juri').forEach(el => el.classList.add('hidden'));
-                navigate('dashboard');
-            } else { // juri
-                DOMElements.userStatus.textContent = 'Role: Juri';
-                document.querySelectorAll('.nav-admin').forEach(el => el.classList.add('hidden'));
-                document.querySelectorAll('.nav-juri').forEach(el => el.classList.remove('hidden'));
-                navigate('pilih-juri'); // Mulai dari pilih juri
-            }
-            
-            // Mulai listener data
-            attachDataListeners();
-        }
-        
-        function toggleSidebar(open) {
-            if (open) {
-                state.ui.isSidebarOpen = true;
-                DOMElements.sidebar.classList.remove('-translate-x-full');
-                DOMElements.sidebarBackdrop.classList.remove('hidden');
-            } else {
-                state.ui.isSidebarOpen = false;
-                DOMElements.sidebar.classList.add('-translate-x-full');
-                DOMElements.sidebarBackdrop.classList.add('hidden');
-            }
-        }
-        
-        // --- Router Sederhana ---
-        
-        function navigate(pageId) {
-            if (!pageId) pageId = (state.app.currentUserRole === 'admin' ? 'dashboard' : 'pilih-juri');
-            
-            state.app.activePage = pageId;
-            
-            // Sembunyikan semua halaman
-            DOMElements.pageContainer.querySelectorAll('.page-content').forEach(page => {
-                page.classList.add('hidden');
-            });
-            
-            // Tampilkan halaman yang aktif
-            const activePageEl = document.getElementById(`page-${pageId}`);
-            if (activePageEl) {
-                activePageEl.classList.remove('hidden');
-            } else {
-                document.getElementById('page-dashboard').classList.remove('hidden'); // Fallback
-            }
-
-            // Update status aktif di sidebar
-            DOMElements.sidebarNav.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.toggle('active', link.dataset.page === pageId);
-            });
-            
-            // Panggil render khusus jika perlu
-            if (pageId === 'penilaian') {
-                renderScoringForm();
-            } else if (pageId === 'konfigurasi') {
-                renderConfigForm();
-            } else if (pageId === 'rekap') {
-                renderRecapTableHead(); // Update header tabel rekap
-            }
-        }
-        
-        // --- Listener Data (Firestore) ---
-        
-        function attachDataListeners() {
-            // Hentikan listener lama
-            state.listeners.forEach(unsub => unsub());
-            state.listeners = [];
-            const path = state.app.publicDataPath;
-
-            // 1. Peserta
-            const qPeserta = query(collection(state.app.db, `${path}/peserta`));
-            state.listeners.push(onSnapshot(qPeserta, (snapshot) => {
-                state.data.peserta.clear();
-                snapshot.forEach(doc => state.data.peserta.set(doc.id, { id: doc.id, ...doc.data() }));
-                renderPesertaList();
-                renderPesertaDropdown();
-                renderRecapTableBody();
-                DOMElements.dashTotalPeserta.textContent = state.data.peserta.size;
-            }));
-            
-            // 2. Juri
-            const qJuri = query(collection(state.app.db, `${path}/juri`));
-            state.listeners.push(onSnapshot(qJuri, (snapshot) => {
-                state.data.juri.clear();
-                snapshot.forEach(doc => state.data.juri.set(doc.id, { id: doc.id, ...doc.data() }));
-                renderJuriList();
-                renderJuriDropdown();
-                renderRecapTableHead(); // Header rekap perlu di-render ulang
-                renderRecapTableBody();
-                DOMElements.dashTotalJuri.textContent = state.data.juri.size;
-            }));
-
-            // 3. Kriteria
-            const qKriteria = query(collection(state.app.db, `${path}/kriteria`));
-            state.listeners.push(onSnapshot(qKriteria, (snapshot) => {
-                state.data.kriteria.clear();
-                snapshot.forEach(doc => state.data.kriteria.set(doc.id, { id: doc.id, ...doc.data() }));
-                renderKriteriaList();
-                renderScoringForm(); // Form penilaian bergantung pada ini
-                DOMElements.dashTotalKriteria.textContent = state.data.kriteria.size;
-            }));
-
-            // 4. Scores
-            const qScores = query(collection(state.app.db, `${path}/scores`));
-            state.listeners.push(onSnapshot(qScores, (snapshot) => {
-                state.data.scores.clear();
-                let totalNilaiMasuk = 0;
-                snapshot.forEach(doc => {
-                    state.data.scores.set(doc.id, doc.data());
-                    // Hitung total nilai yg sudah di-submit
-                    Object.keys(doc.data()).forEach(juriKey => {
-                        if (doc.data()[juriKey] && doc.data()[juriKey].locked) {
-                            totalNilaiMasuk++;
+                    // 3. Menyiapkan listener Auth
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            DOM.userIdDisplay.textContent = `UID: ${userId}`;
+                            API.setupRealtimeListeners();
+                            API.renderApp();
+                        } else {
+                            // Jika logout atau gagal, tampilkan selector peran
+                            API.renderApp(true);
                         }
                     });
+
+                } catch (error) {
+                    console.error("Firebase Initialization or Auth Error:", error);
+                    alert("Terjadi kesalahan saat inisialisasi Firebase. Lihat konsol untuk detail.");
+                    DOM.loading.textContent = "Gagal memuat aplikasi.";
+                }
+            },
+
+            // Fungsi untuk mendapatkan path DB yang benar
+            getDbPath(path) {
+                // Realtime DB tidak menggunakan format /artifacts/{appId}/users/{userId}/...
+                // Kita gunakan path sederhana di root untuk demo, atau sesuaikan jika menggunakan struktur kompleks
+                return `/${path}`;
+            },
+
+            setupRealtimeListeners() {
+                // Listener untuk semua Users (diperlukan Admin 1 & 2)
+                onValue(ref(db, API.getDbPath('users')), (snapshot) => {
+                    allUsers = snapshot.val() || {};
+                    if (userRole === 'admin1') { API.renderAdmin1Proctors(); }
+                    if (userRole === 'student') { API.renderStudentProfile(); }
+                    API.renderApp(); // Render ulang jika data user berubah
                 });
-                renderRecapTableBody();
-                loadSelectedParticipantScore(); // Refresh form jika sedang dibuka
-                DOMElements.dashTotalNilai.textContent = totalNilaiMasuk;
-            }));
 
-            // 5. Config
-            const configDocRef = doc(state.app.db, `${path}/config`, 'scoring');
-            state.listeners.push(onSnapshot(configDocRef, (doc) => {
-                if (doc.exists()) {
-                    state.data.config = doc.data();
-                } else {
-                    // Jika belum ada, buat default
-                    setDoc(configDocRef, state.data.config); // Ini akan menggunakan state.data.config BARU
+                // Listener untuk Subjects (diperlukan semua peran)
+                onValue(ref(db, API.getDbPath('subjects')), (snapshot) => {
+                    allSubjects = snapshot.val() || {};
+                    if (userRole === 'admin1') { API.renderAdmin1Subjects(); }
+                    if (userRole === 'student') { API.renderStudentPanel(); }
+                    if (userRole === 'admin2') { API.renderAdmin2Panel(); }
+                    API.renderApp(); // Render ulang
+                });
+
+                // Listener untuk Results (diperlukan Admin 1 & 2)
+                onValue(ref(db, API.getDbPath('results')), (snapshot) => {
+                    allResults = snapshot.val() || {};
+                    if (userRole === 'admin1') { API.renderAdmin1Recap(); }
+                    if (userRole === 'admin2') { API.renderAdmin2Recap(); }
+                });
+            },
+
+            // === UI Rendering & State Management ===
+            renderApp(showRoleSelector = false) {
+                DOM.loading.classList.add('hidden');
+
+                if (showRoleSelector || !userRole) {
+                    DOM.roleSelector.classList.remove('hidden');
+                    DOM.admin1Panel.classList.add('hidden');
+                    DOM.admin2Panel.classList.add('hidden');
+                    DOM.studentPanel.classList.add('hidden');
+                    DOM.userDisplay.textContent = 'Mode: Belum Dipilih';
+                    return;
                 }
-                renderConfigForm();
-                renderScoringForm(); // Form penilaian bergantung pada ini
-            }));
-            
-            // 6. Token
-            const tokenDocRef = doc(state.app.db, `${path}/config`, 'token');
-            state.listeners.push(onSnapshot(tokenDocRef, (doc) => {
-                if (doc.exists()) {
-                    state.data.token = doc.data().value;
-                    DOMElements.currentTokenDisplay.textContent = state.data.token;
-                } else {
-                    DOMElements.currentTokenDisplay.textContent = "Belum ada token";
-                    state.data.token = null;
+
+                DOM.roleSelector.classList.add('hidden');
+                DOM.userDisplay.textContent = `Mode: ${userRole.toUpperCase()} (${userName || userId})`;
+                
+                DOM.admin1Panel.classList.add('hidden');
+                DOM.admin2Panel.classList.add('hidden');
+                DOM.studentPanel.classList.add('hidden');
+
+                if (userRole === 'admin1') {
+                    DOM.admin1Panel.classList.remove('hidden');
+                    API.renderAdmin1Proctors();
+                    API.renderAdmin1Subjects();
+                    API.renderAdmin1Recap();
+                } else if (userRole === 'admin2') {
+                    DOM.admin2Panel.classList.remove('hidden');
+                    API.renderAdmin2Panel();
+                } else if (userRole === 'student') {
+                    DOM.studentPanel.classList.remove('hidden');
+                    API.renderStudentPanel();
                 }
-            }));
-        }
-        
-        // --- Logika Penilaian (Juri) ---
+            },
 
-        function selectJuri(juriId, juriName) {
-            state.ui.selectedJuriId = juriId;
-            state.ui.selectedJuriName = juriName;
-            
-            DOMElements.penilaianTitle.textContent = `Formulir Penilaian (${juriName})`;
-            DOMElements.userStatus.textContent = `Role: ${juriName}`;
-            
-            navigate('penilaian');
-            resetScoringForm();
-        }
+            // --- Admin 1 Logic ---
+            renderAdmin1Proctors() {
+                DOM.proctorList.innerHTML = '';
+                DOM.proctorSelect.innerHTML = '<option value="">Pilih Proktor/Admin 2 (Opsional)</option>';
 
-        function renderScoringForm() {
-            if (state.app.activePage !== 'penilaian' && state.app.activePage !== 'pilih-juri') return; // Hanya render jika di halaman penilaian
-            
-            const { config, kriteria } = state.data;
-            const kriteriaArray = Array.from(kriteria.values());
-            
-            // Buat Header Tabel
-            const scoreValues = [
-                ...config.cukup,
-                ...config.baik,
-                ...config.sangat_baik
-            ];
-            
-            DOMElements.scoringTableHead.innerHTML = `
-                <tr>
-                    <th rowspan="2" class="w-1/4">Aspek yang Dinilai</th>
-                    <th colspan="3">Cukup</th>
-                    <th colspan="3">Baik</th>
-                    <th colspan="3">Sangat Baik</th>
-                    <th rowspan="2" class="w-16">Skor</th>
-                </tr>
-                <tr>
-                    <th class="col-cukup">${config.cukup[0]}</th>
-                    <th class="col-cukup">${config.cukup[1]}</th>
-                    <th class="col-cukup">${config.cukup[2]}</th>
-                    <th class="col-baik">${config.baik[0]}</th>
-                    <th class="col-baik">${config.baik[1]}</th>
-                    <th class="col-baik">${config.baik[2]}</th>
-                    <th class="col-sangat-baik">${config.sangat_baik[0]}</th>
-                    <th class="col-sangat-baik">${config.sangat_baik[1]}</th>
-                    <th class="col-sangat-baik">${config.sangat_baik[2]}</th>
-                </tr>
-            `;
-            
-            // Buat Body Tabel
-            DOMElements.scoringTableBody.innerHTML = '';
-            if (kriteriaArray.length === 0) {
-                 DOMElements.scoringTableBody.innerHTML = `<tr><td colspan="${scoreValues.length + 2}" class="text-center p-4 text-gray-500">Admin belum menambahkan kriteria penilaian.</td></tr>`;
-            } else {
-                kriteriaArray.forEach(item => {
-                    const row = document.createElement('tr');
-                    let radioButtonsHTML = '';
+                Object.keys(allUsers).filter(uid => allUsers[uid].role === 'admin2').forEach(uid => {
+                    const user = allUsers[uid];
+                    DOM.proctorList.innerHTML += `
+                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
+                            <p class="text-sm font-medium">${user.name || 'Proktor Baru'} <span class="text-xs text-gray-500">(${uid})</span></p>
+                            <button onclick="app.deleteUser('${uid}')" class="text-red-500 hover:text-red-700 text-sm">Hapus</button>
+                        </div>
+                    `;
+                    DOM.proctorSelect.innerHTML += `<option value="${uid}">${user.name} (${uid})</option>`;
+                });
+
+                if (DOM.proctorList.innerHTML === '') {
+                    DOM.proctorList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada Admin 2 yang terdaftar.</p>';
+                }
+            },
+
+            renderAdmin1Subjects() {
+                DOM.subjectsList.innerHTML = '';
+                const subjectKeys = Object.keys(allSubjects);
+
+                if (subjectKeys.length === 0) {
+                    DOM.subjectsList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada jadwal ujian yang dibuat.</p>';
+                    return;
+                }
+
+                subjectKeys.forEach(id => {
+                    const subject = allSubjects[id];
+                    const proctorName = subject.admin2Uid ? (allUsers[subject.admin2Uid]?.name || 'Proktor Tidak Ditemukan') : 'Belum Ditunjuk';
                     
-                    scoreValues.forEach((value, index) => {
-                        let colClass = 'col-cukup';
-                        if (index >= 3 && index < 6) colClass = 'col-baik';
-                        if (index >= 6) colClass = 'col-sangat-baik';
-                        
-                        radioButtonsHTML += `
-                            <td class="${colClass} radio-cell">
-                                <input type="radio" name="${item.id}" value="${value}" data-criterion="${item.id}">
-                                <label for="${item.id}"></label>
-                            </td>
+                    DOM.subjectsList.innerHTML += `
+                        <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <h4 class="font-bold text-lg">${subject.name} (${id})</h4>
+                            <p class="text-sm text-gray-700">Tanggal: ${subject.date}, Waktu: ${subject.startTime} - ${subject.endTime}</p>
+                            <p class="text-xs text-gray-600">Proktor: ${proctorName}</p>
+                            <div class="mt-2 flex space-x-2">
+                                <button onclick="app.deleteSubject('${id}')" class="text-red-500 hover:text-red-700 text-sm">Hapus</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            },
+
+            renderAdmin1Recap() {
+                // 1. Kumpulkan semua siswa
+                const studentUids = new Set();
+                Object.keys(allResults).forEach(subjectId => {
+                    Object.keys(allResults[subjectId]).forEach(uid => studentUids.add(uid));
+                });
+                
+                // 2. Kumpulkan semua mapel untuk header
+                const subjectKeys = Object.keys(allSubjects);
+                DOM.recapHeaderSubjects.colSpan = subjectKeys.length > 0 ? subjectKeys.length : 1;
+                
+                // Buat header mapel
+                let headerHTML = subjectKeys.map(id => 
+                    `<th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">${allSubjects[id].name} (${id})</th>`
+                ).join('');
+                
+                DOM.recapHeaderSubjects.innerHTML = headerHTML || 
+                    `<th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Mata Pelajaran</th>`;
+                
+                // 3. Isi body rekap
+                let bodyHTML = '';
+                if (studentUids.size === 0) {
+                    bodyHTML = '<tr><td colspan="' + (subjectKeys.length + 1) + '" class="px-3 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang mengerjakan ujian.</td></tr>';
+                } else {
+                    studentUids.forEach(uid => {
+                        const studentName = allUsers[uid]?.name || `Siswa UID: ${uid.substring(0, 8)}...`;
+                        let subjectCells = subjectKeys.map(subjectId => {
+                            const result = allResults[subjectId] ? allResults[subjectId][uid] : null;
+                            const totalQuestions = Object.keys(allSubjects[subjectId]?.questions || {}).length;
+                            
+                            if (result) {
+                                return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center text-green-700 bg-green-50 font-semibold">
+                                    ${result.score}/${totalQuestions}
+                                </td>`;
+                            } else if (totalQuestions > 0) {
+                                // Belum mengerjakan
+                                return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center text-red-700 bg-red-50">
+                                    Belum Mengerjakan
+                                </td>`;
+                            } else {
+                                // Soal belum diinput
+                                return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center text-yellow-700 bg-yellow-50">
+                                    Soal Belum Ada
+                                </td>`;
+                            }
+                        }).join('');
+
+                        bodyHTML += `
+                            <tr>
+                                <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${studentName}</td>
+                                ${subjectCells}
+                            </tr>
                         `;
                     });
+                }
+                DOM.recapBody.innerHTML = bodyHTML;
+            },
+
+
+            // --- Admin 2 Logic ---
+            renderAdmin2Panel() {
+                const admin2User = allUsers[userId];
+                
+                // Cek apakah Admin 2 sudah terkait dengan mapel
+                let assignedSubjectId = null;
+                Object.keys(allSubjects).forEach(id => {
+                    if (allSubjects[id].admin2Uid === userId) {
+                        assignedSubjectId = id;
+                        proctorSubjectId = id; // Set global proctor subject ID
+                    }
+                });
+
+                if (assignedSubjectId && allSubjects[assignedSubjectId]) {
+                    const subject = allSubjects[assignedSubjectId];
+                    DOM.proctorSubjectInfo.innerHTML = `Anda mengelola **${subject.name}** (ID: ${assignedSubjectId}).`;
+                    DOM.recapMapelTitle.textContent = `${subject.name} (${assignedSubjectId})`;
                     
-                    row.innerHTML = `
-                        <td class="text-left p-3 font-medium">${item.name}</td>
-                        ${radioButtonsHTML}
-                        <td id="score-${item.id}" class="font-medium">0</td>
+                    // Listener khusus untuk pertanyaan di mapel ini
+                    onValue(ref(db, API.getDbPath(`questions/${assignedSubjectId}`)), (snapshot) => {
+                        const questions = snapshot.val() || {};
+                        subject.questions = questions; // Update subject data locally
+                        API.renderAdmin2Questions(questions, assignedSubjectId);
+                        API.renderAdmin2Recap(); // Render ulang rekap saat soal berubah (total soal)
+                    });
+                } else {
+                    DOM.proctorSubjectInfo.innerHTML = `**PERINGATAN:** Anda belum ditunjuk sebagai proktor untuk mata pelajaran apa pun. Harap hubungi Admin Utama.`;
+                    DOM.questionsList.innerHTML = `<p class="text-red-500">Tidak dapat menambah soal. Anda belum memiliki mapel yang dikelola.</p>`;
+                    proctorSubjectId = null;
+                    API.renderAdmin2Recap(true); // Render ulang rekap dengan status tidak tersedia
+                }
+            },
+
+            renderAdmin2Questions(questions, subjectId) {
+                const questionKeys = Object.keys(questions);
+                DOM.qCount.textContent = questionKeys.length;
+                DOM.qListCount.textContent = questionKeys.length;
+                DOM.questionsList.innerHTML = '';
+
+                if (questionKeys.length === 0) {
+                    DOM.questionsList.innerHTML = '<p class="text-gray-500">Belum ada soal yang diinput.</p>';
+                    return;
+                }
+
+                questionKeys.forEach(qId => {
+                    const q = questions[qId];
+                    const qNum = qId.replace('q', '');
+                    DOM.questionsList.innerHTML += `
+                        <div class="p-3 border border-gray-100 rounded-lg bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <p class="font-bold text-sm text-indigo-800">Soal No. ${qNum}</p>
+                                <button onclick="app.deleteQuestion('${subjectId}', '${qId}')" class="text-red-500 hover:text-red-700 text-xs">Hapus</button>
+                            </div>
+                            <p class="text-sm mt-1">${q.text.substring(0, 100)}...</p>
+                            <p class="text-xs font-semibold mt-1">Kunci: <span class="text-green-600">${q.key.toUpperCase()}</span></p>
+                        </div>
                     `;
-                    DOMElements.scoringTableBody.appendChild(row);
                 });
-            }
-            
-            // Update total colspan di footer
-            DOMElements.totalScoreEl.parentElement.firstElementChild.setAttribute('colspan', scoreValues.length + 1);
-        }
+            },
 
-        function calculateTotalScore() {
-            let total = 0;
-            state.data.kriteria.forEach(item => {
-                const radios = document.getElementsByName(item.id);
-                let score = 0;
-                if (radios.length > 0) {
-                     for (const radio of radios) {
-                        if (radio.checked) {
-                            score = parseInt(radio.value) || 0;
-                            break;
-                        }
-                    }
-                    const scoreEl = document.getElementById(`score-${item.id}`);
-                    if (scoreEl) scoreEl.textContent = score;
-                    total += score;
+            renderAdmin2Recap(noSubject = false) {
+                if (noSubject || !proctorSubjectId) {
+                    DOM.admin2RecapBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-red-500 text-center">Silakan tentukan mapel yang Anda kelola terlebih dahulu.</td></tr>';
+                    return;
                 }
-            });
-            DOMElements.totalScoreEl.textContent = total;
-        }
-
-        function loadSelectedParticipantScore() {
-            state.ui.selectedPesertaId = DOMElements.participantSelect.value;
-            resetScoringForm(); // Selalu reset dulu
-            
-            if (!state.ui.selectedPesertaId || !state.ui.selectedJuriId) return;
-
-            const participantScores = state.data.scores.get(state.ui.selectedPesertaId);
-            if (!participantScores) {
-                setFormLocked(false);
-                return;
-            }
-
-            const juriData = participantScores[state.ui.selectedJuriId];
-            if (juriData && juriData.details) {
-                // Isi form dengan data
-                state.data.kriteria.forEach(item => {
-                    const savedValue = juriData.details[item.id];
-                    if (savedValue) {
-                        const radio = document.querySelector(`input[name="${item.id}"][value="${savedValue}"]`);
-                        if (radio) radio.checked = true;
-                    }
-                });
-                calculateTotalScore();
-            }
-
-            const isLocked = juriData && juriData.locked;
-            setFormLocked(isLocked);
-        }
-
-        function resetScoringForm() {
-            DOMElements.scoringFieldset.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
-            calculateTotalScore();
-            setFormLocked(false);
-            state.ui.selectedPesertaId = DOMElements.participantSelect.value;
-        }
-
-        function setFormLocked(isLocked) {
-            state.ui.isFormLocked = isLocked;
-            DOMElements.scoringFieldset.disabled = isLocked;
-            DOMElements.saveScoreBtn.disabled = isLocked;
-            DOMElements.lockedWarning.classList.toggle('hidden', !isLocked);
-            DOMElements.saveScoreBtn.classList.toggle('opacity-50', isLocked);
-            DOMElements.saveScoreBtn.classList.toggle('cursor-not-allowed', isLocked);
-            DOMElements.saveScoreBtn.innerHTML = isLocked ? `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" /></svg>
-                Nilai Terkunci` : `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
-                Simpan & Kunci Nilai`;
-        }
-
-        async function saveScore() {
-            const { selectedPesertaId, selectedJuriId } = state.ui;
-            if (!selectedPesertaId || !selectedJuriId) {
-                alert("Silakan pilih peserta dan juri terlebih dahulu.");
-                return;
-            }
-
-            const scoreDetails = {};
-            let total = 0;
-            state.data.kriteria.forEach(item => {
-                const radios = document.getElementsByName(item.id);
-                let score = 0;
-                for (const radio of radios) {
-                    if (radio.checked) {
-                        score = parseInt(radio.value) || 0;
-                        break;
-                    }
-                }
-                scoreDetails[item.id] = score;
-                total += score;
-            });
-
-            const scoreData = {
-                [selectedJuriId]: {
-                    total: total,
-                    details: scoreDetails,
-                    locked: true,
-                    juriName: state.ui.selectedJuriName,
-                    lastUpdated: serverTimestamp()
-                }
-            };
-            
-            try {
-                setFormLocked(true); // Langsung kunci UI
-                DOMElements.saveScoreBtn.textContent = "Menyimpan...";
                 
-                const scoreDocRef = doc(state.app.db, `${state.app.publicDataPath}/scores`, selectedPesertaId);
-                await setDoc(scoreDocRef, scoreData, { merge: true });
+                const subjectId = proctorSubjectId;
+                const results = allResults[subjectId] || {};
+                const questions = allSubjects[subjectId]?.questions || {};
+                const totalQuestions = Object.keys(questions).length;
 
-                alert("Nilai berhasil disimpan dan dikunci.");
-                
-            } catch (error) {
-                console.error("Error saving score: ", error);
-                alert("Gagal menyimpan nilai. Coba lagi.");
-                setFormLocked(false); // Buka kunci lagi jika gagal
-            }
-        }
-        
-        // --- Logika Render Admin ---
-        
-        function renderPesertaList() {
-            const tableBody = DOMElements.pesertaTableBody;
-            tableBody.innerHTML = '';
-            if (state.data.peserta.size === 0) {
-                tableBody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada peserta.</td></tr>';
-                return;
-            }
-            Array.from(state.data.peserta.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
-                tableBody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-4 font-medium text-gray-900">${p.name}</td>
-                        <td class="p-4 text-right space-x-2">
-                            <button class="action-btn-edit text-blue-600 hover:text-blue-800" data-id="${p.id}" title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                            </button>
-                            <button class="action-btn-delete text-red-600 hover:text-red-800" data-id="${p.id}" title="Hapus">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c-.34.052-.68.107-1.022.166m11.538 0-1.096-1.096A1.125 1.125 0 0 0 10.27 4.135H7.73a1.125 1.125 0 0 0-.796.328L6.838 5.79m11.538 0-3.809 1.9-3.809-1.9m3.809 1.9v9.115" /></svg>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        
-        function renderPesertaDropdown() {
-            const select = DOMElements.participantSelect;
-            select.innerHTML = '<option value="">-- Pilih Peserta --</option>';
-            Array.from(state.data.peserta.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
-                select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
-            });
-            select.value = state.ui.selectedPesertaId;
-        }
+                let bodyHTML = '';
+                const resultKeys = Object.keys(results);
 
-        function renderJuriList() {
-            const tableBody = DOMElements.juriTableBody;
-            tableBody.innerHTML = '';
-            if (state.data.juri.size === 0) {
-                tableBody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada juri.</td></tr>';
-                return;
-            }
-            Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(j => {
-                tableBody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-4 font-medium text-gray-900">${j.name}</td>
-                        <td class="p-4 text-right space-x-2">
-                            <button class="action-btn-edit text-blue-600 hover:text-blue-800" data-id="${j.id}" title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                            </button>
-                            <button class="action-btn-delete text-red-600 hover:text-red-800" data-id="${j.id}" title="Hapus">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c-.34.052-.68.107-1.022.166m11.538 0-1.096-1.096A1.125 1.125 0 0 0 10.27 4.135H7.73a1.125 1.125 0 0 0-.796.328L6.838 5.79m11.538 0-3.809 1.9-3.809-1.9m3.809 1.9v9.115" /></svg>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        
-        function renderJuriDropdown() {
-            const list = DOMElements.juriSelectionList;
-            list.innerHTML = '';
-            if (state.data.juri.size === 0) {
-                list.innerHTML = '<p class="text-center text-gray-500">Belum ada juri ditambahkan oleh Admin.</p>';
-                return;
-            }
-            Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(j => {
-                list.innerHTML += `
-                    <button class="juri-select-btn w-full bg-blue-500 text-white py-3 rounded-lg font-bold hover:bg-blue-600 transition" data-id="${j.id}" data-name="${j.name}">
-                        ${j.name}
-                    </button>
-                `;
-            });
-        }
-        
-        function renderKriteriaList() {
-            const tableBody = DOMElements.kriteriaTableBody;
-            tableBody.innerHTML = '';
-            if (state.data.kriteria.size === 0) {
-                tableBody.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">Belum ada kriteria.</td></tr>';
-                return;
-            }
-            Array.from(state.data.kriteria.values()).sort((a,b) => a.name.localeCompare(b.name)).forEach(k => {
-                tableBody.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-4 font-medium text-gray-900">${k.name}</td>
-                        <td class="p-4 text-right space-x-2">
-                            <button class="action-btn-edit text-blue-600 hover:text-blue-800" data-id="${k.id}" title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
-                            </button>
-                            <!-- Hapus kriteria bisa berbahaya jika sudah ada nilai, jadi saya nonaktifkan -->
-                            <!--
-                            <button class="action-btn-delete text-red-600 hover:text-red-800" data-id="${k.id}" title="Hapus">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c-.34.052-.68.107-1.022.166m11.538 0-1.096-1.096A1.125 1.125 0 0 0 10.27 4.135H7.73a1.125 1.125 0 0 0-.796.328L6.838 5.79m11.538 0-3.809 1.9-3.809-1.9m3.809 1.9v9.115" /></svg>
-                            </button>
-                            -->
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        
-        function renderConfigForm() {
-            const { config } = state.data;
-            document.getElementById('config-cukup-1').value = config.cukup[0];
-            document.getElementById('config-cukup-2').value = config.cukup[1];
-            document.getElementById('config-cukup-3').value = config.cukup[2];
-            document.getElementById('config-baik-1').value = config.baik[0];
-            document.getElementById('config-baik-2').value = config.baik[1];
-            document.getElementById('config-baik-3').value = config.baik[2];
-            document.getElementById('config-sangat_baik-1').value = config.sangat_baik[0];
-            document.getElementById('config-sangat_baik-2').value = config.sangat_baik[1];
-            document.getElementById('config-sangat_baik-3').value = config.sangat_baik[2];
-        }
-
-        function renderRecapTableHead() {
-            const juriArray = Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name));
-            let ths = '<th class="p-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Peserta</th>';
-            juriArray.forEach(j => {
-                ths += `<th class="p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">${j.name}</th>`;
-            });
-            ths += '<th class="p-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Total Akhir</th>';
-            DOMElements.recapTableHead.innerHTML = `<tr>${ths}</tr>`;
-        }
-
-        function renderRecapTableBody() {
-            const tableBody = DOMElements.recapTableBody;
-            const juriArray = Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name));
-            const pesertaArray = Array.from(state.data.peserta.values()).sort((a,b) => a.name.localeCompare(b.name));
-
-            tableBody.innerHTML = '';
-            if (pesertaArray.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="${juriArray.length + 2}" class="p-4 text-center text-gray-500">Belum ada peserta.</td></tr>`;
-                return;
-            }
-
-            pesertaArray.forEach(p => {
-                const scores = state.data.scores.get(p.id) || {};
-                let total = 0;
-                let tds = `<td class="p-4 font-medium text-gray-900">${p.name}</td>`;
-                
-                juriArray.forEach(j => {
-                    const juriScore = scores[j.id] ? scores[j.id].total : 0;
-                    total += juriScore;
-                    tds += `<td class="p-4 text-center">${juriScore}</td>`;
-                });
-                
-                tds += `<td class="p-4 text-center font-bold">${total}</td>`;
-                tableBody.innerHTML += `<tr class="hover:bg-gray-50">${tds}</tr>`;
-            });
-        }
-        
-        // --- Logika Aksi Admin ---
-        
-        function handleTableAction(event, type) {
-            const target = event.target.closest('button');
-            if (!target) return;
-            
-            const id = target.dataset.id;
-            
-            if (target.classList.contains('action-btn-edit')) {
-                if (type === 'peserta') openPesertaModal(state.data.peserta.get(id));
-                if (type === 'juri') openJuriModal(state.data.juri.get(id));
-                if (type === 'kriteria') openKriteriaModal(state.data.kriteria.get(id));
-            }
-            if (target.classList.contains('action-btn-delete')) {
-                let path;
-                let name;
-                if (type === 'peserta') {
-                    path = `${state.app.publicDataPath}/peserta/${id}`;
-                    name = state.data.peserta.get(id)?.name;
-                }
-                if (type === 'juri') {
-                    path = `${state.app.publicDataPath}/juri/${id}`;
-                    name = state.data.juri.get(id)?.name;
-                }
-                // if (type === 'kriteria') path = `${state.app.publicDataPath}/kriteria/${id}`;
-                openDeleteModal(id, path, name, type);
-            }
-        }
-        
-        async function handleSaveConfig(e) {
-            e.preventDefault();
-            const newConfig = {
-                cukup: [
-                    parseInt(document.getElementById('config-cukup-1').value),
-                    parseInt(document.getElementById('config-cukup-2').value),
-                    parseInt(document.getElementById('config-cukup-3').value),
-                ],
-                baik: [
-                    parseInt(document.getElementById('config-baik-1').value),
-                    parseInt(document.getElementById('config-baik-2').value),
-                    parseInt(document.getElementById('config-baik-3').value),
-                ],
-                sangat_baik: [
-                    parseInt(document.getElementById('config-sangat_baik-1').value),
-                    parseInt(document.getElementById('config-sangat_baik-2').value),
-                    parseInt(document.getElementById('config-sangat_baik-3').value),
-                ]
-            };
-            
-            // Validasi
-            if (Object.values(newConfig).flat().some(isNaN)) {
-                alert("Semua nilai harus berupa angka.");
-                return;
-            }
-            
-            try {
-                DOMElements.saveConfigBtn.disabled = true;
-                DOMElements.saveConfigBtn.textContent = "Menyimpan...";
-                const configDocRef = doc(state.app.db, `${state.app.publicDataPath}/config`, 'scoring');
-                await setDoc(configDocRef, newConfig);
-                alert("Konfigurasi nilai berhasil disimpan.");
-            } catch (error) {
-                console.error("Error saving config:", error);
-                alert("Gagal menyimpan konfigurasi.");
-            } finally {
-                DOMElements.saveConfigBtn.disabled = false;
-                DOMElements.saveConfigBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
-                    Simpan Konfigurasi`;
-            }
-        }
-        
-        async function generateToken() {
-            try {
-                const newToken = Math.random().toString(36).substring(2, 8).toUpperCase();
-                const tokenDocRef = doc(state.app.db, `${state.app.publicDataPath}/config`, 'token');
-                await setDoc(tokenDocRef, {
-                    value: newToken,
-                    createdAt: serverTimestamp()
-                });
-                alert("Token baru telah dibuat: " + newToken);
-            } catch (error) {
-                console.error("Error generating token: ", error);
-                alert("Gagal membuat token.");
-            }
-        }
-        
-        // --- Logika Modal (CRUD) ---
-
-        function showModal(title, contentHTML, onSaveCallback) {
-            DOMElements.modalTitle.textContent = title;
-            DOMElements.modalBody.innerHTML = contentHTML;
-            state.ui.currentModal.onSave = onSaveCallback;
-            
-            DOMElements.modalBackdrop.classList.remove('hidden');
-            DOMElements.modalContainer.classList.remove('hidden');
-            setTimeout(() => {
-                DOMElements.modalBackdrop.classList.remove('opacity-0');
-                DOMElements.modalContainer.classList.remove('opacity-0', 'scale-95');
-            }, 10);
-            
-            // Set default button
-            DOMElements.modalSaveBtn.className = DOMElements.modalSaveBtn.getAttribute('class_base') + " bg-blue-600 hover:bg-blue-700";
-            DOMElements.modalSaveBtn.textContent = "Simpan";
-            DOMElements.modalCancelBtn.textContent = "Batal";
-        }
-        
-        function hideModal() {
-            DOMElements.modalBackdrop.classList.add('opacity-0');
-            DOMElements.modalContainer.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                DOMElements.modalBackdrop.classList.add('hidden');
-                DOMElements.modalContainer.classList.add('hidden');
-                DOMElements.modalBody.innerHTML = '';
-                state.ui.currentModal.onSave = null;
-                state.ui.currentModal.id = null;
-                state.ui.currentModal.type = null;
-            }, 300);
-        }
-        
-        // Modal: Peserta
-        function openPesertaModal(peserta) {
-            const isEdit = peserta !== null;
-            state.ui.currentModal.id = isEdit ? peserta.id : null;
-            state.ui.currentModal.type = 'peserta';
-            
-            const title = isEdit ? 'Edit Peserta' : 'Tambah Peserta Baru';
-            const name = isEdit ? peserta.name : '';
-            const content = `
-                <div>
-                    <label for="modal-input-name" class="block text-sm font-medium text-gray-700 mb-2">Nama Peserta / No. Undi</label>
-                    <input type="text" id="modal-input-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${name}" placeholder="Masukkan nama...">
-                </div>
-            `;
-            showModal(title, content, handleSavePeserta);
-        }
-        
-        async function handleSavePeserta() {
-            const name = document.getElementById('modal-input-name').value.trim();
-            if (!name) {
-                alert("Nama tidak boleh kosong.");
-                return;
-            }
-            
-            const id = state.ui.currentModal.id;
-            const collectionRef = collection(state.app.db, `${state.app.publicDataPath}/peserta`);
-            
-            try {
-                if (id) { // Edit
-                    const docRef = doc(state.app.db, `${state.app.publicDataPath}/peserta`, id);
-                    await setDoc(docRef, { name: name }, { merge: true });
-                } else { // Tambah
-                    await addDoc(collectionRef, { name: name, createdAt: serverTimestamp() });
-                }
-                hideModal();
-            } catch (error) {
-                console.error("Error saving peserta:", error);
-                alert("Gagal menyimpan data.");
-            }
-        }
-        
-        // Modal: Juri
-        function openJuriModal(juri) {
-            const isEdit = juri !== null;
-            state.ui.currentModal.id = isEdit ? juri.id : null;
-            state.ui.currentModal.type = 'juri';
-            
-            const title = isEdit ? 'Edit Juri' : 'Tambah Juri Baru';
-            const name = isEdit ? juri.name : '';
-            const content = `
-                <div>
-                    <label for="modal-input-name" class="block text-sm font-medium text-gray-700 mb-2">Nama Juri</label>
-                    <input type="text" id="modal-input-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${name}" placeholder="Cth: Juri 1, Juri Kehormatan">
-                </div>
-            `;
-            showModal(title, content, handleSaveJuri);
-        }
-
-        async function handleSaveJuri() {
-            const name = document.getElementById('modal-input-name').value.trim();
-            if (!name) {
-                alert("Nama tidak boleh kosong.");
-                return;
-            }
-            
-            const id = state.ui.currentModal.id;
-            const collectionRef = collection(state.app.db, `${state.app.publicDataPath}/juri`);
-            
-            try {
-                if (id) { // Edit
-                    const docRef = doc(state.app.db, `${state.app.publicDataPath}/juri`, id);
-                    await setDoc(docRef, { name: name }, { merge: true });
-                } else { // Tambah
-                    await addDoc(collectionRef, { name: name, createdAt: serverTimestamp() });
-                }
-                hideModal();
-            } catch (error) {
-                console.error("Error saving juri:", error);
-                alert("Gagal menyimpan data.");
-            }
-        }
-
-        // Modal: Kriteria
-        function openKriteriaModal(kriteria) {
-            const isEdit = kriteria !== null;
-            state.ui.currentModal.id = isEdit ? kriteria.id : null;
-            state.ui.currentModal.type = 'kriteria';
-            
-            const title = isEdit ? 'Edit Kriteria' : 'Tambah Kriteria Baru';
-            const name = isEdit ? kriteria.name : '';
-            const content = `
-                <div>
-                    <label for="modal-input-name" class="block text-sm font-medium text-gray-700 mb-2">Nama Kriteria</label>
-                    <input type="text" id="modal-input-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${name}" placeholder="Cth: Sikap Sempurna">
-                </div>
-            `;
-            showModal(title, content, handleSaveKriteria);
-        }
-        
-        async function handleSaveKriteria() {
-            const name = document.getElementById('modal-input-name').value.trim();
-            if (!name) {
-                alert("Nama tidak boleh kosong.");
-                return;
-            }
-            
-            const id = state.ui.currentModal.id;
-            const collectionRef = collection(state.app.db, `${state.app.publicDataPath}/kriteria`);
-            
-            try {
-                if (id) { // Edit
-                    const docRef = doc(state.app.db, `${state.app.publicDataPath}/kriteria`, id);
-                    await setDoc(docRef, { name: name }, { merge: true });
-                } else { // Tambah
-                    await addDoc(collectionRef, { name: name, createdAt: serverTimestamp() });
-                }
-                hideModal();
-            } catch (error) {
-                console.error("Error saving kriteria:", error);
-                alert("Gagal menyimpan data.");
-            }
-        }
-        
-        // Modal: Delete
-        function openDeleteModal(id, path, name, type) {
-            state.ui.currentModal.id = id;
-            state.ui.currentModal.type = 'delete';
-            
-            const title = `Hapus Data?`;
-            let warning = "";
-            if (type === 'peserta') {
-                warning = `<p class="text-sm text-red-600 mt-2">Aksi ini tidak dapat dibatalkan. Menghapus peserta juga akan menghapus semua nilai yang terkait.</p>`;
-            } else if (type === 'juri') {
-                warning = `<p class="text-sm text-red-600 mt-2">Aksi ini tidak dapat dibatalkan. Menghapus juri juga akan menghapus semua nilai yang terkait dengan juri ini dari semua peserta.</p>`;
-            }
-
-            const content = `
-                <p>Anda yakin ingin menghapus data <strong>${name}</strong>?</p>
-                ${warning}
-            `;
-            
-            showModal(title, content, async () => {
-                try {
-                    // Hapus dokumen utama
-                    await deleteDoc(doc(state.app.db, path));
-                    
-                    // Jika ini peserta, hapus juga nilainya
-                    if (type === 'peserta') {
-                        const scoreDocRef = doc(state.app.db, `${state.app.publicDataPath}/scores`, id);
-                        await deleteDoc(scoreDocRef);
-                    }
-                    
-                    // Jika ini juri, kita harus update semua dokumen nilai
-                    if (type === 'juri') {
-                        const batch = writeBatch(state.app.db);
-                        const q = query(collection(state.app.db, `${state.app.publicDataPath}/scores`));
-                        const snapshot = await getDocs(q);
+                if (resultKeys.length === 0) {
+                    bodyHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang mengumpulkan ujian mapel ini.</td></tr>';
+                } else {
+                    resultKeys.forEach(uid => {
+                        const result = results[uid];
+                        const studentName = allUsers[uid]?.name || `Siswa UID: ${uid.substring(0, 8)}...`;
                         
-                        snapshot.forEach(docSnap => {
-                            // Hapus field juri dari dokumen nilai
-                            batch.update(docSnap.ref, { [id]: deleteField() });
-                        });
-                        await batch.commit();
-                    }
-                    
-                    hideModal();
-                } catch (error)
- {
-                    console.error("Error deleting data:", error);
-                    alert("Gagal menghapus data.");
-                }
-            });
-            
-            // Ubah tombol simpan menjadi tombol hapus
-            DOMElements.modalSaveBtn.className = DOMElements.modalSaveBtn.getAttribute('class_base') + " bg-red-600 hover:bg-red-700";
-            DOMElements.modalSaveBtn.textContent = "Ya, Hapus";
-        }
-        
-        // Modal: Token
-        function openTokenModal() {
-            state.ui.currentModal.type = 'token';
-            const title = "Masukkan Token";
-            const content = `
-                <p class="text-gray-600 mb-4">Silakan masukkan token dari Admin untuk membuka kunci nilai.</p>
-                <div>
-                    <input type="text" id="modal-input-token" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Token...">
-                    <p id="modal-token-error" class="text-red-500 text-sm mt-2 hidden">Token salah!</p>
-                </div>
-            `;
-            showModal(title, content, handleSubmitToken);
-            DOMElements.modalSaveBtn.textContent = "Kirim";
-        }
-        
-        function handleSubmitToken() {
-            const token = document.getElementById('modal-input-token').value;
-            if (token && token === state.data.token) {
-                setFormLocked(false);
-                hideModal();
-                alert("Token diterima. Anda bisa mengubah nilai. Jangan lupa simpan kembali.");
-            } else {
-                document.getElementById('modal-token-error').classList.remove('hidden');
-            }
-        }
+                        let correctCount = 0;
+                        if (totalQuestions > 0) {
+                            // Hitung skor
+                            Object.keys(result.answers).forEach(qId => {
+                                if (questions[qId] && result.answers[qId] === questions[qId].key) {
+                                    correctCount++;
+                                }
+                            });
+                            // Update skor di DB jika berbeda
+                            if (result.score !== correctCount) {
+                                set(ref(db, API.getDbPath(`results/${subjectId}/${uid}/score`)), correctCount);
+                            }
+                        }
 
-        // --- Logika Cetak PDF ---
-        
-        function printParticipantPDF() {
-            const { selectedPesertaId, selectedJuriName } = state.ui;
-            if (!selectedPesertaId) {
-                alert("Silakan pilih peserta terlebih dahulu.");
+                        bodyHTML += `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${studentName} <span class="text-xs text-gray-500">(${uid})</span></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(result.submissionTime).toLocaleString('id-ID')}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${correctCount}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${correctCount}/${totalQuestions}</td>
+                            </tr>
+                        `;
+                    });
+                }
+                DOM.admin2RecapBody.innerHTML = bodyHTML;
+            },
+
+
+            // --- Student Logic ---
+            renderStudentProfile() {
+                DOM.studentProfileUid.textContent = userId;
+                DOM.studentNameInput.value = userName;
+            },
+
+            renderStudentPanel() {
+                API.renderStudentProfile(); // Update profile
+                API.renderStudentAnnouncements(); // Update announcements/active exams
+
+                if (currentExam) {
+                    DOM.activeExamsList.classList.add('hidden');
+                    DOM.examArea.classList.remove('hidden');
+                    // Render soal jika ada ujian aktif
+                    API.renderQuiz(currentExam.subjectId);
+                } else {
+                    DOM.activeExamsList.classList.remove('hidden');
+                    DOM.examArea.classList.add('hidden');
+                    DOM.examSubmitted.classList.add('hidden');
+                }
+            },
+
+            renderStudentAnnouncements() {
+                DOM.announcementsList.innerHTML = '';
+                DOM.activeExamsList.innerHTML = '';
+                
+                const today = new Date().toISOString().split('T')[0];
+                let todayExams = [];
+
+                Object.keys(allSubjects).forEach(id => {
+                    const subject = allSubjects[id];
+                    if (subject.date === today) {
+                        todayExams.push({ id, ...subject });
+                    }
+                });
+
+                if (todayExams.length === 0) {
+                    DOM.announcementsList.innerHTML = '<p class="text-sm text-gray-700">Tidak ada jadwal ujian hari ini.</p>';
+                    DOM.activeExamsList.innerHTML = '<p class="text-gray-500">Tidak ada ujian yang tersedia hari ini.</p>';
+                    return;
+                }
+
+                // Tampilkan sebagai pengumuman
+                todayExams.forEach(exam => {
+                    DOM.announcementsList.innerHTML += `
+                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                            <p class="font-bold text-sm">${exam.name}</p>
+                            <p class="text-xs text-gray-600">Pukul: ${exam.startTime} - ${exam.endTime}</p>
+                        </div>
+                    `;
+                });
+
+                // Tampilkan sebagai ujian aktif
+                todayExams.forEach(exam => {
+                    const result = allResults[exam.id] ? allResults[exam.id][userId] : null;
+                    const questions = allSubjects[exam.id]?.questions || {};
+                    const totalQuestions = Object.keys(questions).length;
+
+                    let buttonText = 'Mulai Ujian';
+                    let statusClass = 'bg-emerald-600 hover:bg-emerald-700';
+                    let isDisabled = false;
+                    let statusText = '';
+                    
+                    if (result) {
+                        buttonText = 'Sudah Dikerjakan';
+                        statusClass = 'bg-gray-400';
+                        isDisabled = true;
+                        statusText = `<span class="text-xs text-green-600 font-semibold"> (Selesai pada ${new Date(result.submissionTime).toLocaleTimeString('id-ID')})</span>`;
+                    } else if (totalQuestions === 0) {
+                        buttonText = 'Soal Belum Tersedia';
+                        statusClass = 'bg-yellow-500';
+                        isDisabled = true;
+                    }
+
+                    DOM.activeExamsList.innerHTML += `
+                        <div class="p-4 bg-white border border-gray-200 rounded-lg flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-lg">${exam.name} (${exam.id})</h4>
+                                <p class="text-sm text-gray-600">Waktu: ${exam.startTime} - ${exam.endTime} ${statusText}</p>
+                                <p class="text-xs text-gray-500">Total Soal: ${totalQuestions} pertanyaan.</p>
+                            </div>
+                            <button ${isDisabled ? 'disabled' : ''} onclick="app.startExam('${exam.id}')" 
+                                class="text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ${statusClass} disabled:opacity-50">
+                                ${buttonText}
+                            </button>
+                        </div>
+                    `;
+                });
+            },
+
+            renderQuiz(subjectId) {
+                const subject = allSubjects[subjectId];
+                if (!subject) return;
+
+                const questions = subject.questions || {};
+                const questionKeys = Object.keys(questions);
+
+                DOM.examTitle.textContent = `Ujian: ${subject.name} (${subjectId})`;
+                DOM.quizForm.innerHTML = '';
+                
+                questionKeys.sort((a, b) => parseInt(a.replace('q','')) - parseInt(b.replace('q',''))).forEach((qId, index) => {
+                    const q = questions[qId];
+                    const qNum = index + 1;
+                    
+                    let optionsHtml = '';
+                    ['a', 'b', 'c', 'd', 'e'].forEach(optKey => {
+                        if (q.options[optKey]) {
+                            optionsHtml += `
+                                <label class="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <input type="radio" name="${qId}" value="${optKey}" class="mr-3 text-emerald-600 focus:ring-emerald-500">
+                                    <span class="font-medium uppercase">${optKey}.</span> ${q.options[optKey]}
+                                </label>
+                            `;
+                        }
+                    });
+
+                    DOM.quizForm.innerHTML += `
+                        <div class="p-6 bg-gray-50 rounded-lg border-l-4 border-emerald-500">
+                            <p class="font-bold text-lg mb-3">Soal No. ${qNum} dari ${questionKeys.length}</p>
+                            <p class="text-gray-800 mb-4">${q.text}</p>
+                            <div class="space-y-2 text-sm">
+                                ${optionsHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Mulai timer
+                API.startTimer(subject.endTime);
+            },
+
+            startTimer(endTime) {
+                if (examTimerInterval) clearInterval(examTimerInterval);
+
+                const calculateTimeRemaining = () => {
+                    const now = new Date();
+                    const end = new Date(`${new Date().toISOString().split('T')[0]}T${endTime}`);
+                    const diff = end - now;
+
+                    if (diff <= 0) {
+                        clearInterval(examTimerInterval);
+                        DOM.examTimer.textContent = "Waktu Habis! Ujian Disubmit Otomatis.";
+                        // Jika waktu habis, submit otomatis
+                        setTimeout(() => API.submitExam(true), 1000);
+                        return '00:00:00';
+                    }
+
+                    const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
+                    const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
+                    const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
+                    
+                    return `${hours}:${minutes}:${seconds}`;
+                };
+
+                DOM.examTimer.textContent = calculateTimeRemaining();
+                examTimerInterval = setInterval(() => {
+                    DOM.examTimer.textContent = calculateTimeRemaining();
+                }, 1000);
+            }
+        };
+
+        // Exported functions for global use in HTML
+        window.app = {
+            logout() {
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('userName');
+                userRole = null;
+                userName = '';
+                if (examTimerInterval) clearInterval(examTimerInterval);
+                API.renderApp(true);
+            },
+
+            setRole(role) {
+                localStorage.setItem('userRole', role);
+                userRole = role;
+                // Untuk demo, jika student, set nama anonim
+                if (role === 'student' && !userName) {
+                    const defaultName = 'Siswa Anonim ' + Math.floor(Math.random() * 1000);
+                    localStorage.setItem('userName', defaultName);
+                    userName = defaultName;
+                }
+                API.renderApp();
+            },
+
+            saveStudentName() {
+                const name = DOM.studentNameInput.value.trim();
+                if (name) {
+                    localStorage.setItem('userName', name);
+                    userName = name;
+                    set(ref(db, API.getDbPath(`users/${userId}/name`)), name)
+                        .then(() => alert('Nama berhasil disimpan di database.'))
+                        .catch(err => console.error(err));
+                }
+            },
+
+            // --- Admin 1 Actions ---
+            openProctorModal() {
+                document.getElementById('proctor-uid').value = crypto.randomUUID().substring(0, 10);
+                DOM.proctorModal.classList.remove('hidden');
+                DOM.proctorModal.classList.add('flex');
+            },
+            
+            closeProctorModal() {
+                DOM.proctorModal.classList.add('hidden');
+                DOM.proctorModal.classList.remove('flex');
+            },
+
+            deleteSubject(id) {
+                if (confirm(`Yakin ingin menghapus jadwal ${id}? Semua data soal dan hasil terkait akan dihapus!`)) {
+                    remove(ref(db, API.getDbPath(`subjects/${id}`)));
+                    remove(ref(db, API.getDbPath(`questions/${id}`)));
+                    remove(ref(db, API.getDbPath(`results/${id}`)));
+                }
+            },
+
+            deleteUser(uid) {
+                if (confirm(`Yakin ingin menghapus user ${uid}?`)) {
+                    remove(ref(db, API.getDbPath(`users/${uid}`)));
+                }
+            },
+
+            // --- Admin 2 Actions ---
+            deleteQuestion(subjectId, qId) {
+                if (confirm(`Yakin ingin menghapus soal ${qId}?`)) {
+                    remove(ref(db, API.getDbPath(`questions/${subjectId}/${qId}`)));
+                }
+            },
+
+            clearQuestions() {
+                 if (confirm(`Yakin ingin MENGHAPUS SEMUA ${DOM.recapMapelTitle.textContent} soal Anda?`)) {
+                    remove(ref(db, API.getDbPath(`questions/${proctorSubjectId}`)));
+                }
+            },
+
+            // --- Student Actions ---
+            startExam(subjectId) {
+                currentExam = { subjectId };
+                API.renderStudentPanel();
+            },
+
+            submitExam(isAutoSubmit = false) {
+                if (!currentExam) return;
+                
+                const subjectId = currentExam.subjectId;
+                const form = DOM.quizForm;
+                const questions = allSubjects[subjectId]?.questions || {};
+                const totalQuestions = Object.keys(questions).length;
+                
+                if (!isAutoSubmit && !confirm(`Anda yakin ingin mengumpulkan ujian ${allSubjects[subjectId].name}?`)) return;
+
+                const answers = {};
+                let answeredCount = 0;
+                
+                Object.keys(questions).forEach(qId => {
+                    const selected = form.querySelector(`input[name="${qId}"]:checked`);
+                    if (selected) {
+                        answers[qId] = selected.value;
+                        answeredCount++;
+                    } else {
+                        answers[qId] = 'N/A';
+                    }
+                });
+
+                if (!isAutoSubmit && answeredCount < totalQuestions / 2 && totalQuestions > 0) {
+                     // Gunakan modal kustom atau pesan yang lebih baik daripada alert
+                     alert(`Anda baru menjawab ${answeredCount} dari ${totalQuestions} soal. Silakan tinjau kembali sebelum submit.`);
+                     return;
+                }
+
+                // Hitung skor (Client-side, akan diverifikasi ulang oleh Admin 2)
+                let score = 0;
+                Object.keys(answers).forEach(qId => {
+                    if (questions[qId] && answers[qId] === questions[qId].key) {
+                        score++;
+                    }
+                });
+                
+                const resultData = {
+                    studentName: userName,
+                    submissionTime: serverTimestamp(), // Menggunakan timestamp server
+                    answers: answers,
+                    score: score // Skor awal (hanya untuk informasi cepat, skor resmi dihitung admin)
+                };
+
+                // Path: results/{subjectId}/{userId}
+                set(ref(db, API.getDbPath(`results/${subjectId}/${userId}`)), resultData)
+                    .then(() => {
+                        currentExam = null;
+                        if (examTimerInterval) clearInterval(examTimerInterval);
+                        DOM.examArea.classList.add('hidden');
+                        DOM.examSubmitted.classList.remove('hidden');
+                        alert(isAutoSubmit ? 'Waktu habis! Jawaban berhasil disubmit otomatis.' : 'Jawaban berhasil dikumpulkan!');
+                        API.renderStudentAnnouncements();
+                    })
+                    .catch(error => {
+                        console.error("Submission Error:", error);
+                        alert("Gagal mengumpulkan jawaban. Coba lagi.");
+                    });
+            }
+        };
+
+        // --- Event Listeners for Forms ---
+
+        DOM.scheduleForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const subjectId = DOM.scheduleForm.querySelector('#subject-id').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const subjectData = {
+                name: DOM.scheduleForm.querySelector('#subject-name').value,
+                date: DOM.scheduleForm.querySelector('#subject-date').value,
+                startTime: DOM.scheduleForm.querySelector('#subject-time-start').value,
+                endTime: DOM.scheduleForm.querySelector('#subject-time-end').value,
+                admin2Uid: DOM.proctorSelect.value || null,
+            };
+
+            set(ref(db, API.getDbPath(`subjects/${subjectId}`)), subjectData)
+                .then(() => alert(`Jadwal ${subjectId} berhasil disimpan!`))
+                .catch(err => console.error(err));
+        });
+
+        DOM.addProctorForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const uid = document.getElementById('proctor-uid').value;
+            const name = document.getElementById('proctor-name').value;
+
+            const userData = {
+                name: name,
+                role: 'admin2'
+            };
+
+            set(ref(db, API.getDbPath(`users/${uid}`)), userData)
+                .then(() => {
+                    alert(`${name} berhasil ditambahkan sebagai Admin 2!`);
+                    app.closeProctorModal();
+                })
+                .catch(err => console.error(err));
+        });
+
+        DOM.questionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!proctorSubjectId) {
+                alert('Anda belum memiliki mapel yang dikelola. Gagal menyimpan soal.');
                 return;
             }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            const participant = state.data.peserta.get(selectedPesertaId);
-            const participantName = participant ? participant.name : 'N/A';
-            const juriName = selectedJuriName || 'Juri';
-
-            doc.setFontSize(18);
-            doc.text(`Formulir Penilaian PBB`, 105, 20, { align: 'center' });
+            const qNum = DOM.questionForm.querySelector('#q-number').value;
+            const qId = `q${qNum.padStart(2, '0')}`;
             
-            doc.setFontSize(12);
-            doc.text(`Peserta: ${participantName}`, 14, 30);
-            doc.text(`Penilai: ${juriName}`, 14, 36);
+            const questionData = {
+                text: DOM.questionForm.querySelector('#q-text').value,
+                options: {
+                    a: DOM.questionForm.querySelector('#opt-a').value,
+                    b: DOM.questionForm.querySelector('#opt-b').value,
+                    c: DOM.questionForm.querySelector('#opt-c').value,
+                    d: DOM.questionForm.querySelector('#opt-d').value,
+                },
+                key: DOM.questionForm.querySelector('#q-key').value,
+            };
 
-            const tableData = [];
-            let total = 0;
-
-            state.data.kriteria.forEach(item => {
-                const radios = document.getElementsByName(item.id);
-                let score = 0;
-                for (const radio of radios) {
-                    if (radio.checked) {
-                        score = parseInt(radio.value) || 0;
-                        break;
-                    }
-                }
-                tableData.push([item.name, score]);
-                total += score;
-            });
+            const optE = DOM.questionForm.querySelector('#opt-e').value;
+            if (optE) {
+                questionData.options.e = optE;
+            }
             
-            doc.autoTable({
-                head: [['Aspek yang Dinilai', 'Nilai']],
-                body: tableData,
-                startY: 45,
-                headStyles: { fillColor: [45, 55, 72] }, // slate-800
-                foot: [[{ content: 'TOTAL', styles: { halign: 'right', fontStyle: 'bold'} }, { content: total, styles: { fontStyle: 'bold' } }]],
-                footStyles: { fillColor: [230, 230, 230], textColor: [0, 0, 0] }
-            });
+            // Limit 55 soal
+            if (Object.keys(allSubjects[proctorSubjectId].questions || {}).length >= 55 && !allSubjects[proctorSubjectId].questions[qId]) {
+                 alert('Maksimal soal adalah 55. Soal baru gagal disimpan.');
+                 return;
+            }
 
-            doc.save(`Penilaian_${participantName}_${juriName}.pdf`);
-        }
-        
-        function printRecapPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            doc.setFontSize(18);
-            doc.text(`Rekapitulasi Nilai PBB`, 105, 20, { align: 'center' });
 
-            const juriArray = Array.from(state.data.juri.values()).sort((a,b) => a.name.localeCompare(b.name));
-            const pesertaArray = Array.from(state.data.peserta.values());
+            set(ref(db, API.getDbPath(`questions/${proctorSubjectId}/${qId}`)), questionData)
+                .then(() => {
+                    alert(`Soal No. ${qNum} berhasil disimpan untuk ${proctorSubjectId}!`);
+                    DOM.questionForm.reset();
+                    // Lanjutkan ke nomor berikutnya secara otomatis
+                    DOM.questionForm.querySelector('#q-number').value = parseInt(qNum) + 1;
+                })
+                .catch(err => console.error(err));
+        });
 
-            const tableHead = ['Nama Peserta'];
-            juriArray.forEach(j => tableHead.push(j.name));
-            tableHead.push('Total Akhir');
-            
-            const tableData = [];
-            pesertaArray.forEach(p => {
-                const scores = state.data.scores.get(p.id) || {};
-                let total = 0;
-                const row = [p.name];
-                
-                juriArray.forEach(j => {
-                    const juriScore = scores[j.id] ? scores[j.id].total : 0;
-                    total += juriScore;
-                    row.push(juriScore);
-                });
-                row.push(total);
-                tableData.push(row);
-            });
-            
-            // Urutkan berdasarkan total nilai tertinggi
-            tableData.sort((a, b) => b[b.length - 1] - a[a.length - 1]);
-
-            doc.autoTable({
-                head: [tableHead],
-                body: tableData,
-                startY: 30,
-                headStyles: { fillColor: [45, 55, 72] } // slate-800
-            });
-
-            doc.save(`Rekapitulasi_Nilai_PBB.pdf`);
-        }
-        
-        // --- Jalankan Aplikasi ---
-        window.addEventListener('DOMContentLoaded', initApp);
-
+        // Inisialisasi Aplikasi
+        window.onload = API.init;
     </script>
 </body>
 </html>
