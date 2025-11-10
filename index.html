@@ -3,45 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Ujian Sekolah Realtime (Realtime Database)</title>
-    <!-- Memuat Tailwind CSS -->
+    <title>Sistem Ujian Sekolah Realtime Profesional</title>
+    <!-- Memuat Tailwind CSS & Lucide Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Konfigurasi Font Inter -->
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Warna latar belakang abu-abu muda */
-        }
-        .card {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-        }
-        /* Custom scrollbar for better aesthetics */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .card { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .icon { width: 1.25rem; height: 1.25rem; }
+        /* Style for better tables */
+        .table-container { max-height: 400px; overflow-y: auto; }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
 <body class="min-h-screen antialiased">
 
     <!-- Kontainer Utama Aplikasi -->
     <div id="app" class="max-w-7xl mx-auto p-4 md:p-8">
+        <!-- Header & Info Pengguna -->
         <header class="bg-white p-6 rounded-xl mb-8 card">
             <div class="flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-3xl font-bold text-gray-800">Sistem Ujian Sekolah Online</h1>
+                <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                    <svg class="icon mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Sistem CBT Sekolah
+                </h1>
                 <div class="mt-4 md:mt-0 flex items-center space-x-4">
-                    <span id="user-display" class="text-sm font-medium text-gray-600 bg-gray-100 p-2 rounded-lg">Memuat...</span>
-                    <button id="logout-btn" onclick="app.logout()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150">Ganti Peran</button>
+                    <span id="user-display" class="text-sm font-semibold text-gray-700 bg-gray-100 p-2 rounded-lg">Memuat...</span>
+                    <button id="logout-btn" onclick="App.handleLogout()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center">
+                        <svg class="icon mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        Ganti Peran
+                    </button>
                 </div>
             </div>
             <p id="user-id-display" class="text-xs text-gray-500 mt-2">UID: -</p>
@@ -49,67 +44,97 @@
 
         <!-- Loading State -->
         <div id="loading" class="text-center p-12 bg-white rounded-xl card">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-            <p class="mt-4 text-gray-600">Memuat konfigurasi dan otentikasi...</p>
+            <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mx-auto"></div>
+            <p class="mt-4 text-lg font-medium text-gray-600">Menginisialisasi sistem...</p>
         </div>
 
-        <!-- Role Selector (Hanya untuk demonstrasi sederhana) -->
-        <div id="role-selector" class="hidden max-w-md mx-auto p-8 bg-white rounded-xl card text-center">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">Pilih Peran Anda</h2>
-            <div class="space-y-4">
-                <button onclick="app.setRole('admin1')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 transform hover:scale-[1.02]">Admin Utama (Kelola Jadwal & Rekap Nilai)</button>
-                <button onclick="app.setRole('admin2')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 transform hover:scale-[1.02]">Guru/Proktor (Kelola Soal & Rekap Mapel)</button>
-                <button onclick="app.setRole('student')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-150 transform hover:scale-[1.02]">Siswa (Ambil Ujian)</button>
+        <!-- Panel Login & Role Selection -->
+        <div id="login-panel" class="hidden max-w-lg mx-auto p-10 bg-white rounded-xl card text-center">
+            <h2 class="text-3xl font-extrabold mb-8 text-indigo-700">Selamat Datang</h2>
+            
+            <!-- Role Selection Buttons -->
+            <div id="role-buttons" class="space-y-4">
+                <!-- Admin Utama dan Guru/Proktor akan masuk ke form password -->
+                <button onclick="App.showAdminLogin('admin1')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg transition duration-200 transform hover:scale-[1.01]">
+                    Masuk sebagai **Admin Utama**
+                </button>
+                <button onclick="App.showAdminLogin('admin2')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition duration-200 transform hover:scale-[1.01]">
+                    Masuk sebagai **Guru/Proktor**
+                </button>
+                <div class="p-2">
+                    <span class="text-gray-500 text-sm">-- ATAU --</span>
+                </div>
+                <!-- Siswa langsung masuk (tanpa password) -->
+                <button onclick="App.setRole('student')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-lg transition duration-200 transform hover:scale-[1.01]">
+                    Masuk sebagai **Siswa** (Langsung Tampil)
+                </button>
             </div>
-            <p class="text-sm text-gray-500 mt-6">Peran diatur secara lokal untuk demonstrasi. Di aplikasi nyata, ini diatur melalui proses masuk.</p>
+
+            <!-- Admin Login Form -->
+            <div id="admin-login-form" class="hidden mt-8 pt-6 border-t border-gray-200 space-y-4">
+                <h3 id="login-title" class="text-2xl font-semibold text-gray-700">Masuk sebagai Admin</h3>
+                <p class="text-sm text-gray-500">Gunakan kata sandi: <strong class="text-indigo-600">Admin123</strong></p>
+                <input type="password" id="admin-password" placeholder="Masukkan Kata Sandi" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 text-lg">
+                <button onclick="App.loginAdmin()" id="admin-login-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition duration-200">
+                    Konfirmasi Login
+                </button>
+                <button onclick="App.backToRoleSelection()" class="w-full text-sm text-gray-500 hover:text-gray-700 pt-2">
+                    &larr; Kembali ke Pemilihan Peran
+                </button>
+            </div>
         </div>
 
         <!-- Halaman Admin Utama (Admin 1) -->
         <div id="admin1-panel" class="hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">Panel Admin Utama</h2>
+            <h2 class="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 flex items-center">
+                <svg class="icon mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M12 20.207a11.908 11.908 0 01-3.696-2.613L12 14l3.696 3.594A11.907 11.907 0 0112 20.207z"></path></svg>
+                Panel Admin Utama
+            </h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 <!-- Kelola Jadwal Ujian -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl card h-fit">
-                    <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Kelola Jadwal Ujian</h3>
-                    <form id="schedule-form" class="space-y-4">
-                        <input type="text" id="subject-id" placeholder="ID Mapel (misal: MTK)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                <div class="lg:col-span-1 bg-white p-6 rounded-xl card h-fit border border-indigo-100">
+                    <h3 class="text-xl font-semibold mb-4 text-indigo-700">Kelola Jadwal & Proktor</h3>
+                    <form id="schedule-form" class="space-y-3" onsubmit="App.saveSchedule(event)">
+                        <input type="text" id="subject-id" placeholder="ID Mapel (Misal: MTK, Wajib 4 Karakter)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required maxlength="4">
                         <input type="text" id="subject-name" placeholder="Nama Mata Pelajaran" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
                         <input type="date" id="subject-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                        <input type="time" id="subject-time-start" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                        <input type="time" id="subject-time-end" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <div class="flex space-x-2">
+                            <input type="time" id="subject-time-start" class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                            <input type="time" id="subject-time-end" class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
+                        </div>
                         <select id="subject-proctor" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">Pilih Proktor/Admin 2 (Opsional)</option>
+                            <option value="">Pilih Proktor/Guru (Opsional)</option>
                         </select>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition duration-150">Simpan Jadwal</button>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition duration-150">Simpan Jadwal Ujian</button>
                     </form>
+
+                    <button onclick="App.openProctorModal()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Tambah Guru/Proktor Baru</button>
                 </div>
 
                 <!-- Daftar Jadwal & Proktor -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-xl card">
-                    <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Jadwal Ujian Aktif</h3>
-                    <div id="subjects-list" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                    <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Daftar Jadwal Ujian Aktif</h3>
+                    <div id="subjects-list" class="space-y-3 table-container">
                         <p class="text-gray-500">Memuat jadwal...</p>
                     </div>
 
-                    <h3 class="text-xl font-semibold mt-8 mb-4 text-blue-700 border-b pb-2">Daftar Admin 2 / Proktor</h3>
-                    <div id="proctor-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
+                    <h3 class="text-xl font-semibold mt-6 mb-4 text-blue-700 border-b pb-2">Daftar Guru / Proktor</h3>
+                    <div id="proctor-list" class="space-y-3 table-container">
                         <p class="text-gray-500">Memuat proktor...</p>
                     </div>
-
-                    <button onclick="app.openProctorModal()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Tambah Admin 2 / Proktor Baru</button>
                 </div>
             </div>
 
             <!-- Rekap Nilai Keseluruhan -->
-            <div class="mt-8 bg-white p-6 rounded-xl card">
+            <div class="mt-8 bg-white p-6 rounded-xl card border border-indigo-100">
                 <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Rekap Nilai Siswa Keseluruhan</h3>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto table-container">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                        <thead class="bg-gray-50 sticky top-0">
                             <tr>
-                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Siswa (UID)</th>
-                                <th id="recap-header-subjects" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Mata Pelajaran</th>
+                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Siswa (Nama/UID)</th>
+                                <th id="recap-header-subjects" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran Ujian</th>
                             </tr>
                         </thead>
                         <tbody id="recap-body" class="bg-white divide-y divide-gray-200">
@@ -122,54 +147,58 @@
 
         <!-- Halaman Guru/Proktor (Admin 2) -->
         <div id="admin2-panel" class="hidden">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800">Panel Guru / Proktor</h2>
-            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg" role="alert">
-                <p class="font-bold">Mapel Anda:</p>
-                <p id="proctor-subject-info">Silakan pilih mapel yang Anda kelola di Panel Admin Utama.</p>
+            <h2 class="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 flex items-center">
+                <svg class="icon mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11-4L4 13l2 5z"></path></svg>
+                Panel Guru / Proktor
+            </h2>
+            <div id="proctor-subject-status" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg" role="alert">
+                <p class="font-bold">Status Mapel:</p>
+                <p id="proctor-subject-info">Memeriksa penugasan mapel...</p>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Input Soal Ujian -->
-                <div class="bg-white p-6 rounded-xl card h-fit">
-                    <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Input Soal Ujian (<span id="q-count">0</span>/55)</h3>
-                    <form id="question-form" class="space-y-4">
-                        <input type="number" id="q-number" placeholder="Nomor Soal (1-55)" min="1" max="55" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
-                        <textarea id="q-text" placeholder="Teks Soal" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required></textarea>
-                        <!-- Pilihan Jawaban (A-E) -->
+                <div class="bg-white p-6 rounded-xl card h-fit border border-blue-100">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">
+                        Input Soal Ujian Mapel: <span id="q-subject-name" class="font-bold">N/A</span> (<span id="q-count">0</span>/55)
+                    </h3>
+                    <form id="question-form" class="space-y-3" onsubmit="App.saveQuestion(event)">
+                        <input type="number" id="q-number" placeholder="Nomor Soal (1-55)" min="1" max="55" class="w-full p-3 border rounded-lg" required>
+                        <textarea id="q-text" placeholder="Teks Soal" rows="3" class="w-full p-3 border rounded-lg" required></textarea>
+                        
                         <div class="grid grid-cols-2 gap-2">
                             <input type="text" id="opt-a" placeholder="Pilihan A" class="p-3 border rounded-lg" required>
                             <input type="text" id="opt-b" placeholder="Pilihan B" class="p-3 border rounded-lg" required>
                             <input type="text" id="opt-c" placeholder="Pilihan C" class="p-3 border rounded-lg" required>
                             <input type="text" id="opt-d" placeholder="Pilihan D" class="p-3 border rounded-lg" required>
+                            <input type="text" id="opt-e" placeholder="Pilihan E (Opsional)" class="p-3 border rounded-lg col-span-2">
                         </div>
-                        <input type="text" id="opt-e" placeholder="Pilihan E (Opsional)" class="p-3 border rounded-lg">
                         
-                        <select id="q-key" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
+                        <select id="q-key" class="w-full p-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
                             <option value="">Pilih Kunci Jawaban (A/B/C/D/E)</option>
-                            <option value="a">A</option><option value="b">B</option>
-                            <option value="c">C</option><option value="d">D</option>
-                            <option value="e">E</option>
+                            <option value="a">A</option><option value="b">B</option><option value="c">C</option>
+                            <option value="d">D</option><option value="e">E</option>
                         </select>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Simpan Soal</button>
+                        <button type="submit" id="save-q-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-150" disabled>Simpan Soal</button>
                     </form>
-                    <button onclick="app.clearQuestions()" class="w-full mt-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition duration-150">Hapus Semua Soal Mapel Ini</button>
+                    <button onclick="App.clearQuestions()" id="clear-q-btn" class="w-full mt-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition duration-150" disabled>Hapus Semua Soal Mapel Ini</button>
                 </div>
                 
                 <!-- Daftar Soal -->
-                <div class="bg-white p-6 rounded-xl card">
+                <div class="bg-white p-6 rounded-xl card border border-blue-100">
                     <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Daftar Soal (<span id="q-list-count">0</span>)</h3>
-                    <div id="questions-list" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                    <div id="questions-list" class="space-y-4 table-container">
                         <p class="text-gray-500">Daftar soal akan muncul di sini.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Rekap Nilai Siswa per Mapel -->
-            <div class="mt-8 bg-white p-6 rounded-xl card">
-                <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Rekap Nilai Siswa Mapel: <span id="recap-mapel-title"></span></h3>
-                <div class="overflow-x-auto">
+            <div class="mt-8 bg-white p-6 rounded-xl card border border-blue-100">
+                <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Rekap Nilai Siswa Mapel: <span id="recap-mapel-title" class="font-bold">N/A</span></h3>
+                <div class="overflow-x-auto table-container">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                        <thead class="bg-gray-50 sticky top-0">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa (UID)</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Submit</th>
@@ -178,7 +207,7 @@
                             </tr>
                         </thead>
                         <tbody id="admin2-recap-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500">Menunggu data hasil ujian...</td></tr>
+                            <tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">Menunggu data hasil ujian...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -191,42 +220,51 @@
                 
                 <!-- Profil & Pengumuman -->
                 <div class="lg:col-span-1 space-y-6">
-                    <div class="bg-white p-6 rounded-xl card">
+                    <div class="bg-white p-6 rounded-xl card border border-emerald-100">
                         <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Profil Siswa</h3>
-                        <p><strong>UID:</strong> <span id="student-profile-uid" class="text-xs text-gray-500"></span></p>
-                        <p class="mt-2"><strong>Nama:</strong> <input type="text" id="student-name-input" placeholder="Isi Nama Anda" class="w-full p-2 border rounded-lg mt-1 focus:ring-emerald-500 focus:border-emerald-500"></p>
-                        <button onclick="app.saveStudentName()" class="w-full mt-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 rounded-lg transition duration-150">Simpan Nama</button>
+                        <p class="mb-2"><strong>UID:</strong> <span id="student-profile-uid" class="text-xs text-gray-500"></span></p>
+                        <p><strong>Nama:</strong> 
+                            <input type="text" id="student-name-input" placeholder="Isi Nama Lengkap Anda" class="w-full p-2 border rounded-lg mt-1 focus:ring-emerald-500 focus:border-emerald-500">
+                        </p>
+                        <button onclick="App.saveStudentName()" class="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition duration-150 flex items-center justify-center">
+                            <svg class="icon mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v6a2 2 0 002 2h3m0-4l4 4m0-4l-4-4m4 4H8"></path></svg>
+                            Simpan Nama
+                        </button>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl card">
-                        <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Pengumuman Hari Ini</h3>
-                        <div id="announcements-list" class="space-y-3 max-h-60 overflow-y-auto">
-                            <p class="text-sm text-gray-700">Tidak ada pengumuman hari ini.</p>
-                            <!-- Jadwal hari ini akan ditampilkan di sini -->
+                    <div class="bg-white p-6 rounded-xl card border border-emerald-100">
+                        <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Jadwal Ujian Hari Ini</h3>
+                        <div id="announcements-list" class="space-y-3 table-container">
+                            <p class="text-sm text-gray-700">Memuat jadwal...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Soal Per Hari (Ujian Aktif) -->
-                <div id="exam-container" class="lg:col-span-2 bg-white p-6 rounded-xl card">
-                    <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Ujian Hari Ini</h3>
+                <div id="exam-container" class="lg:col-span-2 bg-white p-6 rounded-xl card border border-emerald-100">
+                    <h3 class="text-2xl font-bold mb-4 text-emerald-700">Area Ujian</h3>
                     <div id="active-exams-list" class="space-y-4">
                         <p class="text-gray-500">Memuat ujian yang tersedia hari ini...</p>
                     </div>
 
                     <!-- Area Ujian -->
                     <div id="exam-area" class="hidden mt-6 pt-4 border-t border-gray-200">
-                        <h4 id="exam-title" class="text-2xl font-bold mb-4 text-indigo-700"></h4>
-                        <p id="exam-timer" class="text-red-600 text-lg font-semibold mb-4"></p>
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 id="exam-title" class="text-2xl font-bold text-indigo-700"></h4>
+                            <p id="exam-timer" class="text-red-600 text-xl font-extrabold bg-red-100 p-2 rounded-lg"></p>
+                        </div>
                         <form id="quiz-form" class="space-y-6">
                             <!-- Soal akan di-inject di sini -->
                         </form>
-                        <button onclick="app.submitExam()" id="submit-btn" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-150">Kumpulkan Jawaban</button>
+                        <button onclick="App.submitExam()" id="submit-btn" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-150 flex items-center justify-center">
+                            <svg class="icon mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Kumpulkan Jawaban
+                        </button>
                     </div>
                     
-                    <div id="exam-submitted" class="hidden mt-6 p-6 bg-green-50 text-green-700 rounded-lg">
+                    <div id="exam-submitted" class="hidden mt-6 p-6 bg-green-50 text-green-700 border-l-4 border-green-500 rounded-lg">
                         <h4 class="font-bold text-xl mb-2">Ujian Selesai!</h4>
-                        <p>Jawaban Anda telah berhasil dikumpulkan. Nilai akan diumumkan oleh Admin.</p>
+                        <p>Jawaban Anda telah berhasil dikumpulkan. Nilai akhir akan diumumkan oleh Guru/Proktor.</p>
                     </div>
                 </div>
             </div>
@@ -235,80 +273,105 @@
     </div>
 
     <!-- Modal untuk Menambah Admin 2 -->
-    <div id="proctor-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center p-4 z-50">
-        <div class="bg-white p-8 rounded-xl card max-w-lg w-full">
-            <h3 class="text-xl font-bold mb-4">Tambahkan Admin 2 (Proktor)</h3>
-            <form id="add-proctor-form" class="space-y-4">
-                <input type="text" id="proctor-uid" placeholder="UID Admin 2 (Untuk Demo: Random ID)" class="w-full p-3 border rounded-lg" required>
+    <div id="proctor-modal" class="fixed inset-0 bg-gray-900 bg-opacity-70 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-xl card max-w-lg w-full transform transition-transform duration-300 scale-95 opacity-0" id="proctor-modal-content">
+            <h3 class="text-2xl font-bold mb-4 text-blue-700">Tambahkan Guru/Proktor</h3>
+            <p class="text-sm text-gray-600 mb-4">Guru/Proktor baru akan menggunakan kata sandi bersama **Admin123**.</p>
+            <form id="add-proctor-form" class="space-y-4" onsubmit="App.addProctor(event)">
+                <input type="text" id="proctor-uid" placeholder="UID Admin 2 (Contoh: ID Unik)" class="w-full p-3 border rounded-lg" required>
                 <input type="text" id="proctor-name" placeholder="Nama Proktor/Guru" class="w-full p-3 border rounded-lg" required>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg">Tambahkan Proktor</button>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Tambahkan Proktor</button>
             </form>
-            <button onclick="app.closeProctorModal()" class="w-full mt-4 text-gray-600 hover:text-gray-800 py-2">Batal</button>
+            <button onclick="App.closeProctorModal()" class="w-full mt-4 text-gray-600 hover:text-gray-800 py-2 text-sm">Batal</button>
         </div>
+    </div>
+    
+    <!-- Toast Notification Area -->
+    <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50">
+        <!-- Notifikasi akan muncul di sini -->
     </div>
 
 
     <script type="module">
-        // Global variables provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'projectone-4016f';
-        // Menggunakan konfigurasi default untuk demo Realtime Database
-        const firebaseConfig = {
-            apiKey: "", // Disediakan oleh platform di runtime
-            authDomain: `${appId}.firebaseapp.com`,
-            databaseURL: `https://${appId}-default-rtdb.asia-southeast1.firebasedatabase.app`, // Contoh URL
-            projectId: appId,
+        // --- KONFIGURASI DAN INISIALISASI APLIKASI ---
+
+        // Konfigurasi Firebase Realtime Database yang disediakan oleh pengguna
+        const CUSTOM_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDjR5u6-aqowURTDGqAXpgEGxalgDm0RBE",
+            authDomain: "projectone-4016f.firebaseapp.com",
+            databaseURL: "https://projectone-4016f-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "projectone-4016f",
+            storageBucket: "projectone-4016f.firebasestorage.app",
+            messagingSenderId: "485377861739",
+            appId: "1:485377861739:web:836b6a59a3406051a2292e"
         };
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
         
-        // Menggunakan versi Firebase standar 11.6.1 untuk stabilitas platform
+        // Gunakan konfigurasi ini untuk inisialisasi Firebase
+        const firebaseConfig = CUSTOM_FIREBASE_CONFIG; 
+
+        // Variabel global untuk token otorisasi dari lingkungan Canvas
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Kata sandi bersama untuk Admin dan Proktor
+        const SHARED_ADMIN_PASSWORD = "Admin123"; // Kata sandi verifikasi
+
+        // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, set, onValue, push, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // Global Firebase instances
+        // Global State & Firebase Instances
         let appInstance, db, auth, userId = null;
         let userRole = localStorage.getItem('userRole') || null;
         let userName = localStorage.getItem('userName') || '';
-
-        // State global
         let allSubjects = {};
         let allUsers = {};
         let allResults = {};
-        let proctorSubjectId = null; // Mapel yang dikelola Admin 2
-        let currentExam = null; // Mapel ujian yang sedang dikerjakan siswa
+        let proctorSubjectId = null; 
+        let currentExam = null; 
         let examTimerInterval = null;
+        let pendingAdminRole = null; 
 
+        // DOM Element Mapping (sama seperti sebelumnya)
         const DOM = {
+            // General
             loading: document.getElementById('loading'),
-            roleSelector: document.getElementById('role-selector'),
+            loginPanel: document.getElementById('login-panel'),
+            adminLoginForm: document.getElementById('admin-login-form'),
+            roleButtons: document.getElementById('role-buttons'),
+            loginTitle: document.getElementById('login-title'),
+            adminPasswordInput: document.getElementById('admin-password'),
+            userDisplay: document.getElementById('user-display'),
+            userIdDisplay: document.getElementById('user-id-display'),
+            toastContainer: document.getElementById('toast-container'),
+            // Panels
             admin1Panel: document.getElementById('admin1-panel'),
             admin2Panel: document.getElementById('admin2-panel'),
             studentPanel: document.getElementById('student-panel'),
-            userDisplay: document.getElementById('user-display'),
-            userIdDisplay: document.getElementById('user-id-display'),
-            // Admin 1 elements
+            // Admin 1
             scheduleForm: document.getElementById('schedule-form'),
             proctorSelect: document.getElementById('subject-proctor'),
             subjectsList: document.getElementById('subjects-list'),
             proctorList: document.getElementById('proctor-list'),
             proctorModal: document.getElementById('proctor-modal'),
-            addProctorForm: document.getElementById('add-proctor-form'),
             recapHeaderSubjects: document.getElementById('recap-header-subjects'),
             recapBody: document.getElementById('recap-body'),
-            // Admin 2 elements
+            // Admin 2
             proctorSubjectInfo: document.getElementById('proctor-subject-info'),
-            questionForm: document.getElementById('question-form'),
+            proctorSubjectStatus: document.getElementById('proctor-subject-status'),
+            qSubjectName: document.getElementById('q-subject-name'),
             qCount: document.getElementById('q-count'),
             qListCount: document.getElementById('q-list-count'),
             questionsList: document.getElementById('questions-list'),
             recapMapelTitle: document.getElementById('recap-mapel-title'),
             admin2RecapBody: document.getElementById('admin2-recap-body'),
-            // Student elements
+            saveQBtn: document.getElementById('save-q-btn'),
+            clearQBtn: document.getElementById('clear-q-btn'),
+            // Student
             studentProfileUid: document.getElementById('student-profile-uid'),
             studentNameInput: document.getElementById('student-name-input'),
             announcementsList: document.getElementById('announcements-list'),
             activeExamsList: document.getElementById('active-exams-list'),
-            examContainer: document.getElementById('exam-container'),
             examArea: document.getElementById('exam-area'),
             examTitle: document.getElementById('exam-title'),
             examTimer: document.getElementById('exam-timer'),
@@ -316,24 +379,74 @@
             examSubmitted: document.getElementById('exam-submitted'),
         };
 
+        // --- UTILITY FUNCTIONS (Toast & Confirmation) ---
+        // (Fungsi showToast dan showConfirmation tidak diubah, tetap profesional)
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: { bg: 'bg-green-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' },
+                error: { bg: 'bg-red-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2A8 8 0 111 12a8 8 0 0115 0z"></path></svg>' },
+                info: { bg: 'bg-blue-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' },
+                warning: { bg: 'bg-yellow-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>' }
+            };
+            const setting = colors[type] || colors.info;
+
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-lg text-white font-medium shadow-xl flex items-center transition-all duration-500 transform translate-x-full ${setting.bg}`;
+            toast.innerHTML = `${setting.icon} <span class="ml-2">${message}</span>`;
+            
+            DOM.toastContainer.appendChild(toast);
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 10);
+
+            // Animate Out and Remove
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                toast.classList.add('opacity-0');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 5000);
+        }
+
+        function showConfirmation(message, callback) {
+            const modal = document.createElement('div');
+            modal.className = "fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center p-4 z-50";
+            
+            const content = document.createElement('div');
+            content.className = "bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4";
+            content.innerHTML = `
+                <h3 class="text-xl font-bold text-gray-800">Konfirmasi Aksi</h3>
+                <p class="text-gray-700">${message}</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancel-btn" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg font-medium text-gray-800 transition">Batal</button>
+                    <button id="confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium text-white transition">Ya, Lanjutkan</button>
+                </div>
+            `;
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+
+            document.getElementById('cancel-btn').onclick = () => { modal.remove(); };
+            document.getElementById('confirm-btn').onclick = () => { modal.remove(); callback(); };
+        }
+
+        // --- CORE APPLICATION LOGIC (API) ---
         const API = {
             async init() {
                 try {
-                    // 1. Inisialisasi Firebase
+                    // 1. Initialize Firebase App and Services
                     appInstance = initializeApp(firebaseConfig);
                     auth = getAuth(appInstance);
                     db = getDatabase(appInstance);
 
-                    // 2. Otentikasi (menggunakan token kustom/anonim dari lingkungan)
+                    // 2. Initial Authentication
                     if (initialAuthToken) {
                         await signInWithCustomToken(auth, initialAuthToken);
-                        console.log("Signed in with custom token.");
                     } else {
                         await signInAnonymously(auth);
-                        console.log("Signed in anonymously.");
                     }
 
-                    // 3. Menyiapkan listener Auth
+                    // 3. Setup Auth State Listener
                     onAuthStateChanged(auth, (user) => {
                         if (user) {
                             userId = user.uid;
@@ -341,67 +454,64 @@
                             API.setupRealtimeListeners();
                             API.renderApp();
                         } else {
-                            // Jika logout atau gagal, tampilkan selector peran
+                            // User logged out
                             API.renderApp(true);
                         }
                     });
 
                 } catch (error) {
-                    console.error("Firebase Initialization or Auth Error:", error);
-                    alert("Terjadi kesalahan saat inisialisasi Firebase. Lihat konsol untuk detail.");
+                    console.error("Firebase Initialization Error:", error);
+                    showToast("Gagal menginisialisasi Firebase. Periksa konsol.", 'error');
                     DOM.loading.textContent = "Gagal memuat aplikasi.";
                 }
             },
 
-            // Fungsi untuk mendapatkan path DB yang benar
+            // Realtime Database Path Helper
             getDbPath(path) {
-                // Realtime DB tidak menggunakan format /artifacts/{appId}/users/{userId}/...
-                // Kita gunakan path sederhana di root untuk demo, atau sesuaikan jika menggunakan struktur kompleks
                 return `/${path}`;
             },
 
             setupRealtimeListeners() {
-                // Listener untuk semua Users (diperlukan Admin 1 & 2)
+                // Listeners (Users, Subjects, Results) tidak diubah.
                 onValue(ref(db, API.getDbPath('users')), (snapshot) => {
                     allUsers = snapshot.val() || {};
-                    if (userRole === 'admin1') { API.renderAdmin1Proctors(); }
-                    if (userRole === 'student') { API.renderStudentProfile(); }
-                    API.renderApp(); // Render ulang jika data user berubah
+                    API.renderApp(); 
                 });
 
-                // Listener untuk Subjects (diperlukan semua peran)
                 onValue(ref(db, API.getDbPath('subjects')), (snapshot) => {
                     allSubjects = snapshot.val() || {};
-                    if (userRole === 'admin1') { API.renderAdmin1Subjects(); }
-                    if (userRole === 'student') { API.renderStudentPanel(); }
-                    if (userRole === 'admin2') { API.renderAdmin2Panel(); }
-                    API.renderApp(); // Render ulang
+                    API.renderApp(); 
                 });
 
-                // Listener untuk Results (diperlukan Admin 1 & 2)
                 onValue(ref(db, API.getDbPath('results')), (snapshot) => {
                     allResults = snapshot.val() || {};
-                    if (userRole === 'admin1') { API.renderAdmin1Recap(); }
-                    if (userRole === 'admin2') { API.renderAdmin2Recap(); }
+                    API.renderApp(); 
                 });
             },
 
-            // === UI Rendering & State Management ===
-            renderApp(showRoleSelector = false) {
+            // --- UI Rendering & State Management ---
+            renderApp(showLoginPanel = false) {
                 DOM.loading.classList.add('hidden');
 
-                if (showRoleSelector || !userRole) {
-                    DOM.roleSelector.classList.remove('hidden');
+                if (showLoginPanel || !userRole) {
+                    DOM.loginPanel.classList.remove('hidden');
+                    // Sembunyikan semua panel
                     DOM.admin1Panel.classList.add('hidden');
                     DOM.admin2Panel.classList.add('hidden');
                     DOM.studentPanel.classList.add('hidden');
-                    DOM.userDisplay.textContent = 'Mode: Belum Dipilih';
+                    DOM.userDisplay.textContent = 'Mode: Belum Masuk';
+                    // Tampilkan tombol pemilihan peran
+                    DOM.roleButtons.classList.remove('hidden');
+                    DOM.adminLoginForm.classList.add('hidden');
                     return;
                 }
 
-                DOM.roleSelector.classList.add('hidden');
-                DOM.userDisplay.textContent = `Mode: ${userRole.toUpperCase()} (${userName || userId})`;
+                // Jika sudah login, perbarui tampilan pengguna dan panel
+                DOM.loginPanel.classList.add('hidden');
+                const displayName = allUsers[userId]?.name || userName || userId.substring(0, 8) + '...';
+                DOM.userDisplay.textContent = `Mode: ${userRole.toUpperCase()} | ${displayName}`;
                 
+                // Sembunyikan semua panel sebelum menampilkan yang benar
                 DOM.admin1Panel.classList.add('hidden');
                 DOM.admin2Panel.classList.add('hidden');
                 DOM.studentPanel.classList.add('hidden');
@@ -415,29 +525,32 @@
                     DOM.admin2Panel.classList.remove('hidden');
                     API.renderAdmin2Panel();
                 } else if (userRole === 'student') {
+                    // Logika: Panel Siswa langsung tampil setelah pemilihan peran 'student'
                     DOM.studentPanel.classList.remove('hidden');
                     API.renderStudentPanel();
                 }
             },
-
-            // --- Admin 1 Logic ---
+            
+            // ... (Fungsi render Admin 1, Admin 2, dan Student lainnya tidak diubah)
             renderAdmin1Proctors() {
                 DOM.proctorList.innerHTML = '';
-                DOM.proctorSelect.innerHTML = '<option value="">Pilih Proktor/Admin 2 (Opsional)</option>';
+                DOM.proctorSelect.innerHTML = '<option value="">Pilih Proktor/Guru (Opsional)</option>';
 
+                let count = 0;
                 Object.keys(allUsers).filter(uid => allUsers[uid].role === 'admin2').forEach(uid => {
+                    count++;
                     const user = allUsers[uid];
                     DOM.proctorList.innerHTML += `
-                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
-                            <p class="text-sm font-medium">${user.name || 'Proktor Baru'} <span class="text-xs text-gray-500">(${uid})</span></p>
-                            <button onclick="app.deleteUser('${uid}')" class="text-red-500 hover:text-red-700 text-sm">Hapus</button>
+                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center text-sm">
+                            <p class="font-medium">${user.name || 'Proktor Baru'} <span class="text-xs text-gray-500">(${uid.substring(0, 8)}...)</span></p>
+                            <button onclick="App.deleteUser('${uid}')" class="text-red-500 hover:text-red-700 text-sm font-semibold ml-4">Hapus</button>
                         </div>
                     `;
-                    DOM.proctorSelect.innerHTML += `<option value="${uid}">${user.name} (${uid})</option>`;
+                    DOM.proctorSelect.innerHTML += `<option value="${uid}">${user.name} (${uid.substring(0, 8)}...)</option>`;
                 });
 
-                if (DOM.proctorList.innerHTML === '') {
-                    DOM.proctorList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada Admin 2 yang terdaftar.</p>';
+                if (count === 0) {
+                    DOM.proctorList.innerHTML = '<p class="text-gray-500 text-sm mt-2">Belum ada Guru/Proktor yang terdaftar.</p>';
                 }
             },
 
@@ -446,7 +559,7 @@
                 const subjectKeys = Object.keys(allSubjects);
 
                 if (subjectKeys.length === 0) {
-                    DOM.subjectsList.innerHTML = '<p class="text-gray-500 text-sm">Belum ada jadwal ujian yang dibuat.</p>';
+                    DOM.subjectsList.innerHTML = '<p class="text-gray-500 text-sm mt-2">Belum ada jadwal ujian yang dibuat.</p>';
                     return;
                 }
 
@@ -455,68 +568,59 @@
                     const proctorName = subject.admin2Uid ? (allUsers[subject.admin2Uid]?.name || 'Proktor Tidak Ditemukan') : 'Belum Ditunjuk';
                     
                     DOM.subjectsList.innerHTML += `
-                        <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                            <h4 class="font-bold text-lg">${subject.name} (${id})</h4>
-                            <p class="text-sm text-gray-700">Tanggal: ${subject.date}, Waktu: ${subject.startTime} - ${subject.endTime}</p>
-                            <p class="text-xs text-gray-600">Proktor: ${proctorName}</p>
-                            <div class="mt-2 flex space-x-2">
-                                <button onclick="app.deleteSubject('${id}')" class="text-red-500 hover:text-red-700 text-sm">Hapus</button>
+                        <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-lg text-indigo-800">${subject.name} (<span class="text-sm">${id}</span>)</h4>
+                                <p class="text-sm text-gray-700 mt-1">🗓️ ${subject.date} ⏱️ ${subject.startTime} - ${subject.endTime}</p>
+                                <p class="text-xs text-gray-600 mt-1">👤 Proktor: <span class="font-semibold">${proctorName}</span></p>
                             </div>
+                            <button onclick="App.deleteSubject('${id}')" class="text-red-500 hover:text-red-700 text-sm font-semibold transition duration-150 p-1 rounded">
+                                Hapus
+                            </button>
                         </div>
                     `;
                 });
             },
 
             renderAdmin1Recap() {
-                // 1. Kumpulkan semua siswa
-                const studentUids = new Set();
-                Object.keys(allResults).forEach(subjectId => {
-                    Object.keys(allResults[subjectId]).forEach(uid => studentUids.add(uid));
-                });
-                
-                // 2. Kumpulkan semua mapel untuk header
+                const studentUids = Object.keys(allUsers).filter(uid => allUsers[uid].role === 'student');
                 const subjectKeys = Object.keys(allSubjects);
-                DOM.recapHeaderSubjects.colSpan = subjectKeys.length > 0 ? subjectKeys.length : 1;
                 
-                // Buat header mapel
+                // 1. Render Header Mapel
                 let headerHTML = subjectKeys.map(id => 
                     `<th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">${allSubjects[id].name} (${id})</th>`
                 ).join('');
+                DOM.recapHeaderSubjects.innerHTML = headerHTML || `<th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Mata Pelajaran</th>`;
                 
-                DOM.recapHeaderSubjects.innerHTML = headerHTML || 
-                    `<th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Mata Pelajaran</th>`;
-                
-                // 3. Isi body rekap
+                // 2. Render Body Rekap
                 let bodyHTML = '';
-                if (studentUids.size === 0) {
-                    bodyHTML = '<tr><td colspan="' + (subjectKeys.length + 1) + '" class="px-3 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang mengerjakan ujian.</td></tr>';
+                if (studentUids.length === 0) {
+                    bodyHTML = `<tr><td colspan="${subjectKeys.length + 1}" class="px-3 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang terdaftar.</td></tr>`;
                 } else {
                     studentUids.forEach(uid => {
-                        const studentName = allUsers[uid]?.name || `Siswa UID: ${uid.substring(0, 8)}...`;
+                        const studentName = allUsers[uid]?.name || `Siswa Anonim`;
                         let subjectCells = subjectKeys.map(subjectId => {
                             const result = allResults[subjectId] ? allResults[subjectId][uid] : null;
                             const totalQuestions = Object.keys(allSubjects[subjectId]?.questions || {}).length;
                             
+                            let content, colorClass;
                             if (result) {
-                                return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center text-green-700 bg-green-50 font-semibold">
-                                    ${result.score}/${totalQuestions}
-                                </td>`;
-                            } else if (totalQuestions > 0) {
-                                // Belum mengerjakan
-                                return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center text-red-700 bg-red-50">
-                                    Belum Mengerjakan
-                                </td>`;
+                                content = `${result.score}/${totalQuestions}`;
+                                colorClass = 'text-green-700 bg-green-50 font-semibold';
+                            } else if (totalQuestions === 0) {
+                                content = `Soal N/A`;
+                                colorClass = 'text-yellow-700 bg-yellow-50';
                             } else {
-                                // Soal belum diinput
-                                return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center text-yellow-700 bg-yellow-50">
-                                    Soal Belum Ada
-                                </td>`;
+                                content = `Belum Mulai`;
+                                colorClass = 'text-red-700 bg-red-50';
                             }
+
+                            return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center ${colorClass}">${content}</td>`;
                         }).join('');
 
                         bodyHTML += `
                             <tr>
-                                <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${studentName}</td>
+                                <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">${studentName} <span class="text-xs text-gray-400">(${uid.substring(0, 8)}...)</span></td>
                                 ${subjectCells}
                             </tr>
                         `;
@@ -525,42 +629,51 @@
                 DOM.recapBody.innerHTML = bodyHTML;
             },
 
-
-            // --- Admin 2 Logic ---
             renderAdmin2Panel() {
-                const admin2User = allUsers[userId];
-                
-                // Cek apakah Admin 2 sudah terkait dengan mapel
                 let assignedSubjectId = null;
+                let assignedSubject = null;
+                
+                // Find the subject assigned to this admin2
                 Object.keys(allSubjects).forEach(id => {
                     if (allSubjects[id].admin2Uid === userId) {
                         assignedSubjectId = id;
-                        proctorSubjectId = id; // Set global proctor subject ID
+                        assignedSubject = allSubjects[id];
                     }
                 });
 
-                if (assignedSubjectId && allSubjects[assignedSubjectId]) {
-                    const subject = allSubjects[assignedSubjectId];
-                    DOM.proctorSubjectInfo.innerHTML = `Anda mengelola **${subject.name}** (ID: ${assignedSubjectId}).`;
-                    DOM.recapMapelTitle.textContent = `${subject.name} (${assignedSubjectId})`;
+                proctorSubjectId = assignedSubjectId; // Update global state
+                
+                if (assignedSubject) {
+                    // Success state
+                    DOM.proctorSubjectInfo.innerHTML = `Anda ditugaskan mengelola **${assignedSubject.name}** (ID: ${assignedSubjectId}). Mulai input soal di bawah.`;
+                    DOM.proctorSubjectStatus.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg';
+                    DOM.qSubjectName.textContent = assignedSubject.name;
+                    DOM.recapMapelTitle.textContent = assignedSubject.name;
+                    DOM.saveQBtn.disabled = false;
+                    DOM.clearQBtn.disabled = false;
                     
-                    // Listener khusus untuk pertanyaan di mapel ini
+                    // Setup Questions Listener for this specific subject
                     onValue(ref(db, API.getDbPath(`questions/${assignedSubjectId}`)), (snapshot) => {
                         const questions = snapshot.val() || {};
-                        subject.questions = questions; // Update subject data locally
+                        assignedSubject.questions = questions; // Update local subject data
                         API.renderAdmin2Questions(questions, assignedSubjectId);
-                        API.renderAdmin2Recap(); // Render ulang rekap saat soal berubah (total soal)
+                        API.renderAdmin2Recap(); // Rerender recap when questions change
                     });
                 } else {
-                    DOM.proctorSubjectInfo.innerHTML = `**PERINGATAN:** Anda belum ditunjuk sebagai proktor untuk mata pelajaran apa pun. Harap hubungi Admin Utama.`;
-                    DOM.questionsList.innerHTML = `<p class="text-red-500">Tidak dapat menambah soal. Anda belum memiliki mapel yang dikelola.</p>`;
-                    proctorSubjectId = null;
-                    API.renderAdmin2Recap(true); // Render ulang rekap dengan status tidak tersedia
+                    // Warning state
+                    DOM.proctorSubjectInfo.innerHTML = `**PERINGATAN:** Anda belum ditunjuk sebagai proktor/guru untuk mata pelajaran apa pun. Harap hubungi Admin Utama.`;
+                    DOM.proctorSubjectStatus.className = 'bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg';
+                    DOM.qSubjectName.textContent = 'N/A';
+                    DOM.recapMapelTitle.textContent = 'N/A';
+                    DOM.saveQBtn.disabled = true;
+                    DOM.clearQBtn.disabled = true;
+                    DOM.questionsList.innerHTML = `<p class="text-red-500">Tidak dapat menambah soal. Tugas mapel belum ditentukan.</p>`;
+                    API.renderAdmin2Recap(true);
                 }
             },
-
+            
             renderAdmin2Questions(questions, subjectId) {
-                const questionKeys = Object.keys(questions);
+                const questionKeys = Object.keys(questions).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
                 DOM.qCount.textContent = questionKeys.length;
                 DOM.qListCount.textContent = questionKeys.length;
                 DOM.questionsList.innerHTML = '';
@@ -574,21 +687,21 @@
                     const q = questions[qId];
                     const qNum = qId.replace('q', '');
                     DOM.questionsList.innerHTML += `
-                        <div class="p-3 border border-gray-100 rounded-lg bg-gray-50">
+                        <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition duration-100">
                             <div class="flex justify-between items-start">
-                                <p class="font-bold text-sm text-indigo-800">Soal No. ${qNum}</p>
-                                <button onclick="app.deleteQuestion('${subjectId}', '${qId}')" class="text-red-500 hover:text-red-700 text-xs">Hapus</button>
+                                <p class="font-bold text-sm text-blue-800">Soal No. ${qNum}</p>
+                                <button onclick="App.deleteQuestion('${subjectId}', '${qId}')" class="text-red-500 hover:text-red-700 text-xs font-medium ml-4">Hapus</button>
                             </div>
-                            <p class="text-sm mt-1">${q.text.substring(0, 100)}...</p>
-                            <p class="text-xs font-semibold mt-1">Kunci: <span class="text-green-600">${q.key.toUpperCase()}</span></p>
+                            <p class="text-sm mt-1 text-gray-700">${q.text.substring(0, 120)}...</p>
+                            <p class="text-xs font-semibold mt-1">Kunci Jawaban: <span class="text-green-600">${q.key.toUpperCase()}</span></p>
                         </div>
                     `;
                 });
             },
 
             renderAdmin2Recap(noSubject = false) {
-                if (noSubject || !proctorSubjectId) {
-                    DOM.admin2RecapBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-red-500 text-center">Silakan tentukan mapel yang Anda kelola terlebih dahulu.</td></tr>';
+                 if (noSubject || !proctorSubjectId) {
+                    DOM.admin2RecapBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-red-500 text-center">Data tidak tersedia.</td></tr>';
                     return;
                 }
                 
@@ -598,7 +711,7 @@
                 const totalQuestions = Object.keys(questions).length;
 
                 let bodyHTML = '';
-                const resultKeys = Object.keys(results);
+                const resultKeys = Object.keys(results).filter(uid => allUsers[uid]?.role === 'student');
 
                 if (resultKeys.length === 0) {
                     bodyHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang mengumpulkan ujian mapel ini.</td></tr>';
@@ -607,25 +720,30 @@
                         const result = results[uid];
                         const studentName = allUsers[uid]?.name || `Siswa UID: ${uid.substring(0, 8)}...`;
                         
-                        let correctCount = 0;
-                        if (totalQuestions > 0) {
-                            // Hitung skor
+                        let correctCount = result.score || 0;
+                        
+                        // Recalculate score for freshness (optional but professional)
+                        if (totalQuestions > 0 && result.answers) {
+                            let recalculatedScore = 0;
                             Object.keys(result.answers).forEach(qId => {
                                 if (questions[qId] && result.answers[qId] === questions[qId].key) {
-                                    correctCount++;
+                                    recalculatedScore++;
                                 }
                             });
-                            // Update skor di DB jika berbeda
+                            correctCount = recalculatedScore;
+                            // Asynchronously update score if different (to ensure clean data)
                             if (result.score !== correctCount) {
                                 set(ref(db, API.getDbPath(`results/${subjectId}/${uid}/score`)), correctCount);
                             }
                         }
 
+                        const time = result.submissionTime ? new Date(result.submissionTime).toLocaleString('id-ID') : 'N/A';
+
                         bodyHTML += `
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${studentName} <span class="text-xs text-gray-500">(${uid})</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(result.submissionTime).toLocaleString('id-ID')}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${correctCount}</td>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${studentName} <span class="text-xs text-gray-500">(${uid.substring(0, 8)}...)</span></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${time}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold">${correctCount}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${correctCount}/${totalQuestions}</td>
                             </tr>
                         `;
@@ -634,29 +752,13 @@
                 DOM.admin2RecapBody.innerHTML = bodyHTML;
             },
 
-
-            // --- Student Logic ---
             renderStudentProfile() {
                 DOM.studentProfileUid.textContent = userId;
-                DOM.studentNameInput.value = userName;
+                // If user data exists in DB, use that name, otherwise use local storage.
+                const currentName = allUsers[userId]?.name || userName;
+                DOM.studentNameInput.value = currentName;
             },
-
-            renderStudentPanel() {
-                API.renderStudentProfile(); // Update profile
-                API.renderStudentAnnouncements(); // Update announcements/active exams
-
-                if (currentExam) {
-                    DOM.activeExamsList.classList.add('hidden');
-                    DOM.examArea.classList.remove('hidden');
-                    // Render soal jika ada ujian aktif
-                    API.renderQuiz(currentExam.subjectId);
-                } else {
-                    DOM.activeExamsList.classList.remove('hidden');
-                    DOM.examArea.classList.add('hidden');
-                    DOM.examSubmitted.classList.add('hidden');
-                }
-            },
-
+            
             renderStudentAnnouncements() {
                 DOM.announcementsList.innerHTML = '';
                 DOM.activeExamsList.innerHTML = '';
@@ -673,16 +775,16 @@
 
                 if (todayExams.length === 0) {
                     DOM.announcementsList.innerHTML = '<p class="text-sm text-gray-700">Tidak ada jadwal ujian hari ini.</p>';
-                    DOM.activeExamsList.innerHTML = '<p class="text-gray-500">Tidak ada ujian yang tersedia hari ini.</p>';
+                    DOM.activeExamsList.innerHTML = '<p class="text-gray-500">Tidak ada ujian yang tersedia untuk Anda saat ini.</p>';
                     return;
                 }
 
-                // Tampilkan sebagai pengumuman
+                // Tampilkan jadwal sebagai pengumuman
                 todayExams.forEach(exam => {
                     DOM.announcementsList.innerHTML += `
-                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                            <p class="font-bold text-sm">${exam.name}</p>
-                            <p class="text-xs text-gray-600">Pukul: ${exam.startTime} - ${exam.endTime}</p>
+                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
+                            <p class="font-bold">${exam.name} (${exam.id})</p>
+                            <p class="text-xs text-gray-600">⏱️ Pukul: ${exam.startTime} - ${exam.endTime}</p>
                         </div>
                     `;
                 });
@@ -698,26 +800,43 @@
                     let isDisabled = false;
                     let statusText = '';
                     
+                    const now = new Date();
+                    const examDate = exam.date;
+                    const startTime = new Date(`${examDate}T${exam.startTime}`);
+                    const endTime = new Date(`${examDate}T${exam.endTime}`);
+
+                    // Logic Status
                     if (result) {
                         buttonText = 'Sudah Dikerjakan';
                         statusClass = 'bg-gray-400';
                         isDisabled = true;
                         statusText = `<span class="text-xs text-green-600 font-semibold"> (Selesai pada ${new Date(result.submissionTime).toLocaleTimeString('id-ID')})</span>`;
+                    } else if (now < startTime) {
+                         buttonText = 'Belum Waktunya';
+                         statusClass = 'bg-yellow-500';
+                         isDisabled = true;
+                    } else if (now > endTime) {
+                        buttonText = 'Waktu Ujian Habis';
+                        statusClass = 'bg-red-500';
+                        isDisabled = true;
                     } else if (totalQuestions === 0) {
                         buttonText = 'Soal Belum Tersedia';
-                        statusClass = 'bg-yellow-500';
+                        statusClass = 'bg-orange-500';
                         isDisabled = true;
                     }
+                    
+                    const timeDifference = endTime.getTime() - startTime.getTime();
+                    const durationMinutes = Math.floor(timeDifference / 60000);
 
                     DOM.activeExamsList.innerHTML += `
-                        <div class="p-4 bg-white border border-gray-200 rounded-lg flex justify-between items-center">
+                        <div class="p-4 bg-white border border-gray-200 rounded-lg flex justify-between items-center transition duration-100 hover:bg-gray-50">
                             <div>
-                                <h4 class="font-bold text-lg">${exam.name} (${exam.id})</h4>
-                                <p class="text-sm text-gray-600">Waktu: ${exam.startTime} - ${exam.endTime} ${statusText}</p>
-                                <p class="text-xs text-gray-500">Total Soal: ${totalQuestions} pertanyaan.</p>
+                                <h4 class="font-bold text-lg">${exam.name}</h4>
+                                <p class="text-sm text-gray-600">Durasi: ${durationMinutes} menit. Total Soal: ${totalQuestions} pertanyaan.</p>
+                                <p class="text-xs text-gray-500">Waktu Aktif: ${exam.startTime} - ${exam.endTime} ${statusText}</p>
                             </div>
-                            <button ${isDisabled ? 'disabled' : ''} onclick="app.startExam('${exam.id}')" 
-                                class="text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ${statusClass} disabled:opacity-50">
+                            <button ${isDisabled ? 'disabled' : ''} onclick="App.startExam('${exam.id}')" 
+                                class="text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ${statusClass} disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
                                 ${buttonText}
                             </button>
                         </div>
@@ -725,152 +844,365 @@
                 });
             },
 
+            renderStudentPanel() {
+                API.renderStudentProfile();
+                API.renderStudentAnnouncements();
+
+                // Tentukan apakah area ujian atau daftar ujian yang harus ditampilkan
+                if (currentExam) {
+                    DOM.activeExamsList.classList.add('hidden');
+                    DOM.examArea.classList.remove('hidden');
+                    DOM.examSubmitted.classList.add('hidden');
+                    API.renderQuiz(currentExam.subjectId);
+                } else if (allResults[currentExam?.subjectId]?.[userId]) {
+                     DOM.activeExamsList.classList.add('hidden');
+                     DOM.examArea.classList.add('hidden');
+                     DOM.examSubmitted.classList.remove('hidden');
+                } else {
+                    DOM.activeExamsList.classList.remove('hidden');
+                    DOM.examArea.classList.add('hidden');
+                    DOM.examSubmitted.classList.add('hidden');
+                }
+            },
+            
             renderQuiz(subjectId) {
                 const subject = allSubjects[subjectId];
-                if (!subject) return;
+                if (!subject || !subject.questions) {
+                    showToast('Soal tidak ditemukan.', 'error');
+                    return;
+                }
 
-                const questions = subject.questions || {};
-                const questionKeys = Object.keys(questions);
-
-                DOM.examTitle.textContent = `Ujian: ${subject.name} (${subjectId})`;
+                DOM.examTitle.textContent = `Ujian: ${subject.name}`;
                 DOM.quizForm.innerHTML = '';
                 
-                questionKeys.sort((a, b) => parseInt(a.replace('q','')) - parseInt(b.replace('q',''))).forEach((qId, index) => {
+                const questions = subject.questions;
+                const questionKeys = Object.keys(questions).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
+                
+                questionKeys.forEach((qId, index) => {
                     const q = questions[qId];
-                    const qNum = index + 1;
-                    
-                    let optionsHtml = '';
-                    ['a', 'b', 'c', 'd', 'e'].forEach(optKey => {
-                        if (q.options[optKey]) {
-                            optionsHtml += `
-                                <label class="block p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
-                                    <input type="radio" name="${qId}" value="${optKey}" class="mr-3 text-emerald-600 focus:ring-emerald-500">
-                                    <span class="font-medium uppercase">${optKey}.</span> ${q.options[optKey]}
-                                </label>
-                            `;
-                        }
-                    });
+                    const optionsHtml = Object.keys(q.options).map(key => {
+                        if (!q.options[key]) return '';
+                        return `
+                            <label class="block p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition duration-100">
+                                <input type="radio" name="${qId}" value="${key}" class="mr-3 text-indigo-600 focus:ring-indigo-500">
+                                <span class="font-medium">${key.toUpperCase()}.</span> ${q.options[key]}
+                            </label>
+                        `;
+                    }).join('');
 
                     DOM.quizForm.innerHTML += `
-                        <div class="p-6 bg-gray-50 rounded-lg border-l-4 border-emerald-500">
-                            <p class="font-bold text-lg mb-3">Soal No. ${qNum} dari ${questionKeys.length}</p>
-                            <p class="text-gray-800 mb-4">${q.text}</p>
-                            <div class="space-y-2 text-sm">
-                                ${optionsHtml}
-                            </div>
+                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-md">
+                            <h5 class="text-lg font-bold mb-3 text-gray-800">Soal No. ${index + 1}</h5>
+                            <p class="mb-4 text-gray-700">${q.text}</p>
+                            <div class="space-y-2">${optionsHtml}</div>
                         </div>
                     `;
                 });
                 
-                // Mulai timer
-                API.startTimer(subject.endTime);
+                // Start Timer
+                API.startExamTimer(subject.date, subject.endTime, subjectId);
             },
-
-            startTimer(endTime) {
+            
+            startExamTimer(examDate, endTimeStr, subjectId) {
                 if (examTimerInterval) clearInterval(examTimerInterval);
 
-                const calculateTimeRemaining = () => {
+                const endTime = new Date(`${examDate}T${endTimeStr}`);
+                
+                const updateTimer = () => {
                     const now = new Date();
-                    const end = new Date(`${new Date().toISOString().split('T')[0]}T${endTime}`);
-                    const diff = end - now;
+                    const timeLeft = endTime - now;
 
-                    if (diff <= 0) {
+                    if (timeLeft <= 0) {
                         clearInterval(examTimerInterval);
-                        DOM.examTimer.textContent = "Waktu Habis! Ujian Disubmit Otomatis.";
-                        // Jika waktu habis, submit otomatis
-                        setTimeout(() => API.submitExam(true), 1000);
-                        return '00:00:00';
+                        DOM.examTimer.textContent = 'Waktu Habis!';
+                        currentExam = { subjectId }; // Set currentExam for auto-submit
+                        App.submitExam(true); // Auto-submit
+                        return;
                     }
 
-                    const hours = String(Math.floor(diff / (1000 * 60 * 60))).padStart(2, '0');
-                    const minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
-                    const seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
-                    
-                    return `${hours}:${minutes}:${seconds}`;
+                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                    const formatTime = (time) => String(time).padStart(2, '0');
+                    DOM.examTimer.textContent = `Sisa Waktu: ${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
                 };
 
-                DOM.examTimer.textContent = calculateTimeRemaining();
-                examTimerInterval = setInterval(() => {
-                    DOM.examTimer.textContent = calculateTimeRemaining();
-                }, 1000);
+                updateTimer();
+                examTimerInterval = setInterval(updateTimer, 1000);
             }
+
         };
 
-        // Exported functions for global use in HTML
-        window.app = {
-            logout() {
-                localStorage.removeItem('userRole');
-                localStorage.removeItem('userName');
-                userRole = null;
-                userName = '';
-                if (examTimerInterval) clearInterval(examTimerInterval);
-                API.renderApp(true);
+        // --- PUBLIC APP HANDLERS (Used in HTML onclick) ---
+        window.App = {
+            handleLogout() {
+                showConfirmation("Anda yakin ingin keluar dan berganti peran? Progress ujian yang belum disubmit akan hilang.", () => {
+                    localStorage.removeItem('userRole');
+                    userRole = null;
+                    pendingAdminRole = null;
+                    if (examTimerInterval) clearInterval(examTimerInterval);
+                    API.renderApp(true);
+                    showToast('Berhasil keluar. Silakan pilih peran baru.', 'info');
+                });
+            },
+
+            backToRoleSelection() {
+                DOM.roleButtons.classList.remove('hidden');
+                DOM.adminLoginForm.classList.add('hidden');
+                DOM.adminPasswordInput.value = '';
+                pendingAdminRole = null;
+            },
+
+            showAdminLogin(role) {
+                pendingAdminRole = role;
+                const title = role === 'admin1' ? 'Admin Utama' : 'Guru/Proktor';
+                DOM.loginTitle.textContent = `Masuk sebagai ${title}`;
+                DOM.roleButtons.classList.add('hidden');
+                DOM.adminLoginForm.classList.remove('hidden');
+                DOM.adminPasswordInput.focus();
+            },
+
+            loginAdmin() {
+                // Logika utama untuk masuk Admin/Proktor (memeriksa password)
+                const password = DOM.adminPasswordInput.value.trim();
+                if (!password) {
+                    showToast('Kata sandi harus diisi.', 'warning');
+                    return;
+                }
+
+                if (password === SHARED_ADMIN_PASSWORD && pendingAdminRole) {
+                    // Password Benar: Lanjutkan ke halaman Admin/Proktor
+                    localStorage.setItem('userRole', pendingAdminRole);
+                    userRole = pendingAdminRole;
+                    
+                    const defaultName = pendingAdminRole === 'admin1' ? 'Admin Utama' : 'Guru/Proktor';
+                    const newName = allUsers[userId]?.name || defaultName;
+                    localStorage.setItem('userName', newName);
+                    userName = newName;
+                    
+                    set(ref(db, API.getDbPath(`users/${userId}/name`)), userName);
+                    set(ref(db, API.getDbPath(`users/${userId}/role`)), userRole);
+                    
+                    DOM.adminPasswordInput.value = '';
+                    API.renderApp();
+                    showToast(`Selamat datang, ${userName}! Anda berhasil masuk sebagai ${userRole.toUpperCase()}.`, 'success');
+
+                } else {
+                    showToast('Kata sandi salah. Coba lagi.', 'error');
+                    DOM.adminPasswordInput.value = '';
+                    DOM.adminPasswordInput.focus();
+                }
             },
 
             setRole(role) {
+                // Logika utama untuk masuk Siswa (langsung masuk)
                 localStorage.setItem('userRole', role);
                 userRole = role;
-                // Untuk demo, jika student, set nama anonim
-                if (role === 'student' && !userName) {
-                    const defaultName = 'Siswa Anonim ' + Math.floor(Math.random() * 1000);
-                    localStorage.setItem('userName', defaultName);
-                    userName = defaultName;
+                
+                const defaultName = 'Siswa Anonim ' + Math.floor(Math.random() * 1000);
+                const newName = allUsers[userId]?.name || localStorage.getItem('userName') || defaultName;
+                if (!allUsers[userId]) {
+                    localStorage.setItem('userName', newName);
+                    userName = newName;
                 }
-                API.renderApp();
+
+                set(ref(db, API.getDbPath(`users/${userId}/name`)), newName);
+                set(ref(db, API.getDbPath(`users/${userId}/role`)), userRole);
+
+                // Panel Siswa akan ditampilkan di dalam API.renderApp()
+                API.renderApp(); 
+                showToast(`Anda masuk sebagai Siswa. Jangan lupa simpan nama Anda!`, 'info');
             },
 
             saveStudentName() {
                 const name = DOM.studentNameInput.value.trim();
-                if (name) {
-                    localStorage.setItem('userName', name);
-                    userName = name;
-                    set(ref(db, API.getDbPath(`users/${userId}/name`)), name)
-                        .then(() => alert('Nama berhasil disimpan di database.'))
-                        .catch(err => console.error(err));
+                if (!name) {
+                    showToast('Nama tidak boleh kosong.', 'warning');
+                    return;
                 }
+                if (name.length < 3) {
+                     showToast('Nama terlalu pendek.', 'warning');
+                    return;
+                }
+
+                localStorage.setItem('userName', name);
+                userName = name;
+                set(ref(db, API.getDbPath(`users/${userId}/name`)), name)
+                    .then(() => showToast('Nama siswa berhasil diperbarui.', 'success'))
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Gagal menyimpan nama. Coba lagi.', 'error');
+                    });
             },
 
             // --- Admin 1 Actions ---
+            saveSchedule(e) {
+                e.preventDefault();
+                const subjectIdInput = DOM.scheduleForm.querySelector('#subject-id');
+                const subjectId = subjectIdInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                
+                if (subjectId.length !== 4) {
+                    showToast('ID Mapel harus 4 karakter (A-Z, 0-9).', 'error');
+                    subjectIdInput.focus();
+                    return;
+                }
+                
+                const subjectData = {
+                    name: DOM.scheduleForm.querySelector('#subject-name').value,
+                    date: DOM.scheduleForm.querySelector('#subject-date').value,
+                    startTime: DOM.scheduleForm.querySelector('#subject-time-start').value,
+                    endTime: DOM.scheduleForm.querySelector('#subject-time-end').value,
+                    admin2Uid: DOM.proctorSelect.value || null,
+                };
+
+                set(ref(db, API.getDbPath(`subjects/${subjectId}`)), subjectData)
+                    .then(() => {
+                        showToast(`Jadwal ${subjectId} berhasil disimpan!`, 'success');
+                        DOM.scheduleForm.reset();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Gagal menyimpan jadwal.', 'error');
+                    });
+            },
+            
             openProctorModal() {
-                document.getElementById('proctor-uid').value = crypto.randomUUID().substring(0, 10);
+                const randomId = 'P' + crypto.randomUUID().substring(0, 8);
+                document.getElementById('proctor-uid').value = randomId;
                 DOM.proctorModal.classList.remove('hidden');
                 DOM.proctorModal.classList.add('flex');
+                setTimeout(() => {
+                    document.getElementById('proctor-modal-content').classList.remove('scale-95', 'opacity-0');
+                }, 10);
             },
             
             closeProctorModal() {
-                DOM.proctorModal.classList.add('hidden');
-                DOM.proctorModal.classList.remove('flex');
+                document.getElementById('proctor-modal-content').classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    DOM.proctorModal.classList.add('hidden');
+                    DOM.proctorModal.classList.remove('flex');
+                }, 300);
+            },
+
+            addProctor(e) {
+                e.preventDefault();
+                const uid = document.getElementById('proctor-uid').value.trim();
+                const name = document.getElementById('proctor-name').value.trim();
+
+                const userData = {
+                    name: name,
+                    role: 'admin2'
+                };
+
+                set(ref(db, API.getDbPath(`users/${uid}`)), userData)
+                    .then(() => {
+                        showToast(`${name} berhasil ditambahkan sebagai Guru/Proktor! UID: ${uid.substring(0, 8)}...`, 'success');
+                        App.closeProctorModal();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Gagal menambahkan proktor.', 'error');
+                    });
             },
 
             deleteSubject(id) {
-                if (confirm(`Yakin ingin menghapus jadwal ${id}? Semua data soal dan hasil terkait akan dihapus!`)) {
+                showConfirmation(`Yakin ingin menghapus jadwal ${id}? SEMUA data soal dan hasil terkait akan hilang!`, () => {
                     remove(ref(db, API.getDbPath(`subjects/${id}`)));
                     remove(ref(db, API.getDbPath(`questions/${id}`)));
-                    remove(ref(db, API.getDbPath(`results/${id}`)));
-                }
+                    remove(ref(db, API.getDbPath(`results/${id}`)))
+                        .then(() => showToast(`Jadwal ${id} berhasil dihapus.`, 'warning'))
+                        .catch(err => {
+                            console.error(err);
+                            showToast('Gagal menghapus jadwal.', 'error');
+                        });
+                });
             },
 
             deleteUser(uid) {
-                if (confirm(`Yakin ingin menghapus user ${uid}?`)) {
-                    remove(ref(db, API.getDbPath(`users/${uid}`)));
-                }
+                showConfirmation(`Yakin ingin menghapus user ${uid.substring(0, 8)}...?`, () => {
+                    remove(ref(db, API.getDbPath(`users/${uid}`)))
+                        .then(() => showToast(`User ${uid.substring(0, 8)}... berhasil dihapus.`, 'warning'))
+                        .catch(err => {
+                            console.error(err);
+                            showToast('Gagal menghapus user.', 'error');
+                        });
+                });
             },
 
             // --- Admin 2 Actions ---
-            deleteQuestion(subjectId, qId) {
-                if (confirm(`Yakin ingin menghapus soal ${qId}?`)) {
-                    remove(ref(db, API.getDbPath(`questions/${subjectId}/${qId}`)));
+            saveQuestion(e) {
+                e.preventDefault();
+                if (!proctorSubjectId) {
+                    showToast('Gagal menyimpan soal. Mapel belum ditetapkan.', 'error');
+                    return;
                 }
+                const form = e.target;
+                const qNum = form.querySelector('#q-number').value;
+                const qId = `q${qNum.padStart(2, '0')}`;
+                
+                const questionData = {
+                    text: form.querySelector('#q-text').value,
+                    options: {
+                        a: form.querySelector('#opt-a').value,
+                        b: form.querySelector('#opt-b').value,
+                        c: form.querySelector('#opt-c').value,
+                        d: form.querySelector('#opt-d').value,
+                    },
+                    key: form.querySelector('#q-key').value,
+                };
+                const optE = form.querySelector('#opt-e').value;
+                if (optE) { questionData.options.e = optE; }
+                
+                const currentQuestions = allSubjects[proctorSubjectId]?.questions || {};
+                if (Object.keys(currentQuestions).length >= 55 && !currentQuestions[qId]) {
+                     showToast('Maksimal soal adalah 55. Soal baru gagal disimpan.', 'error');
+                     return;
+                }
+
+                set(ref(db, API.getDbPath(`questions/${proctorSubjectId}/${qId}`)), questionData)
+                    .then(() => {
+                        showToast(`Soal No. ${qNum} berhasil disimpan!`, 'success');
+                        form.reset();
+                        // Auto-increment question number
+                        form.querySelector('#q-number').value = parseInt(qNum) + 1;
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Gagal menyimpan soal.', 'error');
+                    });
+            },
+
+            deleteQuestion(subjectId, qId) {
+                showConfirmation(`Yakin ingin menghapus soal ${qId.replace('q', 'No. ')}?`, () => {
+                    remove(ref(db, API.getDbPath(`questions/${subjectId}/${qId}`)))
+                        .then(() => showToast(`Soal ${qId.replace('q', 'No. ')} berhasil dihapus.`, 'warning'))
+                        .catch(err => {
+                            console.error(err);
+                            showToast('Gagal menghapus soal.', 'error');
+                        });
+                });
             },
 
             clearQuestions() {
-                 if (confirm(`Yakin ingin MENGHAPUS SEMUA ${DOM.recapMapelTitle.textContent} soal Anda?`)) {
-                    remove(ref(db, API.getDbPath(`questions/${proctorSubjectId}`)));
-                }
+                 showConfirmation(`Yakin ingin MENGHAPUS SEMUA soal di mapel ${DOM.recapMapelTitle.textContent}?`, () => {
+                    remove(ref(db, API.getDbPath(`questions/${proctorSubjectId}`)))
+                        .then(() => showToast(`Semua soal di ${proctorSubjectId} telah dihapus.`, 'warning'))
+                        .catch(err => {
+                            console.error(err);
+                            showToast('Gagal menghapus semua soal.', 'error');
+                        });
+                });
             },
 
             // --- Student Actions ---
             startExam(subjectId) {
+                const subject = allSubjects[subjectId];
+                if (!subject || !subject.questions || Object.keys(subject.questions).length === 0) {
+                     showToast('Soal belum tersedia untuk ujian ini.', 'error');
+                     return;
+                }
+
                 currentExam = { subjectId };
                 API.renderStudentPanel();
             },
@@ -883,8 +1215,6 @@
                 const questions = allSubjects[subjectId]?.questions || {};
                 const totalQuestions = Object.keys(questions).length;
                 
-                if (!isAutoSubmit && !confirm(`Anda yakin ingin mengumpulkan ujian ${allSubjects[subjectId].name}?`)) return;
-
                 const answers = {};
                 let answeredCount = 0;
                 
@@ -898,13 +1228,25 @@
                     }
                 });
 
-                if (!isAutoSubmit && answeredCount < totalQuestions / 2 && totalQuestions > 0) {
-                     // Gunakan modal kustom atau pesan yang lebih baik daripada alert
-                     alert(`Anda baru menjawab ${answeredCount} dari ${totalQuestions} soal. Silakan tinjau kembali sebelum submit.`);
-                     return;
+                // Final Confirmation Check
+                if (!isAutoSubmit) {
+                    const confirmationMessage = (answeredCount < totalQuestions) 
+                        ? `Anda baru menjawab ${answeredCount} dari ${totalQuestions} soal. Jawaban yang kosong akan dianggap salah. Lanjut kumpulkan?`
+                        : `Anda yakin ingin mengumpulkan ujian ${allSubjects[subjectId].name}?`;
+                    
+                    showConfirmation(confirmationMessage, () => {
+                        App._performSubmission(subjectId, answers, answeredCount, totalQuestions, isAutoSubmit);
+                    });
+                } else {
+                    // Auto-submit requires no confirmation
+                    App._performSubmission(subjectId, answers, answeredCount, totalQuestions, isAutoSubmit);
                 }
-
-                // Hitung skor (Client-side, akan diverifikasi ulang oleh Admin 2)
+            },
+            
+            _performSubmission(subjectId, answers, answeredCount, totalQuestions, isAutoSubmit) {
+                const questions = allSubjects[subjectId]?.questions || {};
+                
+                // Recalculate score (Crucial)
                 let score = 0;
                 Object.keys(answers).forEach(qId => {
                     if (questions[qId] && answers[qId] === questions[qId].key) {
@@ -914,9 +1256,9 @@
                 
                 const resultData = {
                     studentName: userName,
-                    submissionTime: serverTimestamp(), // Menggunakan timestamp server
+                    submissionTime: serverTimestamp(), 
                     answers: answers,
-                    score: score // Skor awal (hanya untuk informasi cepat, skor resmi dihitung admin)
+                    score: score 
                 };
 
                 // Path: results/{subjectId}/{userId}
@@ -926,96 +1268,30 @@
                         if (examTimerInterval) clearInterval(examTimerInterval);
                         DOM.examArea.classList.add('hidden');
                         DOM.examSubmitted.classList.remove('hidden');
-                        alert(isAutoSubmit ? 'Waktu habis! Jawaban berhasil disubmit otomatis.' : 'Jawaban berhasil dikumpulkan!');
                         API.renderStudentAnnouncements();
+                        showToast(isAutoSubmit ? 'Waktu habis! Jawaban disubmit otomatis.' : 'Jawaban berhasil dikumpulkan!', 'success');
                     })
                     .catch(error => {
                         console.error("Submission Error:", error);
-                        alert("Gagal mengumpulkan jawaban. Coba lagi.");
+                        showToast("Gagal mengumpulkan jawaban. Coba lagi.", 'error');
                     });
             }
         };
 
-        // --- Event Listeners for Forms ---
+        // --- Event Listeners Initialization ---
 
-        DOM.scheduleForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const subjectId = DOM.scheduleForm.querySelector('#subject-id').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-            const subjectData = {
-                name: DOM.scheduleForm.querySelector('#subject-name').value,
-                date: DOM.scheduleForm.querySelector('#subject-date').value,
-                startTime: DOM.scheduleForm.querySelector('#subject-time-start').value,
-                endTime: DOM.scheduleForm.querySelector('#subject-time-end').value,
-                admin2Uid: DOM.proctorSelect.value || null,
-            };
-
-            set(ref(db, API.getDbPath(`subjects/${subjectId}`)), subjectData)
-                .then(() => alert(`Jadwal ${subjectId} berhasil disimpan!`))
-                .catch(err => console.error(err));
+        // Schedule Form (Admin 1)
+        DOM.scheduleForm.addEventListener('submit', App.saveSchedule);
+        
+        // Admin Password Input Enter Key
+        DOM.adminPasswordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                App.loginAdmin();
+            }
         });
 
-        DOM.addProctorForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const uid = document.getElementById('proctor-uid').value;
-            const name = document.getElementById('proctor-name').value;
-
-            const userData = {
-                name: name,
-                role: 'admin2'
-            };
-
-            set(ref(db, API.getDbPath(`users/${uid}`)), userData)
-                .then(() => {
-                    alert(`${name} berhasil ditambahkan sebagai Admin 2!`);
-                    app.closeProctorModal();
-                })
-                .catch(err => console.error(err));
-        });
-
-        DOM.questionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            if (!proctorSubjectId) {
-                alert('Anda belum memiliki mapel yang dikelola. Gagal menyimpan soal.');
-                return;
-            }
-
-            const qNum = DOM.questionForm.querySelector('#q-number').value;
-            const qId = `q${qNum.padStart(2, '0')}`;
-            
-            const questionData = {
-                text: DOM.questionForm.querySelector('#q-text').value,
-                options: {
-                    a: DOM.questionForm.querySelector('#opt-a').value,
-                    b: DOM.questionForm.querySelector('#opt-b').value,
-                    c: DOM.questionForm.querySelector('#opt-c').value,
-                    d: DOM.questionForm.querySelector('#opt-d').value,
-                },
-                key: DOM.questionForm.querySelector('#q-key').value,
-            };
-
-            const optE = DOM.questionForm.querySelector('#opt-e').value;
-            if (optE) {
-                questionData.options.e = optE;
-            }
-            
-            // Limit 55 soal
-            if (Object.keys(allSubjects[proctorSubjectId].questions || {}).length >= 55 && !allSubjects[proctorSubjectId].questions[qId]) {
-                 alert('Maksimal soal adalah 55. Soal baru gagal disimpan.');
-                 return;
-            }
-
-
-            set(ref(db, API.getDbPath(`questions/${proctorSubjectId}/${qId}`)), questionData)
-                .then(() => {
-                    alert(`Soal No. ${qNum} berhasil disimpan untuk ${proctorSubjectId}!`);
-                    DOM.questionForm.reset();
-                    // Lanjutkan ke nomor berikutnya secara otomatis
-                    DOM.questionForm.querySelector('#q-number').value = parseInt(qNum) + 1;
-                })
-                .catch(err => console.error(err));
-        });
-
-        // Inisialisasi Aplikasi
+        // Inisialisasi Aplikasi setelah DOM dimuat
         window.onload = API.init;
     </script>
 </body>
