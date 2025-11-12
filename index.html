@@ -3,300 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Ujian Sekolah Realtime Profesional</title>
-    <!-- Memuat Tailwind CSS & Lucide Icons -->
+    <title>Toko Online Misteri Box</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK Imports -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"></script>
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .card { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-        .icon { width: 1.25rem; height: 1.25rem; }
-        /* Style for better tables */
-        .table-container { max-height: 400px; overflow-y: auto; }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        body { font-family: 'Inter', sans-serif; }
+        /* Hamburger Menu Animation */
+        .hamburger-icon span {
+            display: block;
+            width: 25px;
+            height: 3px;
+            margin: 5px auto;
+            background-color: #333;
+            transition: all 0.3s ease-in-out;
+        }
+        .hamburger-icon.open span:nth-child(1) {
+            transform: translateY(8px) rotate(45deg);
+        }
+        .hamburger-icon.open span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger-icon.open span:nth-child(3) {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+        /* Mobile sidebar transition */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+            transform: translateX(-100%);
+        }
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        .admin-link {
+            display: none; /* Default hidden */
+        }
+        .admin-active .admin-link {
+            display: block; /* Show if admin is active */
+        }
     </style>
 </head>
-<body class="min-h-screen antialiased">
+<body class="bg-gray-50 min-h-screen">
 
-    <!-- Kontainer Utama Aplikasi -->
-    <div id="app" class="max-w-7xl mx-auto p-4 md:p-8">
-        <!-- Header & Info Pengguna -->
-        <header class="bg-white p-6 rounded-xl mb-8 card">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <h1 class="text-3xl font-bold text-gray-800 flex items-center">
-                    <svg class="icon mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Sistem CBT Sekolah
-                </h1>
-                <div class="mt-4 md:mt-0 flex items-center space-x-4">
-                    <span id="user-display" class="text-sm font-semibold text-gray-700 bg-gray-100 p-2 rounded-lg">Memuat...</span>
-                    <button id="logout-btn" onclick="App.handleLogout()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 flex items-center">
-                        <svg class="icon mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                        Ganti Peran
-                    </button>
-                </div>
-            </div>
-            <p id="user-id-display" class="text-xs text-gray-500 mt-2">UID: -</p>
-        </header>
-
-        <!-- Loading State -->
-        <div id="loading" class="text-center p-12 bg-white rounded-xl card">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-indigo-600 mx-auto"></div>
-            <p class="mt-4 text-lg font-medium text-gray-600">Menginisialisasi sistem...</p>
-        </div>
-
-        <!-- Panel Login & Role Selection -->
-        <div id="login-panel" class="hidden max-w-lg mx-auto p-10 bg-white rounded-xl card text-center">
-            <h2 class="text-3xl font-extrabold mb-8 text-indigo-700">Selamat Datang</h2>
-            
-            <!-- Role Selection Buttons -->
-            <div id="role-buttons" class="space-y-4">
-                <!-- Admin Utama dan Guru/Proktor akan masuk ke form password -->
-                <button onclick="App.showAdminLogin('admin1')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-lg transition duration-200 transform hover:scale-[1.01]">
-                    Masuk sebagai **Admin Utama**
-                </button>
-                <button onclick="App.showAdminLogin('admin2')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-lg transition duration-200 transform hover:scale-[1.01]">
-                    Masuk sebagai **Guru/Proktor**
-                </button>
-                <div class="p-2">
-                    <span class="text-gray-500 text-sm">-- ATAU --</span>
-                </div>
-                <!-- Siswa langsung masuk (tanpa password) -->
-                <button onclick="App.setRole('student')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 px-6 rounded-lg transition duration-200 transform hover:scale-[1.01]">
-                    Masuk sebagai **Siswa** (Langsung Tampil)
-                </button>
-            </div>
-
-            <!-- Admin Login Form -->
-            <div id="admin-login-form" class="hidden mt-8 pt-6 border-t border-gray-200 space-y-4">
-                <h3 id="login-title" class="text-2xl font-semibold text-gray-700">Masuk sebagai Admin</h3>
-                <p class="text-sm text-gray-500">Gunakan kata sandi: <strong class="text-indigo-600">Admin123</strong></p>
-                <input type="password" id="admin-password" placeholder="Masukkan Kata Sandi" class="w-full p-4 border border-gray-300 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 text-lg">
-                <button onclick="App.loginAdmin()" id="admin-login-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl transition duration-200">
-                    Konfirmasi Login
-                </button>
-                <button onclick="App.backToRoleSelection()" class="w-full text-sm text-gray-500 hover:text-gray-700 pt-2">
-                    &larr; Kembali ke Pemilihan Peran
-                </button>
-            </div>
-        </div>
-
-        <!-- Halaman Admin Utama (Admin 1) -->
-        <div id="admin1-panel" class="hidden">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 flex items-center">
-                <svg class="icon mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M12 20.207a11.908 11.908 0 01-3.696-2.613L12 14l3.696 3.594A11.907 11.907 0 0112 20.207z"></path></svg>
-                Panel Admin Utama
-            </h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- Kelola Jadwal Ujian -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl card h-fit border border-indigo-100">
-                    <h3 class="text-xl font-semibold mb-4 text-indigo-700">Kelola Jadwal & Proktor</h3>
-                    <form id="schedule-form" class="space-y-3" onsubmit="App.saveSchedule(event)">
-                        <input type="text" id="subject-id" placeholder="ID Mapel (Misal: MTK, Wajib 4 Karakter)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required maxlength="4">
-                        <input type="text" id="subject-name" placeholder="Nama Mata Pelajaran" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                        <input type="date" id="subject-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                        <div class="flex space-x-2">
-                            <input type="time" id="subject-time-start" class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                            <input type="time" id="subject-time-end" class="w-1/2 p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" required>
-                        </div>
-                        <select id="subject-proctor" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">Pilih Proktor/Guru (Opsional)</option>
-                        </select>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition duration-150">Simpan Jadwal Ujian</button>
-                    </form>
-
-                    <button onclick="App.openProctorModal()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition duration-150">Tambah Guru/Proktor Baru</button>
-                </div>
-
-                <!-- Daftar Jadwal & Proktor -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl card">
-                    <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Daftar Jadwal Ujian Aktif</h3>
-                    <div id="subjects-list" class="space-y-3 table-container">
-                        <p class="text-gray-500">Memuat jadwal...</p>
-                    </div>
-
-                    <h3 class="text-xl font-semibold mt-6 mb-4 text-blue-700 border-b pb-2">Daftar Guru / Proktor</h3>
-                    <div id="proctor-list" class="space-y-3 table-container">
-                        <p class="text-gray-500">Memuat proktor...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rekap Nilai Keseluruhan -->
-            <div class="mt-8 bg-white p-6 rounded-xl card border border-indigo-100">
-                <h3 class="text-xl font-semibold mb-4 text-indigo-700 border-b pb-2">Rekap Nilai Siswa Keseluruhan</h3>
-                <div class="overflow-x-auto table-container">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">Siswa (Nama/UID)</th>
-                                <th id="recap-header-subjects" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mata Pelajaran Ujian</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recap-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="2" class="px-3 py-4 text-sm text-gray-500">Memuat rekap data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Halaman Guru/Proktor (Admin 2) -->
-        <div id="admin2-panel" class="hidden">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800 border-b pb-2 flex items-center">
-                <svg class="icon mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11-4L4 13l2 5z"></path></svg>
-                Panel Guru / Proktor
-            </h2>
-            <div id="proctor-subject-status" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-lg" role="alert">
-                <p class="font-bold">Status Mapel:</p>
-                <p id="proctor-subject-info">Memeriksa penugasan mapel...</p>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Input Soal Ujian -->
-                <div class="bg-white p-6 rounded-xl card h-fit border border-blue-100">
-                    <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">
-                        Input Soal Ujian Mapel: <span id="q-subject-name" class="font-bold">N/A</span> (<span id="q-count">0</span>/55)
-                    </h3>
-                    <form id="question-form" class="space-y-3" onsubmit="App.saveQuestion(event)">
-                        <input type="number" id="q-number" placeholder="Nomor Soal (1-55)" min="1" max="55" class="w-full p-3 border rounded-lg" required>
-                        <textarea id="q-text" placeholder="Teks Soal" rows="3" class="w-full p-3 border rounded-lg" required></textarea>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="opt-a" placeholder="Pilihan A" class="p-3 border rounded-lg" required>
-                            <input type="text" id="opt-b" placeholder="Pilihan B" class="p-3 border rounded-lg" required>
-                            <input type="text" id="opt-c" placeholder="Pilihan C" class="p-3 border rounded-lg" required>
-                            <input type="text" id="opt-d" placeholder="Pilihan D" class="p-3 border rounded-lg" required>
-                            <input type="text" id="opt-e" placeholder="Pilihan E (Opsional)" class="p-3 border rounded-lg col-span-2">
-                        </div>
-                        
-                        <select id="q-key" class="w-full p-3 border rounded-lg focus:ring-blue-500 focus:border-blue-500" required>
-                            <option value="">Pilih Kunci Jawaban (A/B/C/D/E)</option>
-                            <option value="a">A</option><option value="b">B</option><option value="c">C</option>
-                            <option value="d">D</option><option value="e">E</option>
-                        </select>
-                        <button type="submit" id="save-q-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-150" disabled>Simpan Soal</button>
-                    </form>
-                    <button onclick="App.clearQuestions()" id="clear-q-btn" class="w-full mt-2 bg-red-500 hover:bg-red-600 text-white font-semibold py-3 rounded-lg transition duration-150" disabled>Hapus Semua Soal Mapel Ini</button>
-                </div>
-                
-                <!-- Daftar Soal -->
-                <div class="bg-white p-6 rounded-xl card border border-blue-100">
-                    <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Daftar Soal (<span id="q-list-count">0</span>)</h3>
-                    <div id="questions-list" class="space-y-4 table-container">
-                        <p class="text-gray-500">Daftar soal akan muncul di sini.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rekap Nilai Siswa per Mapel -->
-            <div class="mt-8 bg-white p-6 rounded-xl card border border-blue-100">
-                <h3 class="text-xl font-semibold mb-4 text-blue-700 border-b pb-2">Rekap Nilai Siswa Mapel: <span id="recap-mapel-title" class="font-bold">N/A</span></h3>
-                <div class="overflow-x-auto table-container">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Siswa (UID)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Submit</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jawaban Benar</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nilai (Skor/Total)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin2-recap-body" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">Menunggu data hasil ujian...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Halaman Siswa (Student) -->
-        <div id="student-panel" class="hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- Profil & Pengumuman -->
-                <div class="lg:col-span-1 space-y-6">
-                    <div class="bg-white p-6 rounded-xl card border border-emerald-100">
-                        <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Profil Siswa</h3>
-                        <p class="mb-2"><strong>UID:</strong> <span id="student-profile-uid" class="text-xs text-gray-500"></span></p>
-                        <p><strong>Nama:</strong> 
-                            <input type="text" id="student-name-input" placeholder="Isi Nama Lengkap Anda" class="w-full p-2 border rounded-lg mt-1 focus:ring-emerald-500 focus:border-emerald-500">
-                        </p>
-                        <button onclick="App.saveStudentName()" class="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg transition duration-150 flex items-center justify-center">
-                            <svg class="icon mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v6a2 2 0 002 2h3m0-4l4 4m0-4l-4-4m4 4H8"></path></svg>
-                            Simpan Nama
-                        </button>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-xl card border border-emerald-100">
-                        <h3 class="text-xl font-semibold mb-4 text-emerald-700 border-b pb-2">Jadwal Ujian Hari Ini</h3>
-                        <div id="announcements-list" class="space-y-3 table-container">
-                            <p class="text-sm text-gray-700">Memuat jadwal...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Soal Per Hari (Ujian Aktif) -->
-                <div id="exam-container" class="lg:col-span-2 bg-white p-6 rounded-xl card border border-emerald-100">
-                    <h3 class="text-2xl font-bold mb-4 text-emerald-700">Area Ujian</h3>
-                    <div id="active-exams-list" class="space-y-4">
-                        <p class="text-gray-500">Memuat ujian yang tersedia hari ini...</p>
-                    </div>
-
-                    <!-- Area Ujian -->
-                    <div id="exam-area" class="hidden mt-6 pt-4 border-t border-gray-200">
-                        <div class="flex justify-between items-center mb-4">
-                            <h4 id="exam-title" class="text-2xl font-bold text-indigo-700"></h4>
-                            <p id="exam-timer" class="text-red-600 text-xl font-extrabold bg-red-100 p-2 rounded-lg"></p>
-                        </div>
-                        <form id="quiz-form" class="space-y-6">
-                            <!-- Soal akan di-inject di sini -->
-                        </form>
-                        <button onclick="App.submitExam()" id="submit-btn" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition duration-150 flex items-center justify-center">
-                            <svg class="icon mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                            Kumpulkan Jawaban
-                        </button>
-                    </div>
-                    
-                    <div id="exam-submitted" class="hidden mt-6 p-6 bg-green-50 text-green-700 border-l-4 border-green-500 rounded-lg">
-                        <h4 class="font-bold text-xl mb-2">Ujian Selesai!</h4>
-                        <p>Jawaban Anda telah berhasil dikumpulkan. Nilai akhir akan diumumkan oleh Guru/Proktor.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- Modal untuk Menambah Admin 2 -->
-    <div id="proctor-modal" class="fixed inset-0 bg-gray-900 bg-opacity-70 hidden items-center justify-center p-4 z-50 transition-opacity duration-300">
-        <div class="bg-white p-8 rounded-xl card max-w-lg w-full transform transition-transform duration-300 scale-95 opacity-0" id="proctor-modal-content">
-            <h3 class="text-2xl font-bold mb-4 text-blue-700">Tambahkan Guru/Proktor</h3>
-            <p class="text-sm text-gray-600 mb-4">Guru/Proktor baru akan menggunakan kata sandi bersama **Admin123**.</p>
-            <form id="add-proctor-form" class="space-y-4" onsubmit="App.addProctor(event)">
-                <input type="text" id="proctor-uid" placeholder="UID Admin 2 (Contoh: ID Unik)" class="w-full p-3 border rounded-lg" required>
-                <input type="text" id="proctor-name" placeholder="Nama Proktor/Guru" class="w-full p-3 border rounded-lg" required>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">Tambahkan Proktor</button>
-            </form>
-            <button onclick="App.closeProctorModal()" class="w-full mt-4 text-gray-600 hover:text-gray-800 py-2 text-sm">Batal</button>
-        </div>
-    </div>
-    
-    <!-- Toast Notification Area -->
-    <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50">
-        <!-- Notifikasi akan muncul di sini -->
-    </div>
-
-
-    <script type="module">
-        // --- KONFIGURASI DAN INISIALISASI APLIKASI ---
-
-        // Konfigurasi Firebase Realtime Database yang disediakan oleh pengguna
-        const CUSTOM_FIREBASE_CONFIG = {
+    <!-- Global Variables & Config -->
+    <script>
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'toko-app-default';
+        // Fallback configuration MUST be complete for Realtime DB
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
             apiKey: "AIzaSyDjR5u6-aqowURTDGqAXpgEGxalgDm0RBE",
             authDomain: "projectone-4016f.firebaseapp.com",
             databaseURL: "https://projectone-4016f-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -304,995 +62,972 @@
             storageBucket: "projectone-4016f.firebasestorage.app",
             messagingSenderId: "485377861739",
             appId: "1:485377861739:web:836b6a59a3406051a2292e"
-        };
-        
-        // Gunakan konfigurasi ini untuk inisialisasi Firebase
-        const firebaseConfig = CUSTOM_FIREBASE_CONFIG; 
-
-        // Variabel global untuk token otorisasi dari lingkungan Canvas
+        }));
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Kata sandi bersama untuk Admin dan Proktor
-        const SHARED_ADMIN_PASSWORD = "Admin123"; // Kata sandi verifikasi
-
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, set, onValue, push, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-
-        // Global State & Firebase Instances
-        let appInstance, db, auth, userId = null;
-        let userRole = localStorage.getItem('userRole') || null;
-        let userName = localStorage.getItem('userName') || '';
-        let allSubjects = {};
-        let allUsers = {};
-        let allResults = {};
-        let proctorSubjectId = null; 
-        let currentExam = null; 
-        let examTimerInterval = null;
-        let pendingAdminRole = null; 
-
-        // DOM Element Mapping (sama seperti sebelumnya)
-        const DOM = {
-            // General
-            loading: document.getElementById('loading'),
-            loginPanel: document.getElementById('login-panel'),
-            adminLoginForm: document.getElementById('admin-login-form'),
-            roleButtons: document.getElementById('role-buttons'),
-            loginTitle: document.getElementById('login-title'),
-            adminPasswordInput: document.getElementById('admin-password'),
-            userDisplay: document.getElementById('user-display'),
-            userIdDisplay: document.getElementById('user-id-display'),
-            toastContainer: document.getElementById('toast-container'),
-            // Panels
-            admin1Panel: document.getElementById('admin1-panel'),
-            admin2Panel: document.getElementById('admin2-panel'),
-            studentPanel: document.getElementById('student-panel'),
-            // Admin 1
-            scheduleForm: document.getElementById('schedule-form'),
-            proctorSelect: document.getElementById('subject-proctor'),
-            subjectsList: document.getElementById('subjects-list'),
-            proctorList: document.getElementById('proctor-list'),
-            proctorModal: document.getElementById('proctor-modal'),
-            recapHeaderSubjects: document.getElementById('recap-header-subjects'),
-            recapBody: document.getElementById('recap-body'),
-            // Admin 2
-            proctorSubjectInfo: document.getElementById('proctor-subject-info'),
-            proctorSubjectStatus: document.getElementById('proctor-subject-status'),
-            qSubjectName: document.getElementById('q-subject-name'),
-            qCount: document.getElementById('q-count'),
-            qListCount: document.getElementById('q-list-count'),
-            questionsList: document.getElementById('questions-list'),
-            recapMapelTitle: document.getElementById('recap-mapel-title'),
-            admin2RecapBody: document.getElementById('admin2-recap-body'),
-            saveQBtn: document.getElementById('save-q-btn'),
-            clearQBtn: document.getElementById('clear-q-btn'),
-            // Student
-            studentProfileUid: document.getElementById('student-profile-uid'),
-            studentNameInput: document.getElementById('student-name-input'),
-            announcementsList: document.getElementById('announcements-list'),
-            activeExamsList: document.getElementById('active-exams-list'),
-            examArea: document.getElementById('exam-area'),
-            examTitle: document.getElementById('exam-title'),
-            examTimer: document.getElementById('exam-timer'),
-            quizForm: document.getElementById('quiz-form'),
-            examSubmitted: document.getElementById('exam-submitted'),
-        };
-
-        // --- UTILITY FUNCTIONS (Toast & Confirmation) ---
-        // (Fungsi showToast dan showConfirmation tidak diubah, tetap profesional)
-        function showToast(message, type = 'info') {
-            const colors = {
-                success: { bg: 'bg-green-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' },
-                error: { bg: 'bg-red-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2A8 8 0 111 12a8 8 0 0115 0z"></path></svg>' },
-                info: { bg: 'bg-blue-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' },
-                warning: { bg: 'bg-yellow-500', icon: '<svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>' }
-            };
-            const setting = colors[type] || colors.info;
-
-            const toast = document.createElement('div');
-            toast.className = `p-4 rounded-lg text-white font-medium shadow-xl flex items-center transition-all duration-500 transform translate-x-full ${setting.bg}`;
-            toast.innerHTML = `${setting.icon} <span class="ml-2">${message}</span>`;
-            
-            DOM.toastContainer.appendChild(toast);
-
-            // Animate In
-            setTimeout(() => {
-                toast.classList.remove('translate-x-full');
-            }, 10);
-
-            // Animate Out and Remove
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                toast.classList.add('opacity-0');
-                toast.addEventListener('transitionend', () => toast.remove());
-            }, 5000);
-        }
-
-        function showConfirmation(message, callback) {
-            const modal = document.createElement('div');
-            modal.className = "fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center p-4 z-50";
-            
-            const content = document.createElement('div');
-            content.className = "bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full space-y-4";
-            content.innerHTML = `
-                <h3 class="text-xl font-bold text-gray-800">Konfirmasi Aksi</h3>
-                <p class="text-gray-700">${message}</p>
-                <div class="flex justify-end space-x-3">
-                    <button id="cancel-btn" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-lg font-medium text-gray-800 transition">Batal</button>
-                    <button id="confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium text-white transition">Ya, Lanjutkan</button>
-                </div>
-            `;
-            modal.appendChild(content);
-            document.body.appendChild(modal);
-
-            document.getElementById('cancel-btn').onclick = () => { modal.remove(); };
-            document.getElementById('confirm-btn').onclick = () => { modal.remove(); callback(); };
-        }
-
-        // --- CORE APPLICATION LOGIC (API) ---
-        const API = {
-            async init() {
-                try {
-                    // 1. Initialize Firebase App and Services
-                    appInstance = initializeApp(firebaseConfig);
-                    auth = getAuth(appInstance);
-                    db = getDatabase(appInstance);
-
-                    // 2. Initial Authentication
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-
-                    // 3. Setup Auth State Listener
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            userId = user.uid;
-                            DOM.userIdDisplay.textContent = `UID: ${userId}`;
-                            API.setupRealtimeListeners();
-                            API.renderApp();
-                        } else {
-                            // User logged out
-                            API.renderApp(true);
-                        }
-                    });
-
-                } catch (error) {
-                    console.error("Firebase Initialization Error:", error);
-                    showToast("Gagal menginisialisasi Firebase. Periksa konsol.", 'error');
-                    DOM.loading.textContent = "Gagal memuat aplikasi.";
-                }
-            },
-
-            // Realtime Database Path Helper
-            getDbPath(path) {
-                return `/${path}`;
-            },
-
-            setupRealtimeListeners() {
-                // Listeners (Users, Subjects, Results) tidak diubah.
-                onValue(ref(db, API.getDbPath('users')), (snapshot) => {
-                    allUsers = snapshot.val() || {};
-                    API.renderApp(); 
-                });
-
-                onValue(ref(db, API.getDbPath('subjects')), (snapshot) => {
-                    allSubjects = snapshot.val() || {};
-                    API.renderApp(); 
-                });
-
-                onValue(ref(db, API.getDbPath('results')), (snapshot) => {
-                    allResults = snapshot.val() || {};
-                    API.renderApp(); 
-                });
-            },
-
-            // --- UI Rendering & State Management ---
-            renderApp(showLoginPanel = false) {
-                DOM.loading.classList.add('hidden');
-
-                if (showLoginPanel || !userRole) {
-                    DOM.loginPanel.classList.remove('hidden');
-                    // Sembunyikan semua panel
-                    DOM.admin1Panel.classList.add('hidden');
-                    DOM.admin2Panel.classList.add('hidden');
-                    DOM.studentPanel.classList.add('hidden');
-                    DOM.userDisplay.textContent = 'Mode: Belum Masuk';
-                    // Tampilkan tombol pemilihan peran
-                    DOM.roleButtons.classList.remove('hidden');
-                    DOM.adminLoginForm.classList.add('hidden');
-                    return;
-                }
-
-                // Jika sudah login, perbarui tampilan pengguna dan panel
-                DOM.loginPanel.classList.add('hidden');
-                const displayName = allUsers[userId]?.name || userName || userId.substring(0, 8) + '...';
-                DOM.userDisplay.textContent = `Mode: ${userRole.toUpperCase()} | ${displayName}`;
-                
-                // Sembunyikan semua panel sebelum menampilkan yang benar
-                DOM.admin1Panel.classList.add('hidden');
-                DOM.admin2Panel.classList.add('hidden');
-                DOM.studentPanel.classList.add('hidden');
-
-                if (userRole === 'admin1') {
-                    DOM.admin1Panel.classList.remove('hidden');
-                    API.renderAdmin1Proctors();
-                    API.renderAdmin1Subjects();
-                    API.renderAdmin1Recap();
-                } else if (userRole === 'admin2') {
-                    DOM.admin2Panel.classList.remove('hidden');
-                    API.renderAdmin2Panel();
-                } else if (userRole === 'student') {
-                    // Logika: Panel Siswa langsung tampil setelah pemilihan peran 'student'
-                    DOM.studentPanel.classList.remove('hidden');
-                    API.renderStudentPanel();
-                }
-            },
-            
-            // ... (Fungsi render Admin 1, Admin 2, dan Student lainnya tidak diubah)
-            renderAdmin1Proctors() {
-                DOM.proctorList.innerHTML = '';
-                DOM.proctorSelect.innerHTML = '<option value="">Pilih Proktor/Guru (Opsional)</option>';
-
-                let count = 0;
-                Object.keys(allUsers).filter(uid => allUsers[uid].role === 'admin2').forEach(uid => {
-                    count++;
-                    const user = allUsers[uid];
-                    DOM.proctorList.innerHTML += `
-                        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center text-sm">
-                            <p class="font-medium">${user.name || 'Proktor Baru'} <span class="text-xs text-gray-500">(${uid.substring(0, 8)}...)</span></p>
-                            <button onclick="App.deleteUser('${uid}')" class="text-red-500 hover:text-red-700 text-sm font-semibold ml-4">Hapus</button>
-                        </div>
-                    `;
-                    DOM.proctorSelect.innerHTML += `<option value="${uid}">${user.name} (${uid.substring(0, 8)}...)</option>`;
-                });
-
-                if (count === 0) {
-                    DOM.proctorList.innerHTML = '<p class="text-gray-500 text-sm mt-2">Belum ada Guru/Proktor yang terdaftar.</p>';
-                }
-            },
-
-            renderAdmin1Subjects() {
-                DOM.subjectsList.innerHTML = '';
-                const subjectKeys = Object.keys(allSubjects);
-
-                if (subjectKeys.length === 0) {
-                    DOM.subjectsList.innerHTML = '<p class="text-gray-500 text-sm mt-2">Belum ada jadwal ujian yang dibuat.</p>';
-                    return;
-                }
-
-                subjectKeys.forEach(id => {
-                    const subject = allSubjects[id];
-                    const proctorName = subject.admin2Uid ? (allUsers[subject.admin2Uid]?.name || 'Proktor Tidak Ditemukan') : 'Belum Ditunjuk';
-                    
-                    DOM.subjectsList.innerHTML += `
-                        <div class="p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex justify-between items-start">
-                            <div>
-                                <h4 class="font-bold text-lg text-indigo-800">${subject.name} (<span class="text-sm">${id}</span>)</h4>
-                                <p class="text-sm text-gray-700 mt-1">🗓️ ${subject.date} ⏱️ ${subject.startTime} - ${subject.endTime}</p>
-                                <p class="text-xs text-gray-600 mt-1">👤 Proktor: <span class="font-semibold">${proctorName}</span></p>
-                            </div>
-                            <button onclick="App.deleteSubject('${id}')" class="text-red-500 hover:text-red-700 text-sm font-semibold transition duration-150 p-1 rounded">
-                                Hapus
-                            </button>
-                        </div>
-                    `;
-                });
-            },
-
-            renderAdmin1Recap() {
-                const studentUids = Object.keys(allUsers).filter(uid => allUsers[uid].role === 'student');
-                const subjectKeys = Object.keys(allSubjects);
-                
-                // 1. Render Header Mapel
-                let headerHTML = subjectKeys.map(id => 
-                    `<th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">${allSubjects[id].name} (${id})</th>`
-                ).join('');
-                DOM.recapHeaderSubjects.innerHTML = headerHTML || `<th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Mata Pelajaran</th>`;
-                
-                // 2. Render Body Rekap
-                let bodyHTML = '';
-                if (studentUids.length === 0) {
-                    bodyHTML = `<tr><td colspan="${subjectKeys.length + 1}" class="px-3 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang terdaftar.</td></tr>`;
-                } else {
-                    studentUids.forEach(uid => {
-                        const studentName = allUsers[uid]?.name || `Siswa Anonim`;
-                        let subjectCells = subjectKeys.map(subjectId => {
-                            const result = allResults[subjectId] ? allResults[subjectId][uid] : null;
-                            const totalQuestions = Object.keys(allSubjects[subjectId]?.questions || {}).length;
-                            
-                            let content, colorClass;
-                            if (result) {
-                                content = `${result.score}/${totalQuestions}`;
-                                colorClass = 'text-green-700 bg-green-50 font-semibold';
-                            } else if (totalQuestions === 0) {
-                                content = `Soal N/A`;
-                                colorClass = 'text-yellow-700 bg-yellow-50';
-                            } else {
-                                content = `Belum Mulai`;
-                                colorClass = 'text-red-700 bg-red-50';
-                            }
-
-                            return `<td class="px-3 py-4 whitespace-nowrap text-sm text-center ${colorClass}">${content}</td>`;
-                        }).join('');
-
-                        bodyHTML += `
-                            <tr>
-                                <td class="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 sticky left-0 bg-white z-10">${studentName} <span class="text-xs text-gray-400">(${uid.substring(0, 8)}...)</span></td>
-                                ${subjectCells}
-                            </tr>
-                        `;
-                    });
-                }
-                DOM.recapBody.innerHTML = bodyHTML;
-            },
-
-            renderAdmin2Panel() {
-                let assignedSubjectId = null;
-                let assignedSubject = null;
-                
-                // Find the subject assigned to this admin2
-                Object.keys(allSubjects).forEach(id => {
-                    if (allSubjects[id].admin2Uid === userId) {
-                        assignedSubjectId = id;
-                        assignedSubject = allSubjects[id];
-                    }
-                });
-
-                proctorSubjectId = assignedSubjectId; // Update global state
-                
-                if (assignedSubject) {
-                    // Success state
-                    DOM.proctorSubjectInfo.innerHTML = `Anda ditugaskan mengelola **${assignedSubject.name}** (ID: ${assignedSubjectId}). Mulai input soal di bawah.`;
-                    DOM.proctorSubjectStatus.className = 'bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded-lg';
-                    DOM.qSubjectName.textContent = assignedSubject.name;
-                    DOM.recapMapelTitle.textContent = assignedSubject.name;
-                    DOM.saveQBtn.disabled = false;
-                    DOM.clearQBtn.disabled = false;
-                    
-                    // Setup Questions Listener for this specific subject
-                    onValue(ref(db, API.getDbPath(`questions/${assignedSubjectId}`)), (snapshot) => {
-                        const questions = snapshot.val() || {};
-                        assignedSubject.questions = questions; // Update local subject data
-                        API.renderAdmin2Questions(questions, assignedSubjectId);
-                        API.renderAdmin2Recap(); // Rerender recap when questions change
-                    });
-                } else {
-                    // Warning state
-                    DOM.proctorSubjectInfo.innerHTML = `**PERINGATAN:** Anda belum ditunjuk sebagai proktor/guru untuk mata pelajaran apa pun. Harap hubungi Admin Utama.`;
-                    DOM.proctorSubjectStatus.className = 'bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg';
-                    DOM.qSubjectName.textContent = 'N/A';
-                    DOM.recapMapelTitle.textContent = 'N/A';
-                    DOM.saveQBtn.disabled = true;
-                    DOM.clearQBtn.disabled = true;
-                    DOM.questionsList.innerHTML = `<p class="text-red-500">Tidak dapat menambah soal. Tugas mapel belum ditentukan.</p>`;
-                    API.renderAdmin2Recap(true);
-                }
-            },
-            
-            renderAdmin2Questions(questions, subjectId) {
-                const questionKeys = Object.keys(questions).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
-                DOM.qCount.textContent = questionKeys.length;
-                DOM.qListCount.textContent = questionKeys.length;
-                DOM.questionsList.innerHTML = '';
-
-                if (questionKeys.length === 0) {
-                    DOM.questionsList.innerHTML = '<p class="text-gray-500">Belum ada soal yang diinput.</p>';
-                    return;
-                }
-
-                questionKeys.forEach(qId => {
-                    const q = questions[qId];
-                    const qNum = qId.replace('q', '');
-                    DOM.questionsList.innerHTML += `
-                        <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition duration-100">
-                            <div class="flex justify-between items-start">
-                                <p class="font-bold text-sm text-blue-800">Soal No. ${qNum}</p>
-                                <button onclick="App.deleteQuestion('${subjectId}', '${qId}')" class="text-red-500 hover:text-red-700 text-xs font-medium ml-4">Hapus</button>
-                            </div>
-                            <p class="text-sm mt-1 text-gray-700">${q.text.substring(0, 120)}...</p>
-                            <p class="text-xs font-semibold mt-1">Kunci Jawaban: <span class="text-green-600">${q.key.toUpperCase()}</span></p>
-                        </div>
-                    `;
-                });
-            },
-
-            renderAdmin2Recap(noSubject = false) {
-                 if (noSubject || !proctorSubjectId) {
-                    DOM.admin2RecapBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-red-500 text-center">Data tidak tersedia.</td></tr>';
-                    return;
-                }
-                
-                const subjectId = proctorSubjectId;
-                const results = allResults[subjectId] || {};
-                const questions = allSubjects[subjectId]?.questions || {};
-                const totalQuestions = Object.keys(questions).length;
-
-                let bodyHTML = '';
-                const resultKeys = Object.keys(results).filter(uid => allUsers[uid]?.role === 'student');
-
-                if (resultKeys.length === 0) {
-                    bodyHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">Belum ada siswa yang mengumpulkan ujian mapel ini.</td></tr>';
-                } else {
-                    resultKeys.forEach(uid => {
-                        const result = results[uid];
-                        const studentName = allUsers[uid]?.name || `Siswa UID: ${uid.substring(0, 8)}...`;
-                        
-                        let correctCount = result.score || 0;
-                        
-                        // Recalculate score for freshness (optional but professional)
-                        if (totalQuestions > 0 && result.answers) {
-                            let recalculatedScore = 0;
-                            Object.keys(result.answers).forEach(qId => {
-                                if (questions[qId] && result.answers[qId] === questions[qId].key) {
-                                    recalculatedScore++;
-                                }
-                            });
-                            correctCount = recalculatedScore;
-                            // Asynchronously update score if different (to ensure clean data)
-                            if (result.score !== correctCount) {
-                                set(ref(db, API.getDbPath(`results/${subjectId}/${uid}/score`)), correctCount);
-                            }
-                        }
-
-                        const time = result.submissionTime ? new Date(result.submissionTime).toLocaleString('id-ID') : 'N/A';
-
-                        bodyHTML += `
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${studentName} <span class="text-xs text-gray-500">(${uid.substring(0, 8)}...)</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${time}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold">${correctCount}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">${correctCount}/${totalQuestions}</td>
-                            </tr>
-                        `;
-                    });
-                }
-                DOM.admin2RecapBody.innerHTML = bodyHTML;
-            },
-
-            renderStudentProfile() {
-                DOM.studentProfileUid.textContent = userId;
-                // If user data exists in DB, use that name, otherwise use local storage.
-                const currentName = allUsers[userId]?.name || userName;
-                DOM.studentNameInput.value = currentName;
-            },
-            
-            renderStudentAnnouncements() {
-                DOM.announcementsList.innerHTML = '';
-                DOM.activeExamsList.innerHTML = '';
-                
-                const today = new Date().toISOString().split('T')[0];
-                let todayExams = [];
-
-                Object.keys(allSubjects).forEach(id => {
-                    const subject = allSubjects[id];
-                    if (subject.date === today) {
-                        todayExams.push({ id, ...subject });
-                    }
-                });
-
-                if (todayExams.length === 0) {
-                    DOM.announcementsList.innerHTML = '<p class="text-sm text-gray-700">Tidak ada jadwal ujian hari ini.</p>';
-                    DOM.activeExamsList.innerHTML = '<p class="text-gray-500">Tidak ada ujian yang tersedia untuk Anda saat ini.</p>';
-                    return;
-                }
-
-                // Tampilkan jadwal sebagai pengumuman
-                todayExams.forEach(exam => {
-                    DOM.announcementsList.innerHTML += `
-                        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm">
-                            <p class="font-bold">${exam.name} (${exam.id})</p>
-                            <p class="text-xs text-gray-600">⏱️ Pukul: ${exam.startTime} - ${exam.endTime}</p>
-                        </div>
-                    `;
-                });
-
-                // Tampilkan sebagai ujian aktif
-                todayExams.forEach(exam => {
-                    const result = allResults[exam.id] ? allResults[exam.id][userId] : null;
-                    const questions = allSubjects[exam.id]?.questions || {};
-                    const totalQuestions = Object.keys(questions).length;
-
-                    let buttonText = 'Mulai Ujian';
-                    let statusClass = 'bg-emerald-600 hover:bg-emerald-700';
-                    let isDisabled = false;
-                    let statusText = '';
-                    
-                    const now = new Date();
-                    const examDate = exam.date;
-                    const startTime = new Date(`${examDate}T${exam.startTime}`);
-                    const endTime = new Date(`${examDate}T${exam.endTime}`);
-
-                    // Logic Status
-                    if (result) {
-                        buttonText = 'Sudah Dikerjakan';
-                        statusClass = 'bg-gray-400';
-                        isDisabled = true;
-                        statusText = `<span class="text-xs text-green-600 font-semibold"> (Selesai pada ${new Date(result.submissionTime).toLocaleTimeString('id-ID')})</span>`;
-                    } else if (now < startTime) {
-                         buttonText = 'Belum Waktunya';
-                         statusClass = 'bg-yellow-500';
-                         isDisabled = true;
-                    } else if (now > endTime) {
-                        buttonText = 'Waktu Ujian Habis';
-                        statusClass = 'bg-red-500';
-                        isDisabled = true;
-                    } else if (totalQuestions === 0) {
-                        buttonText = 'Soal Belum Tersedia';
-                        statusClass = 'bg-orange-500';
-                        isDisabled = true;
-                    }
-                    
-                    const timeDifference = endTime.getTime() - startTime.getTime();
-                    const durationMinutes = Math.floor(timeDifference / 60000);
-
-                    DOM.activeExamsList.innerHTML += `
-                        <div class="p-4 bg-white border border-gray-200 rounded-lg flex justify-between items-center transition duration-100 hover:bg-gray-50">
-                            <div>
-                                <h4 class="font-bold text-lg">${exam.name}</h4>
-                                <p class="text-sm text-gray-600">Durasi: ${durationMinutes} menit. Total Soal: ${totalQuestions} pertanyaan.</p>
-                                <p class="text-xs text-gray-500">Waktu Aktif: ${exam.startTime} - ${exam.endTime} ${statusText}</p>
-                            </div>
-                            <button ${isDisabled ? 'disabled' : ''} onclick="App.startExam('${exam.id}')" 
-                                class="text-white font-semibold py-2 px-4 rounded-lg transition duration-150 ${statusClass} disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
-                                ${buttonText}
-                            </button>
-                        </div>
-                    `;
-                });
-            },
-
-            renderStudentPanel() {
-                API.renderStudentProfile();
-                API.renderStudentAnnouncements();
-
-                // Tentukan apakah area ujian atau daftar ujian yang harus ditampilkan
-                if (currentExam) {
-                    DOM.activeExamsList.classList.add('hidden');
-                    DOM.examArea.classList.remove('hidden');
-                    DOM.examSubmitted.classList.add('hidden');
-                    API.renderQuiz(currentExam.subjectId);
-                } else if (allResults[currentExam?.subjectId]?.[userId]) {
-                     DOM.activeExamsList.classList.add('hidden');
-                     DOM.examArea.classList.add('hidden');
-                     DOM.examSubmitted.classList.remove('hidden');
-                } else {
-                    DOM.activeExamsList.classList.remove('hidden');
-                    DOM.examArea.classList.add('hidden');
-                    DOM.examSubmitted.classList.add('hidden');
-                }
-            },
-            
-            renderQuiz(subjectId) {
-                const subject = allSubjects[subjectId];
-                if (!subject || !subject.questions) {
-                    showToast('Soal tidak ditemukan.', 'error');
-                    return;
-                }
-
-                DOM.examTitle.textContent = `Ujian: ${subject.name}`;
-                DOM.quizForm.innerHTML = '';
-                
-                const questions = subject.questions;
-                const questionKeys = Object.keys(questions).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1)));
-                
-                questionKeys.forEach((qId, index) => {
-                    const q = questions[qId];
-                    const optionsHtml = Object.keys(q.options).map(key => {
-                        if (!q.options[key]) return '';
-                        return `
-                            <label class="block p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-indigo-50 transition duration-100">
-                                <input type="radio" name="${qId}" value="${key}" class="mr-3 text-indigo-600 focus:ring-indigo-500">
-                                <span class="font-medium">${key.toUpperCase()}.</span> ${q.options[key]}
-                            </label>
-                        `;
-                    }).join('');
-
-                    DOM.quizForm.innerHTML += `
-                        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-md">
-                            <h5 class="text-lg font-bold mb-3 text-gray-800">Soal No. ${index + 1}</h5>
-                            <p class="mb-4 text-gray-700">${q.text}</p>
-                            <div class="space-y-2">${optionsHtml}</div>
-                        </div>
-                    `;
-                });
-                
-                // Start Timer
-                API.startExamTimer(subject.date, subject.endTime, subjectId);
-            },
-            
-            startExamTimer(examDate, endTimeStr, subjectId) {
-                if (examTimerInterval) clearInterval(examTimerInterval);
-
-                const endTime = new Date(`${examDate}T${endTimeStr}`);
-                
-                const updateTimer = () => {
-                    const now = new Date();
-                    const timeLeft = endTime - now;
-
-                    if (timeLeft <= 0) {
-                        clearInterval(examTimerInterval);
-                        DOM.examTimer.textContent = 'Waktu Habis!';
-                        currentExam = { subjectId }; // Set currentExam for auto-submit
-                        App.submitExam(true); // Auto-submit
-                        return;
-                    }
-
-                    const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-                    const formatTime = (time) => String(time).padStart(2, '0');
-                    DOM.examTimer.textContent = `Sisa Waktu: ${formatTime(hours)}:${formatTime(minutes)}:${formatTime(seconds)}`;
-                };
-
-                updateTimer();
-                examTimerInterval = setInterval(updateTimer, 1000);
-            }
-
-        };
-
-        // --- PUBLIC APP HANDLERS (Used in HTML onclick) ---
-        window.App = {
-            handleLogout() {
-                showConfirmation("Anda yakin ingin keluar dan berganti peran? Progress ujian yang belum disubmit akan hilang.", () => {
-                    localStorage.removeItem('userRole');
-                    userRole = null;
-                    pendingAdminRole = null;
-                    if (examTimerInterval) clearInterval(examTimerInterval);
-                    API.renderApp(true);
-                    showToast('Berhasil keluar. Silakan pilih peran baru.', 'info');
-                });
-            },
-
-            backToRoleSelection() {
-                DOM.roleButtons.classList.remove('hidden');
-                DOM.adminLoginForm.classList.add('hidden');
-                DOM.adminPasswordInput.value = '';
-                pendingAdminRole = null;
-            },
-
-            showAdminLogin(role) {
-                pendingAdminRole = role;
-                const title = role === 'admin1' ? 'Admin Utama' : 'Guru/Proktor';
-                DOM.loginTitle.textContent = `Masuk sebagai ${title}`;
-                DOM.roleButtons.classList.add('hidden');
-                DOM.adminLoginForm.classList.remove('hidden');
-                DOM.adminPasswordInput.focus();
-            },
-
-            loginAdmin() {
-                // Logika utama untuk masuk Admin/Proktor (memeriksa password)
-                const password = DOM.adminPasswordInput.value.trim();
-                if (!password) {
-                    showToast('Kata sandi harus diisi.', 'warning');
-                    return;
-                }
-
-                if (password === SHARED_ADMIN_PASSWORD && pendingAdminRole) {
-                    // Password Benar: Lanjutkan ke halaman Admin/Proktor
-                    localStorage.setItem('userRole', pendingAdminRole);
-                    userRole = pendingAdminRole;
-                    
-                    const defaultName = pendingAdminRole === 'admin1' ? 'Admin Utama' : 'Guru/Proktor';
-                    const newName = allUsers[userId]?.name || defaultName;
-                    localStorage.setItem('userName', newName);
-                    userName = newName;
-                    
-                    set(ref(db, API.getDbPath(`users/${userId}/name`)), userName);
-                    set(ref(db, API.getDbPath(`users/${userId}/role`)), userRole);
-                    
-                    DOM.adminPasswordInput.value = '';
-                    API.renderApp();
-                    showToast(`Selamat datang, ${userName}! Anda berhasil masuk sebagai ${userRole.toUpperCase()}.`, 'success');
-
-                } else {
-                    showToast('Kata sandi salah. Coba lagi.', 'error');
-                    DOM.adminPasswordInput.value = '';
-                    DOM.adminPasswordInput.focus();
-                }
-            },
-
-            setRole(role) {
-                // Logika utama untuk masuk Siswa (langsung masuk)
-                localStorage.setItem('userRole', role);
-                userRole = role;
-                
-                const defaultName = 'Siswa Anonim ' + Math.floor(Math.random() * 1000);
-                const newName = allUsers[userId]?.name || localStorage.getItem('userName') || defaultName;
-                if (!allUsers[userId]) {
-                    localStorage.setItem('userName', newName);
-                    userName = newName;
-                }
-
-                set(ref(db, API.getDbPath(`users/${userId}/name`)), newName);
-                set(ref(db, API.getDbPath(`users/${userId}/role`)), userRole);
-
-                // Panel Siswa akan ditampilkan di dalam API.renderApp()
-                API.renderApp(); 
-                showToast(`Anda masuk sebagai Siswa. Jangan lupa simpan nama Anda!`, 'info');
-            },
-
-            saveStudentName() {
-                const name = DOM.studentNameInput.value.trim();
-                if (!name) {
-                    showToast('Nama tidak boleh kosong.', 'warning');
-                    return;
-                }
-                if (name.length < 3) {
-                     showToast('Nama terlalu pendek.', 'warning');
-                    return;
-                }
-
-                localStorage.setItem('userName', name);
-                userName = name;
-                set(ref(db, API.getDbPath(`users/${userId}/name`)), name)
-                    .then(() => showToast('Nama siswa berhasil diperbarui.', 'success'))
-                    .catch(err => {
-                        console.error(err);
-                        showToast('Gagal menyimpan nama. Coba lagi.', 'error');
-                    });
-            },
-
-            // --- Admin 1 Actions ---
-            saveSchedule(e) {
-                e.preventDefault();
-                const subjectIdInput = DOM.scheduleForm.querySelector('#subject-id');
-                const subjectId = subjectIdInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                
-                if (subjectId.length !== 4) {
-                    showToast('ID Mapel harus 4 karakter (A-Z, 0-9).', 'error');
-                    subjectIdInput.focus();
-                    return;
-                }
-                
-                const subjectData = {
-                    name: DOM.scheduleForm.querySelector('#subject-name').value,
-                    date: DOM.scheduleForm.querySelector('#subject-date').value,
-                    startTime: DOM.scheduleForm.querySelector('#subject-time-start').value,
-                    endTime: DOM.scheduleForm.querySelector('#subject-time-end').value,
-                    admin2Uid: DOM.proctorSelect.value || null,
-                };
-
-                set(ref(db, API.getDbPath(`subjects/${subjectId}`)), subjectData)
-                    .then(() => {
-                        showToast(`Jadwal ${subjectId} berhasil disimpan!`, 'success');
-                        DOM.scheduleForm.reset();
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        showToast('Gagal menyimpan jadwal.', 'error');
-                    });
-            },
-            
-            openProctorModal() {
-                const randomId = 'P' + crypto.randomUUID().substring(0, 8);
-                document.getElementById('proctor-uid').value = randomId;
-                DOM.proctorModal.classList.remove('hidden');
-                DOM.proctorModal.classList.add('flex');
-                setTimeout(() => {
-                    document.getElementById('proctor-modal-content').classList.remove('scale-95', 'opacity-0');
-                }, 10);
-            },
-            
-            closeProctorModal() {
-                document.getElementById('proctor-modal-content').classList.add('scale-95', 'opacity-0');
-                setTimeout(() => {
-                    DOM.proctorModal.classList.add('hidden');
-                    DOM.proctorModal.classList.remove('flex');
-                }, 300);
-            },
-
-            addProctor(e) {
-                e.preventDefault();
-                const uid = document.getElementById('proctor-uid').value.trim();
-                const name = document.getElementById('proctor-name').value.trim();
-
-                const userData = {
-                    name: name,
-                    role: 'admin2'
-                };
-
-                set(ref(db, API.getDbPath(`users/${uid}`)), userData)
-                    .then(() => {
-                        showToast(`${name} berhasil ditambahkan sebagai Guru/Proktor! UID: ${uid.substring(0, 8)}...`, 'success');
-                        App.closeProctorModal();
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        showToast('Gagal menambahkan proktor.', 'error');
-                    });
-            },
-
-            deleteSubject(id) {
-                showConfirmation(`Yakin ingin menghapus jadwal ${id}? SEMUA data soal dan hasil terkait akan hilang!`, () => {
-                    remove(ref(db, API.getDbPath(`subjects/${id}`)));
-                    remove(ref(db, API.getDbPath(`questions/${id}`)));
-                    remove(ref(db, API.getDbPath(`results/${id}`)))
-                        .then(() => showToast(`Jadwal ${id} berhasil dihapus.`, 'warning'))
-                        .catch(err => {
-                            console.error(err);
-                            showToast('Gagal menghapus jadwal.', 'error');
-                        });
-                });
-            },
-
-            deleteUser(uid) {
-                showConfirmation(`Yakin ingin menghapus user ${uid.substring(0, 8)}...?`, () => {
-                    remove(ref(db, API.getDbPath(`users/${uid}`)))
-                        .then(() => showToast(`User ${uid.substring(0, 8)}... berhasil dihapus.`, 'warning'))
-                        .catch(err => {
-                            console.error(err);
-                            showToast('Gagal menghapus user.', 'error');
-                        });
-                });
-            },
-
-            // --- Admin 2 Actions ---
-            saveQuestion(e) {
-                e.preventDefault();
-                if (!proctorSubjectId) {
-                    showToast('Gagal menyimpan soal. Mapel belum ditetapkan.', 'error');
-                    return;
-                }
-                const form = e.target;
-                const qNum = form.querySelector('#q-number').value;
-                const qId = `q${qNum.padStart(2, '0')}`;
-                
-                const questionData = {
-                    text: form.querySelector('#q-text').value,
-                    options: {
-                        a: form.querySelector('#opt-a').value,
-                        b: form.querySelector('#opt-b').value,
-                        c: form.querySelector('#opt-c').value,
-                        d: form.querySelector('#opt-d').value,
-                    },
-                    key: form.querySelector('#q-key').value,
-                };
-                const optE = form.querySelector('#opt-e').value;
-                if (optE) { questionData.options.e = optE; }
-                
-                const currentQuestions = allSubjects[proctorSubjectId]?.questions || {};
-                if (Object.keys(currentQuestions).length >= 55 && !currentQuestions[qId]) {
-                     showToast('Maksimal soal adalah 55. Soal baru gagal disimpan.', 'error');
-                     return;
-                }
-
-                set(ref(db, API.getDbPath(`questions/${proctorSubjectId}/${qId}`)), questionData)
-                    .then(() => {
-                        showToast(`Soal No. ${qNum} berhasil disimpan!`, 'success');
-                        form.reset();
-                        // Auto-increment question number
-                        form.querySelector('#q-number').value = parseInt(qNum) + 1;
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        showToast('Gagal menyimpan soal.', 'error');
-                    });
-            },
-
-            deleteQuestion(subjectId, qId) {
-                showConfirmation(`Yakin ingin menghapus soal ${qId.replace('q', 'No. ')}?`, () => {
-                    remove(ref(db, API.getDbPath(`questions/${subjectId}/${qId}`)))
-                        .then(() => showToast(`Soal ${qId.replace('q', 'No. ')} berhasil dihapus.`, 'warning'))
-                        .catch(err => {
-                            console.error(err);
-                            showToast('Gagal menghapus soal.', 'error');
-                        });
-                });
-            },
-
-            clearQuestions() {
-                 showConfirmation(`Yakin ingin MENGHAPUS SEMUA soal di mapel ${DOM.recapMapelTitle.textContent}?`, () => {
-                    remove(ref(db, API.getDbPath(`questions/${proctorSubjectId}`)))
-                        .then(() => showToast(`Semua soal di ${proctorSubjectId} telah dihapus.`, 'warning'))
-                        .catch(err => {
-                            console.error(err);
-                            showToast('Gagal menghapus semua soal.', 'error');
-                        });
-                });
-            },
-
-            // --- Student Actions ---
-            startExam(subjectId) {
-                const subject = allSubjects[subjectId];
-                if (!subject || !subject.questions || Object.keys(subject.questions).length === 0) {
-                     showToast('Soal belum tersedia untuk ujian ini.', 'error');
-                     return;
-                }
-
-                currentExam = { subjectId };
-                API.renderStudentPanel();
-            },
-
-            submitExam(isAutoSubmit = false) {
-                if (!currentExam) return;
-                
-                const subjectId = currentExam.subjectId;
-                const form = DOM.quizForm;
-                const questions = allSubjects[subjectId]?.questions || {};
-                const totalQuestions = Object.keys(questions).length;
-                
-                const answers = {};
-                let answeredCount = 0;
-                
-                Object.keys(questions).forEach(qId => {
-                    const selected = form.querySelector(`input[name="${qId}"]:checked`);
-                    if (selected) {
-                        answers[qId] = selected.value;
-                        answeredCount++;
-                    } else {
-                        answers[qId] = 'N/A';
-                    }
-                });
-
-                // Final Confirmation Check
-                if (!isAutoSubmit) {
-                    const confirmationMessage = (answeredCount < totalQuestions) 
-                        ? `Anda baru menjawab ${answeredCount} dari ${totalQuestions} soal. Jawaban yang kosong akan dianggap salah. Lanjut kumpulkan?`
-                        : `Anda yakin ingin mengumpulkan ujian ${allSubjects[subjectId].name}?`;
-                    
-                    showConfirmation(confirmationMessage, () => {
-                        App._performSubmission(subjectId, answers, answeredCount, totalQuestions, isAutoSubmit);
-                    });
-                } else {
-                    // Auto-submit requires no confirmation
-                    App._performSubmission(subjectId, answers, answeredCount, totalQuestions, isAutoSubmit);
-                }
-            },
-            
-            _performSubmission(subjectId, answers, answeredCount, totalQuestions, isAutoSubmit) {
-                const questions = allSubjects[subjectId]?.questions || {};
-                
-                // Recalculate score (Crucial)
-                let score = 0;
-                Object.keys(answers).forEach(qId => {
-                    if (questions[qId] && answers[qId] === questions[qId].key) {
-                        score++;
-                    }
-                });
-                
-                const resultData = {
-                    studentName: userName,
-                    submissionTime: serverTimestamp(), 
-                    answers: answers,
-                    score: score 
-                };
-
-                // Path: results/{subjectId}/{userId}
-                set(ref(db, API.getDbPath(`results/${subjectId}/${userId}`)), resultData)
-                    .then(() => {
-                        currentExam = null;
-                        if (examTimerInterval) clearInterval(examTimerInterval);
-                        DOM.examArea.classList.add('hidden');
-                        DOM.examSubmitted.classList.remove('hidden');
-                        API.renderStudentAnnouncements();
-                        showToast(isAutoSubmit ? 'Waktu habis! Jawaban disubmit otomatis.' : 'Jawaban berhasil dikumpulkan!', 'success');
-                    })
-                    .catch(error => {
-                        console.error("Submission Error:", error);
-                        showToast("Gagal mengumpulkan jawaban. Coba lagi.", 'error');
-                    });
-            }
-        };
-
-        // --- Event Listeners Initialization ---
-
-        // Schedule Form (Admin 1)
-        DOM.scheduleForm.addEventListener('submit', App.saveSchedule);
         
-        // Admin Password Input Enter Key
-        DOM.adminPasswordInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                App.loginAdmin();
-            }
-        });
+        // --- KONSTAN BARU UNTUK MYSTERY BOX ---
+        const WA_ADMIN_NUMBER = '6285817938860'; 
+        const PAYMENT_LINK = 'https://lynk.id/yustdan'; 
+        const ADMIN_PASSWORD = "Masuk22";
+    </script>
 
-        // Inisialisasi Aplikasi setelah DOM dimuat
-        window.onload = API.init;
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-md sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600">Misteri Toko</h1>
+                </div>
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex space-x-4 items-center">
+                    <a href="#" onclick="showUserView('home')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Beranda</a>
+                    <a href="#" onclick="showUserView('products')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Dijual</a>
+                    <a href="#" onclick="showUserView('mystery')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Mystery Box</a>
+                    <a href="#" onclick="showUserView('leaderboard')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Leaderboard</a>
+                    
+                    <!-- Admin Links and Login Button -->
+                    <a href="#" id="desktop-admin-link" onclick="showAdminView('manage-products')" class="text-red-600 hover:text-red-800 font-medium transition duration-150 ease-in-out admin-link ml-4">Admin Panel</a>
+                    <button id="admin-login-btn" onclick="openAdminLoginModal()" class="px-3 py-1.5 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition">
+                        Login Admin
+                    </button>
+                    <button id="admin-logout-btn" onclick="logoutAdmin()" class="px-3 py-1.5 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition admin-link hidden">
+                        Logout
+                    </button>
+                </nav>
+                <!-- Hamburger Menu (Mobile) -->
+                <button id="hamburger-btn" class="md:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <div class="hamburger-icon">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Sidebar -->
+    <div id="mobile-sidebar" class="sidebar fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-20 md:hidden p-4">
+        <nav class="flex flex-col space-y-4 pt-16">
+            <a href="#" onclick="closeSidebar(); showUserView('home')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Beranda</a>
+            <a href="#" onclick="closeSidebar(); showUserView('products')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Dijual</a>
+            <a href="#" onclick="closeSidebar(); showUserView('mystery')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Mystery Box</a>
+            <a href="#" onclick="closeSidebar(); showUserView('leaderboard')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Leaderboard</a>
+            <a href="#" id="mobile-admin-link" onclick="closeSidebar(); showAdminView('manage-products')" class="text-lg text-red-600 hover:text-red-800 font-medium admin-link border-t pt-4 mt-4">Admin Panel</a>
+            <button onclick="closeSidebar(); openAdminLoginModal()" class="w-full py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition mt-4">
+                Login Admin
+            </button>
+             <button onclick="closeSidebar(); logoutAdmin()" class="w-full py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition admin-link mt-2 hidden">
+                Logout
+            </button>
+        </nav>
+    </div>
+    <div id="sidebar-overlay" onclick="closeSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-10 hidden md:hidden"></div>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="loading-spinner" class="text-center p-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Memuat data...</p>
+        </div>
+
+        <!-- USER VIEW -->
+        <div id="user-view" class="hidden">
+            <!-- User Home Section (Beranda) -->
+            <section id="user-home" class="view-section">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Beranda - Rangkuman Produk</h2>
+                <div id="category-summary" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Category summaries will be injected here -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-200">
+                        <p class="text-indigo-600 font-semibold text-sm">Total Produk</p>
+                        <p id="total-products" class="text-4xl font-bold text-gray-800 mt-1">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- User Products Section (Dijual) -->
+            <section id="user-products" class="view-section hidden">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Semua Produk Dijual</h2>
+                <div id="product-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                    <!-- Products will be injected here -->
+                </div>
+            </section>
+
+            <!-- User Mystery Box Section -->
+            <section id="user-mystery" class="view-section hidden">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Mystery Box Berhadiah</h2>
+                <div class="bg-white p-6 rounded-xl shadow-lg border border-red-300 max-w-lg mx-auto text-center">
+                    <div class="text-6xl mb-4">🎁</div>
+                    <h3 class="text-2xl font-bold text-red-600 mb-2">Baju dan Balik Nanti!</h3>
+                    <p class="text-gray-600 mb-6">Dapatkan kesempatan memenangkan hadiah istimewa! Harga: Rp 50.000</p>
+                    
+                    <!-- Tombol Utama Mystery Box (Selalu muncul untuk memicu info pembayaran) -->
+                    <button id="mystery-box-cta" onclick="openPaymentInfoModal()" class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-300 shadow-md">
+                        Beli Mystery Box / Lihat Info
+                    </button>
+                    
+                    <div id="mystery-box-status" class="mt-4 text-center">
+                        <!-- Status akan diinjeksikan di sini -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- User Leaderboard Section -->
+            <section id="user-leaderboard" class="view-section hidden">
+                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Leaderboard Pemenang</h2>
+                <div class="bg-white p-4 rounded-xl shadow-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID (Pengenal)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher Hadiah</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Menang</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Leaderboard data will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- ADMIN VIEW -->
+        <div id="admin-view" class="hidden">
+            <h2 class="text-3xl font-extrabold text-red-600 mb-6 border-b pb-2">Admin Panel</h2>
+            <div class="flex space-x-4 mb-6">
+                <button onclick="showAdminView('manage-products')" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition">Kelola Produk</button>
+                <button onclick="showAdminView('manage-mystery')" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition">Kelola Mystery Box</button>
+                <button onclick="showUserView('home')" class="px-4 py-2 rounded-lg text-gray-600 border border-gray-300 hover:bg-gray-100 transition">Kembali ke User View</button>
+            </div>
+
+            <!-- Admin Manage Products -->
+            <section id="admin-manage-products" class="admin-section">
+                <h3 class="text-2xl font-bold mb-4">Daftar Produk</h3>
+                <button onclick="openProductModal()" class="mb-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Tambah Produk Baru</button>
+                <div class="bg-white p-4 rounded-xl shadow-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-product-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Admin products will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Admin Manage Mystery Box -->
+            <section id="admin-manage-mystery" class="admin-section hidden">
+                <h3 class="text-2xl font-bold mb-4">Kelola Mystery Box Plays</h3>
+                <div class="bg-white p-4 rounded-xl shadow-lg">
+                    <p class="mb-4 text-sm text-gray-600">Total User Bermain: <span id="total-mystery-users" class="font-bold">0</span></p>
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID (Proxy IP)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Beli</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token Kirim</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Menang?</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-mystery-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Admin mystery box plays will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <!-- Modal: Admin Password Login -->
+    <div id="admin-login-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="text-xl font-bold text-indigo-600 mb-4">Login Admin</h3>
+            <form id="admin-login-form">
+                <div class="mb-4">
+                    <label for="admin-password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="admin-password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <p id="admin-login-error" class="text-red-500 text-sm mb-4 hidden">Password salah. Coba lagi.</p>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeAdminLoginModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Masuk</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal: Product Form (Admin) - Placeholder -->
+    <div id="product-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-30 p-4">
+        <!-- Content will be generated by JS functions -->
+    </div>
+
+    <!-- Universal Confirmation/Message Modal -->
+    <div id="message-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <div id="modal-icon" class="text-4xl mb-4 text-indigo-500">🎉</div>
+            <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-2">Pesan</h3>
+            <p id="modal-body" class="text-gray-600 mb-6">Pesan detail.</p>
+            <button onclick="closeMessageModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Modal BARU: Payment Information and Token Generation Trigger -->
+    <div id="payment-info-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-40 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center">
+            <h3 class="text-xl font-bold text-red-600 mb-4">Langkah Pembelian Mystery Box</h3>
+            <ol class="list-decimal list-inside text-gray-700 space-y-3 mb-6 text-left text-base">
+                <li>Bayar Mystery Box (Rp 50.000) melalui link berikut: 
+                    <a href="${PAYMENT_LINK}" target="_blank" class="text-indigo-600 font-semibold break-all hover:underline">${PAYMENT_LINK}</a>
+                </li>
+                <li>Kirim bukti bayar ke WhatsApp Admin: 
+                    <a href="https://wa.me/${WA_ADMIN_NUMBER}" target="_blank" class="text-indigo-600 font-semibold break-all hover:underline">${WA_ADMIN_NUMBER}</a>
+                </li>
+                <li>Tunggu balasan Admin yang akan memberikan **TOKEN RAHASIA** Anda.</li>
+                <li>Setelah mendapatkan token, klik tombol di bawah untuk memasukkan token.</li>
+            </ol>
+            <button onclick="registerPlayAndOpenTokenInput()" class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                Saya Sudah Bayar dan Punya Token
+            </button>
+            <button onclick="closePaymentInfoModal()" class="w-full py-2 mt-3 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition">
+                Tutup / Kembali
+            </button>
+        </div>
+    </div>
+    
+    <!-- Modal BARU: Token Input for Opening Box -->
+    <div id="token-input-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-40 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+            <h3 class="text-xl font-bold text-green-600 mb-4">Masukkan Token Anda</h3>
+            <form id="token-form">
+                <div class="mb-4">
+                    <label for="mystery-token" class="block text-sm font-medium text-gray-700 mb-1">Token Rahasia (dari Admin):</label>
+                    <input type="text" id="mystery-token" required maxlength="6" pattern="[A-Z0-9]{6}"
+                        class="mt-1 block w-full text-center text-2xl font-mono border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500 uppercase tracking-widest">
+                    <p class="text-xs text-gray-500 mt-1">Token 6 digit (A-Z, 0-9)</p>
+                </div>
+                <p id="token-error" class="text-red-500 text-sm mb-4 hidden">Token salah atau sudah digunakan. Coba lagi.</p>
+                <div class="flex justify-center space-x-3">
+                    <button type="button" onclick="closeTokenInputModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Buka Mystery Box!</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- JavaScript & Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, get, set, push, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        
+        // --- MODULE-SCOPE STATE ---
+        let app, auth, db, userId;
+        let isAuthReady = false;
+        let isAdmin = false;
+        let latestPlayId = null; 
+        
+        // --- EXPOSE GLOBAL FUNCTIONS (Fix for onclick errors) ---
+        // (Existing window exposure functions are omitted for brevity but assumed to be present)
+        window.toggleSidebar = toggleSidebar;
+        window.closeSidebar = closeSidebar;
+        window.showUserView = showUserView;
+        window.showAdminView = showAdminView;
+        window.showMessageModal = showMessageModal;
+        window.closeMessageModal = closeMessageModal;
+        window.openPaymentInfoModal = openPaymentInfoModal;
+        window.closePaymentInfoModal = closePaymentInfoModal;
+        window.registerPlayAndOpenTokenInput = registerPlayAndOpenTokenInput;
+        window.closeTokenInputModal = closeTokenInputModal;
+        window.openProductModal = openProductModal;
+        window.closeProductModal = closeProductModal;
+        window.deleteProduct = deleteProduct;
+        window.buyProduct = buyProduct;
+        window.updatePlayStatus = updatePlayStatus;
+        window.saveToken = saveToken;
+        window.saveVoucher = saveVoucher;
+        window.openAdminLoginModal = openAdminLoginModal;
+        window.closeAdminLoginModal = closeAdminLoginModal;
+        window.logoutAdmin = logoutAdmin;
+
+        // --- FIREBASE PATHING ---
+        function getProductsRef() {
+            return ref(db, `artifacts/${appId}/public/data/products`);
+        }
+        function getMysteryPlaysRef(uid) {
+             return ref(db, `artifacts/${appId}/users/${uid}/mystery_box_plays`);
+        }
+        function getAllMysteryPlaysAdminRef() {
+            return ref(db, `artifacts/${appId}/users/`);
+        }
+        function getLeaderboardRef() {
+            return ref(db, `artifacts/${appId}/public/data/leaderboard`);
+        }
+
+
+        // --- UI FUNCTIONS (omitted for brevity) ---
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const sidebar = document.getElementById('mobile-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const userView = document.getElementById('user-view');
+        const adminView = document.getElementById('admin-view');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const adminLinks = document.querySelectorAll('.admin-link');
+        const adminLoginBtn = document.getElementById('admin-login-btn');
+        const adminLogoutBtn = document.getElementById('admin-logout-btn');
+
+
+        function toggleSidebar() {
+            const isOpen = sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden', !isOpen);
+            hamburgerBtn.querySelector('.hamburger-icon').classList.toggle('open', isOpen);
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+            hamburgerBtn.querySelector('.hamburger-icon').classList.remove('open');
+        }
+
+        hamburgerBtn.addEventListener('click', toggleSidebar);
+
+        function updateAdminUI(isNowAdmin) {
+            isAdmin = isNowAdmin;
+            if (isNowAdmin) {
+                document.body.classList.add('admin-active');
+                adminLinks.forEach(link => link.classList.remove('hidden'));
+                adminLoginBtn.classList.add('hidden');
+                adminLogoutBtn.classList.remove('hidden');
+            } else {
+                document.body.classList.remove('admin-active');
+                adminLinks.forEach(link => link.classList.add('hidden'));
+                adminLoginBtn.classList.remove('hidden');
+                adminLogoutBtn.classList.add('hidden');
+                showUserView('home'); 
+            }
+        }
+
+        function showView(viewId) {
+            userView.classList.add('hidden');
+            adminView.classList.add('hidden');
+            
+            if (viewId.startsWith('user')) {
+                userView.classList.remove('hidden');
+                document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+                document.getElementById(viewId.replace('user-', 'user-')).classList.remove('hidden');
+            } else if (viewId.startsWith('admin')) {
+                adminView.classList.remove('hidden');
+                document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden'));
+                document.getElementById(viewId.replace('admin-', 'admin-')).classList.remove('hidden');
+            }
+        }
+
+        function showUserView(section) {
+            showView('user-' + section);
+        }
+
+        function showAdminView(section) {
+            if (isAdmin) {
+                showView('admin-' + section);
+            } else {
+                showMessageModal('🚫 Akses Ditolak', 'Anda tidak memiliki izin akses sebagai Admin. Silahkan Login Admin terlebih dahulu.', 'text-red-500');
+                showUserView('home');
+            }
+        }
+        
+        function showMessageModal(title, body, iconClass = 'text-indigo-500', icon = '🎉') {
+            document.getElementById('modal-icon').innerHTML = icon;
+            document.getElementById('modal-icon').className = `text-4xl mb-4 ${iconClass}`;
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').textContent = body;
+            document.getElementById('message-modal').classList.remove('hidden');
+            document.getElementById('message-modal').classList.add('flex');
+        }
+
+        function closeMessageModal() {
+            document.getElementById('message-modal').classList.add('hidden');
+            document.getElementById('message-modal').classList.remove('flex');
+        }
+        
+        // --- ADMIN LOGIN MODAL FUNCTIONS ---
+        
+        function openAdminLoginModal() {
+            document.getElementById('admin-login-error').classList.add('hidden');
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-login-modal').classList.remove('hidden');
+            document.getElementById('admin-login-modal').classList.add('flex');
+        }
+
+        function closeAdminLoginModal() {
+            document.getElementById('admin-login-modal').classList.add('hidden');
+            document.getElementById('admin-login-modal').classList.remove('flex');
+        }
+        
+        document.getElementById('admin-login-form').addEventListener('submit', handleAdminLoginSubmit);
+        
+        function handleAdminLoginSubmit(e) {
+            e.preventDefault();
+            const password = document.getElementById('admin-password').value;
+            const errorEl = document.getElementById('admin-login-error');
+
+            if (password === ADMIN_PASSWORD) {
+                closeAdminLoginModal();
+                updateAdminUI(true); 
+                showAdminView('manage-products');
+                showMessageModal('Login Berhasil', 'Anda berhasil masuk sebagai Admin!', 'text-green-600', '🔑');
+            } else {
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            if (!confirm('Yakin ingin keluar dari Admin Panel?')) return;
+            updateAdminUI(false); 
+            showMessageModal('Logout Berhasil', 'Anda telah keluar dari Admin Panel.', 'text-red-500', '🚪');
+        }
+        
+        // Dummy function for product modal content
+        function openProductModal() {
+             const productModal = document.getElementById('product-modal');
+             productModal.innerHTML = `
+                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                     <h3 class="text-xl font-bold text-indigo-600 mb-4">Tambah/Edit Produk</h3>
+                     <p class="text-gray-500">Fitur ini tidak diimplementasikan secara penuh. Gunakan Firebase Realtime Database langsung untuk data produk.</p>
+                     <button onclick="closeProductModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg">Tutup</button>
+                 </div>
+             `;
+             productModal.classList.remove('hidden');
+             productModal.classList.add('flex');
+        }
+        function closeProductModal() {
+             document.getElementById('product-modal').classList.add('hidden');
+        }
+        
+        // Dummy function for buyProduct
+        function buyProduct(productId, name) {
+            showMessageModal('Pembelian', `Anda mencoba membeli produk: ${name}. Fitur checkout belum diimplementasikan.`, 'text-yellow-500', '🛒');
+        }
+        
+        function deleteProduct(productId, name) {
+             showMessageModal('Hapus Produk', `Fitur hapus untuk produk ${name} belum diimplementasikan.`, 'text-red-500', '🗑️');
+        }
+        
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        }
+
+        function renderUserHome(products) {
+            document.getElementById('total-products').textContent = Object.keys(products).length;
+            // Additional home summaries can be added here
+        }
+
+        function renderUserProducts(products) {
+            const listEl = document.getElementById('product-list');
+            listEl.innerHTML = '';
+            
+            if (Object.keys(products).length === 0) {
+                listEl.innerHTML = '<p class="col-span-4 text-center text-gray-500 p-8">Belum ada produk yang ditambahkan oleh Admin.</p>';
+                return;
+            }
+
+            Object.entries(products).forEach(([id, product]) => {
+                const card = `
+                    <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden">
+                        <img src="https://placehold.co/400x300/1e40af/ffffff?text=${product.name.substring(0, 10).replace(/ /g, '+')}" 
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x300/9ca3af/ffffff?text=Produk';" 
+                             alt="${product.name}" class="w-full h-32 object-cover">
+                        <div class="p-4">
+                            <h4 class="font-bold text-lg text-gray-800 truncate">${product.name}</h4>
+                            <p class="text-indigo-600 font-semibold mt-1">${formatRupiah(product.price)}</p>
+                            <p class="text-sm text-gray-500">Stok: ${product.stock}</p>
+                            <button onclick="buyProduct('${id}', '${product.name}')" class="mt-3 w-full py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition">
+                                Beli
+                            </button>
+                        </div>
+                    </div>
+                `;
+                listEl.innerHTML += card;
+            });
+        }
+        
+        function renderAdminProducts(products) {
+             const tableBody = document.getElementById('admin-product-table');
+             tableBody.innerHTML = '';
+
+             Object.entries(products).forEach(([id, product]) => {
+                 const row = `
+                    <tr class="hover:bg-gray-100">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${product.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.stock}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatRupiah(product.price)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="openProductModal('${id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
+                            <button onclick="deleteProduct('${id}', '${product.name}')" class="text-red-600 hover:text-red-900">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+             });
+        }
+
+        // (The rest of the user/admin functions for Mystery Box and Leaderboard are assumed to be here)
+
+        // --- FIREBASE INITIALIZATION & AUTH (PERBAIKAN UTAMA) ---
+
+        async function attemptSignIn() {
+             try {
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                // If successful, onAuthStateChanged will fire again, hitting the 'if (user)' block.
+            } catch (signInError) {
+                console.error("Firebase Sign-In Attempt Failed:", signInError);
+                // If sign-in fails (e.g., bad token, network), we stop the spinner and show UI
+                isAuthReady = false;
+                userId = 'guest_unauth';
+                loadingSpinner.classList.add('hidden');
+                showUserView('home');
+                showMessageModal('Gagal Otorisasi', 'Gagal masuk ke Firebase. Aplikasi mungkin tidak dapat menyimpan data secara persisten.', 'text-red-500', '⚠️');
+            }
+        }
+
+        window.onload = async () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getDatabase(app);
+                
+                // Set up Auth State Listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        // --- SUCCESS PATH ---
+                        userId = user.uid;
+                        isAuthReady = true;
+                        
+                        updateAdminUI(false); 
+                        setupRealtimeListeners();
+                        
+                        loadingSpinner.classList.add('hidden');
+                        showUserView('home');
+
+                    } else if (!isAuthReady) {
+                        // --- INITIAL SIGN-IN ATTEMPT ---
+                        // Only run this logic on the very first check (when isAuthReady is still false/initial)
+                        await attemptSignIn();
+                    }
+                });
+            } catch (error) {
+                // --- CRITICAL INIT FAILURE PATH (Firebase App Initialization Failure) ---
+                console.error("Error during Firebase initialization:", error);
+                loadingSpinner.classList.add('hidden'); // CRUCIAL: Hide spinner on failure
+                userView.classList.remove('hidden'); // Show the container
+                document.getElementById('user-home').classList.remove('hidden');
+                
+                loadingSpinner.innerHTML = `<p class="text-red-600">Gagal memuat aplikasi. Cek koneksi atau konfigurasi Firebase. (${error.message})</p>`;
+            }
+        };
+        
+        function setupRealtimeListeners() {
+            // Listen for Products (and other common listeners)
+            onValue(getProductsRef(), (snapshot) => {
+                const products = snapshot.val() || {};
+                renderUserProducts(products);
+                renderUserHome(products);
+                if (isAdmin) {
+                    renderAdminProducts(products);
+                }
+            });
+
+            // Listen for Mystery Plays (Admin only)
+            onValue(getAllMysteryPlaysAdminRef(), (snapshot) => {
+                const allPlaysData = snapshot.val() || {};
+                if (isAdmin) {
+                    renderAdminMystery(allPlaysData);
+                }
+            });
+            
+            // Listen for User's Mystery Play Status
+            if (userId) {
+                onValue(getMysteryPlaysRef(userId), (snapshot) => {
+                    const userPlays = snapshot.val() || {};
+                    renderMysteryBoxUserStatus(userPlays);
+                });
+            }
+            
+            // Listen for Leaderboard
+            onValue(getLeaderboardRef(), (snapshot) => {
+                const winners = snapshot.val() || {};
+                renderLeaderboard(winners);
+            });
+        }
+        
+        // --- MYSTERY BOX LOGIC (USER) ---
+        
+        function getLatestPlay(userPlays) {
+            if (!userPlays) return null;
+            const playsArray = Object.entries(userPlays).map(([playId, play]) => ({ playId, ...play }));
+            if (playsArray.length === 0) return null;
+            return playsArray.sort((a, b) => b.timestamp - a.timestamp)[0];
+        }
+
+        function openPaymentInfoModal() {
+            if (!isAuthReady) return showMessageModal('Otorisasi', 'Sedang memuat otorisasi. Mohon tunggu sebentar.', 'text-yellow-500', '⏳');
+            
+            document.getElementById('payment-info-modal').classList.remove('hidden');
+            document.getElementById('payment-info-modal').classList.add('flex');
+        }
+
+        function closePaymentInfoModal() {
+            document.getElementById('payment-info-modal').classList.add('hidden');
+            document.getElementById('payment-info-modal').classList.remove('flex');
+        }
+        
+        function closeTokenInputModal() {
+            document.getElementById('token-input-modal').classList.add('hidden');
+            document.getElementById('token-input-modal').classList.remove('flex');
+            document.getElementById('token-error').classList.add('hidden');
+        }
+
+        async function registerPlayAndOpenTokenInput() {
+            closePaymentInfoModal();
+            if (!isAuthReady || !userId) return showMessageModal('Otorisasi', 'Autentikasi belum siap.', 'text-yellow-500', '⏳');
+
+            const userPlaysRef = getMysteryPlaysRef(userId);
+            const snapshot = await get(userPlaysRef);
+            const userPlays = snapshot.val() || {};
+            const latestPlay = getLatestPlay(userPlays);
+            
+            if (latestPlay && latestPlay.isWinner === undefined) {
+                latestPlayId = latestPlay.playId;
+            } else {
+                const playRef = push(userPlaysRef);
+                latestPlayId = playRef.key;
+                const newPlayData = {
+                    userId: userId,
+                    timestamp: Date.now(),
+                    token: null, 
+                    isWinner: undefined, 
+                    voucher: null,
+                };
+                await set(playRef, newPlayData);
+            }
+            
+            document.getElementById('token-input-modal').classList.remove('hidden');
+            document.getElementById('token-input-modal').classList.add('flex');
+        }
+
+        document.getElementById('token-form').addEventListener('submit', handleTokenSubmit);
+
+        async function handleTokenSubmit(e) {
+            e.preventDefault();
+            const submittedToken = document.getElementById('mystery-token').value.toUpperCase();
+            const errorEl = document.getElementById('token-error');
+
+            if (!latestPlayId) {
+                errorEl.textContent = 'Tidak ada riwayat pembelian. Silahkan ulangi langkah beli.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                const playRef = ref(db, `artifacts/${appId}/users/${userId}/mystery_box_plays/${latestPlayId}`);
+                const snapshot = await get(playRef);
+                const latestPlay = snapshot.val();
+                
+                if (!latestPlay) {
+                    errorEl.textContent = 'Data pembelian tidak ditemukan.';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (!latestPlay.token) {
+                    errorEl.textContent = 'Admin belum memasukkan token untuk pembelian Anda. Mohon hubungi Admin.';
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                if (latestPlay.token === submittedToken && latestPlay.isWinner === undefined) {
+                    
+                    if (latestPlay.isWinner === true) {
+                        showMessageModal('ANDA MENANG!', `Selamat! Anda mendapatkan voucher tukar: ${latestPlay.voucher || 'Voucher Tidak Tersedia'}. Screenshot dan kirim ke WA Admin!`, 'text-green-700', '🏆');
+                    } else { 
+                        showMessageModal('Coba Lagi Nanti 😥', 'Anda belum beruntung. Coba lagi di kesempatan berikutnya!', 'text-red-600', '😥');
+                    }
+                    
+                    await update(playRef, { isWinner: latestPlay.isWinner }); 
+                    
+                    closeTokenInputModal();
+
+                } else if (latestPlay.token === submittedToken && latestPlay.isWinner !== undefined) {
+                    errorEl.textContent = 'Token ini sudah digunakan. Lihat status Anda di bawah.';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    errorEl.textContent = 'Token salah. Mohon periksa kembali token Anda.';
+                    errorEl.classList.remove('hidden');
+                }
+                
+            } catch (error) {
+                console.error("Error opening mystery box:", error);
+                errorEl.textContent = 'Terjadi error saat memproses. Coba lagi.';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function renderMysteryBoxUserStatus(userPlays) {
+            const statusEl = document.getElementById('mystery-box-status');
+            const ctaBtn = document.getElementById('mystery-box-cta');
+            
+            statusEl.innerHTML = '';
+
+            const latestPlay = getLatestPlay(userPlays);
+            latestPlayId = latestPlay ? latestPlay.playId : null;
+            
+            ctaBtn.textContent = 'Beli Mystery Box / Lihat Info';
+            ctaBtn.onclick = openPaymentInfoModal;
+
+            if (!latestPlay) {
+                statusEl.innerHTML = '<p class="text-gray-500">Anda belum membeli Mystery Box. Silahkan Beli di atas.</p>';
+                return;
+            }
+            
+            if (!latestPlay.token) {
+                statusEl.innerHTML = `
+                    <p class="text-yellow-600 font-semibold mt-4">⏳ Menunggu Token dari Admin...</p>
+                    <p class="text-sm text-gray-500 mt-2">Pastikan sudah kirim bukti bayar ke WA Admin. User ID Anda: <span class="font-bold">${userId}</span></p>
+                `;
+                ctaBtn.textContent = 'Lihat Status Pembelian';
+                ctaBtn.onclick = openPaymentInfoModal;
+
+            } else if (latestPlay.token && latestPlay.isWinner === undefined) {
+                 statusEl.innerHTML = `
+                    <p class="text-green-600 font-semibold mt-4">✅ Token Diberikan! Klik di bawah untuk membuka.</p>
+                    <p class="text-sm text-gray-500 mt-2">Masukkan token yang Anda terima untuk membuka kotak.</p>
+                `;
+                ctaBtn.textContent = 'Buka Mystery Box Sekarang!';
+                ctaBtn.onclick = registerPlayAndOpenTokenInput; 
+                
+            } else if (latestPlay.isWinner === true) {
+                statusEl.innerHTML = `
+                    <p class="text-green-700 font-extrabold text-2xl mt-4">ANDA MENANG! 🎉</p>
+                    <p class="text-lg font-semibold mt-2">Voucher Tukar Hadiah:</p>
+                    <p class="text-3xl font-mono text-indigo-700 bg-yellow-100 p-2 rounded-lg break-all">${latestPlay.voucher || 'Voucher Tidak Tersedia'}</p>
+                    <p class="text-sm text-gray-600 mt-4">Segera screenshot dan kirim kode voucher ini ke WA Admin!</p>
+                `;
+                ctaBtn.textContent = 'Beli Lagi';
+                ctaBtn.onclick = openPaymentInfoModal;
+
+            } else if (latestPlay.isWinner === false) {
+                statusEl.innerHTML = `
+                    <p class="text-red-600 font-extrabold text-2xl mt-4">Coba Lagi Nanti 😥</p>
+                    <p class="text-sm text-gray-500 mt-2">Anda belum beruntung. Silahkan beli lagi untuk kesempatan baru.</p>
+                `;
+                ctaBtn.textContent = 'Beli Lagi';
+                ctaBtn.onclick = openPaymentInfoModal;
+            }
+        }
+
+
+        // --- MYSTERY BOX LOGIC (ADMIN) ---
+
+        function renderAdminMystery(allPlaysData) {
+            if (!isAdmin) return; 
+            
+            const tableBody = document.getElementById('admin-mystery-table');
+            const totalUsersEl = document.getElementById('total-mystery-users');
+            tableBody.innerHTML = '';
+            
+            const groupedPlays = {};
+            let uniqueUsers = new Set();
+
+            for (const uid in allPlaysData) {
+                // Ensure we only process nodes that contain mystery_box_plays
+                if (allPlaysData[uid].mystery_box_plays) {
+                    groupedPlays[uid] = Object.entries(allPlaysData[uid].mystery_box_plays || {}).map(([key, play]) => ({ playId: key, ...play }));
+                    if (groupedPlays[uid].length > 0) {
+                         uniqueUsers.add(uid);
+                    }
+                }
+            }
+            totalUsersEl.textContent = uniqueUsers.size;
+
+            const allPlaysList = Object.values(groupedPlays).flat().sort((a, b) => b.timestamp - a.timestamp);
+
+
+            allPlaysList.forEach((play) => {
+                const uid = play.userId;
+                const playRefPath = `artifacts/${appId}/users/${uid}/mystery_box_plays/${play.playId}`;
+                const time = new Date(play.timestamp).toLocaleString('id-ID');
+                
+                const tokenInput = `
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="token-${play.playId}" value="${play.token || ''}" 
+                            maxlength="6" placeholder="A1B2C3"
+                            class="w-20 border border-gray-300 rounded-md p-1 text-xs font-mono uppercase">
+                        <button onclick="saveToken('${playRefPath}', document.getElementById('token-${play.playId}').value, '${uid}')" 
+                            class="text-sm text-indigo-600 hover:text-indigo-900">Set</button>
+                    </div>
+                `;
+                
+                // If token is not set, disable win/lose options
+                const isTokenSet = !!play.token;
+                
+                const isWinnerCheckbox = `
+                    <input type="checkbox" ${play.isWinner === true ? 'checked' : ''} 
+                        ${!isTokenSet ? 'disabled' : ''}
+                        onchange="updatePlayStatus('${playRefPath}', 'isWinner', this.checked, '${uid}', '${play.playId}')"
+                        class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                `;
+
+                const isWinnerConfirmed = play.isWinner === true;
+                const voucherInput = `
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="voucher-${play.playId}" value="${play.voucher || ''}" 
+                            class="w-24 border border-gray-300 rounded-md p-1 text-xs" 
+                            placeholder="Voucher Code" ${!isWinnerConfirmed ? 'disabled' : ''}>
+                        <button onclick="saveVoucher('${playRefPath}', document.getElementById('voucher-${play.playId}').value, '${uid}')" 
+                            class="text-sm text-indigo-600 hover:text-indigo-900" ${!isWinnerConfirmed ? 'disabled' : ''}>Simpan</button>
+                    </div>
+                `;
+
+                let rowClass = 'bg-white';
+                if (play.isWinner === true) { rowClass = 'bg-green-100'; }
+                else if (play.isWinner === false) { rowClass = 'bg-red-100'; }
+                else if (play.token) { rowClass = 'bg-yellow-50'; } 
+
+                const row = `
+                    <tr class="${rowClass} hover:bg-gray-100 transition">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900 break-all">${uid}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${time}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${tokenInput}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${isWinnerCheckbox}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${voucherInput}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        async function saveToken(path, token, winnerUid) {
+            if (!isAdmin) return showAdminView('manage-mystery');
+            
+            const formattedToken = token.toUpperCase().trim();
+            if (formattedToken.length !== 6 || !/^[A-Z0-9]{6}$/.test(formattedToken)) {
+                 return showMessageModal('Gagal', 'Token harus 6 karakter (huruf/angka) dan tidak boleh kosong.', 'text-red-500', '⚠️');
+            }
+            
+            const playRef = ref(db, path);
+            
+            try {
+                 await update(playRef, { token: formattedToken });
+                 showMessageModal('Token Tersimpan', `Token (${formattedToken}) berhasil disimpan. Berikan ini ke user.`, 'text-green-600', '💾');
+            } catch(error) {
+                console.error("Error saving token:", error);
+                showMessageModal('Error', 'Gagal menyimpan token.', 'text-red-500', '❌');
+            }
+        }
+        
+        async function updatePlayStatus(path, field, value, winnerUid, playId) {
+            if (!isAdmin) return showAdminView('manage-mystery');
+            
+            const playRef = ref(db, path);
+            const updates = {};
+            
+            try {
+                if (field === 'isWinner') {
+                    updates[field] = value;
+                    // Only generate/set voucher if setting to true
+                    if (value === true) {
+                        updates.voucher = updates.voucher || generateVoucherCode(); 
+                        
+                        // Update/Add to leaderboard
+                        const leaderboardRef = ref(getLeaderboardRef(), winnerUid);
+                        await set(leaderboardRef, {
+                            userId: winnerUid,
+                            voucher: updates.voucher,
+                            date: new Date().toISOString()
+                        });
+                    } else if (value === false) {
+                        // If setting to false, remove from leaderboard and clear voucher in play record
+                        updates.voucher = null;
+                        await remove(ref(getLeaderboardRef(), winnerUid));
+                    }
+                } 
+
+                await update(playRef, updates);
+                showMessageModal('Update Sukses', `Status ${field} berhasil diperbarui!`, 'text-green-600', '👍');
+            } catch (error) {
+                console.error("Error updating play status:", error);
+                showMessageModal('Error', 'Gagal memperbarui status.', 'text-red-500', '❌');
+            }
+        }
+        
+        async function saveVoucher(path, voucherCode, winnerUid) {
+            if (!isAdmin) return showAdminView('manage-mystery');
+            
+            if (!voucherCode) {
+                 return showMessageModal('Gagal', 'Kode voucher tidak boleh kosong.', 'text-red-500', '⚠️');
+            }
+            
+            const playRef = ref(db, path);
+            
+            try {
+                 await update(playRef, { voucher: voucherCode });
+                 
+                 const leaderboardRef = ref(getLeaderboardRef(), winnerUid);
+                 await update(leaderboardRef, { voucher: voucherCode });
+                 
+                 showMessageModal('Voucher Tersimpan', 'Kode voucher berhasil disimpan.', 'text-green-600', '💾');
+            } catch(error) {
+                console.error("Error saving voucher:", error);
+                showMessageModal('Error', 'Gagal menyimpan voucher.', 'text-red-500', '❌');
+            }
+        }
+
+        function generateVoucherCode() {
+            return 'VCHR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+        
+        
+        // --- LEADERBOARD LOGIC ---
+
+        function renderLeaderboard(winners) {
+            const tableBody = document.getElementById('leaderboard-table');
+            tableBody.innerHTML = '';
+            
+            const winnerList = Object.values(winners || {});
+            
+            if (winnerList.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Belum ada pemenang tercatat.</td></tr>';
+                return;
+            }
+
+            winnerList.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            winnerList.forEach((winner, index) => {
+                const date = new Date(winner.date).toLocaleDateString('id-ID');
+                const row = `
+                    <tr class="hover:bg-yellow-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 break-all">${winner.userId}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-lg font-bold text-indigo-600">${winner.voucher}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
     </script>
 </body>
 </html>
