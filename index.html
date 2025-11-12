@@ -3,1030 +3,1080 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Toko Online Misteri Box</title>
+    <title>Toko Online & Mystery Box</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDK Imports -->
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"></script>
-    <!-- Font -->
+    <!-- Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        /* Hamburger Menu Animation */
-        .hamburger-icon span {
-            display: block;
-            width: 25px;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Custom styles for animated hamburger menu */
+        .hamburger-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 24px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .bar {
             height: 3px;
-            margin: 5px auto;
-            background-color: #333;
+            width: 100%;
+            background-color: #374151;
+            border-radius: 9999px;
             transition: all 0.3s ease-in-out;
         }
-        .hamburger-icon.open span:nth-child(1) {
-            transform: translateY(8px) rotate(45deg);
+        .menu-open .bar:nth-child(1) {
+            transform: translateY(8.5px) rotate(45deg);
         }
-        .hamburger-icon.open span:nth-child(2) {
+        .menu-open .bar:nth-child(2) {
             opacity: 0;
         }
-        .hamburger-icon.open span:nth-child(3) {
-            transform: translateY(-8px) rotate(-45deg);
+        .menu-open .bar:nth-child(3) {
+            transform: translateY(-8.5px) rotate(-45deg);
         }
-        /* Mobile sidebar transition */
-        .sidebar {
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(-100%);
-        }
-        .sidebar.open {
-            transform: translateX(0);
-        }
-        .admin-link {
-            display: none; /* Default hidden */
-        }
-        .admin-active .admin-link {
-            display: block; /* Show if admin is active */
+        /* Style for modals */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen">
 
-    <!-- Global Variables & Config -->
-    <script>
-        // Global variables provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'toko-app-default';
-        // Fallback configuration MUST be complete for Realtime DB
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : JSON.stringify({
-            apiKey: "AIzaSyDjR5u6-aqowURTDGqAXpgEGxalgDm0RBE",
-            authDomain: "projectone-4016f.firebaseapp.com",
-            databaseURL: "https://projectone-4016f-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "projectone-4016f",
-            storageBucket: "projectone-4016f.firebasestorage.app",
-            messagingSenderId: "485377861739",
-            appId: "1:485377861739:web:836b6a59a3406051a2292e"
-        }));
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        // --- KONSTAN BARU UNTUK MYSTERY BOX ---
-        const WA_ADMIN_NUMBER = '6285817938860'; 
-        const PAYMENT_LINK = 'https://lynk.id/yustdan'; 
-        const ADMIN_PASSWORD = "Masuk22";
-    </script>
+    <div id="app" class="flex flex-col min-h-screen">
+        <!-- Main Header -->
+        <header class="bg-white shadow-md sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <a href="#" class="text-2xl font-bold text-indigo-600" onclick="App.setView('userHome'); return false;">TokoID</a>
 
-    <!-- Header / Navbar -->
-    <header class="bg-white shadow-md sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-indigo-600">Misteri Toko</h1>
-                </div>
-                <!-- Desktop Navigation -->
-                <nav class="hidden md:flex space-x-4 items-center">
-                    <a href="#" onclick="showUserView('home')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Beranda</a>
-                    <a href="#" onclick="showUserView('products')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Dijual</a>
-                    <a href="#" onclick="showUserView('mystery')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Mystery Box</a>
-                    <a href="#" onclick="showUserView('leaderboard')" class="text-gray-600 hover:text-indigo-600 font-medium transition duration-150 ease-in-out">Leaderboard</a>
-                    
-                    <!-- Admin Links and Login Button -->
-                    <a href="#" id="desktop-admin-link" onclick="showAdminView('manage-products')" class="text-red-600 hover:text-red-800 font-medium transition duration-150 ease-in-out admin-link ml-4">Admin Panel</a>
-                    <button id="admin-login-btn" onclick="openAdminLoginModal()" class="px-3 py-1.5 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition">
-                        Login Admin
-                    </button>
-                    <button id="admin-logout-btn" onclick="logoutAdmin()" class="px-3 py-1.5 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition admin-link hidden">
-                        Logout
-                    </button>
-                </nav>
-                <!-- Hamburger Menu (Mobile) -->
-                <button id="hamburger-btn" class="md:hidden p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <div class="hamburger-icon">
-                        <span></span>
-                        <span></span>
-                        <span></span>
+                    <!-- Desktop Navigation -->
+                    <nav id="desktop-nav" class="hidden sm:block">
+                        <div class="flex space-x-4">
+                            <!-- Nav links rendered by JS -->
+                        </div>
+                    </nav>
+
+                    <!-- Hamburger Menu Button (Mobile) -->
+                    <div class="sm:hidden flex items-center space-x-4">
+                        <button id="admin-switch-btn" class="text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition">
+                            Admin
+                        </button>
+                        <button id="hamburger-btn" class="hamburger-menu transition-all duration-300">
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                        </button>
                     </div>
-                </button>
+
+                    <!-- Desktop Admin Button -->
+                    <button id="admin-switch-btn-desktop" class="hidden sm:block text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition" onclick="App.toggleAdminView()">
+                        Admin View
+                    </button>
+                </div>
             </div>
+        </header>
+
+        <!-- Mobile Sidebar -->
+        <div id="mobile-sidebar" class="fixed inset-y-0 left-0 w-64 bg-white z-40 transform -translate-x-full transition-transform duration-300 shadow-xl sm:hidden pt-16">
+            <nav class="p-4">
+                <!-- Mobile Nav links rendered by JS -->
+            </nav>
         </div>
-    </header>
+        <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden sm:hidden" onclick="App.closeSidebar()"></div>
 
-    <!-- Mobile Sidebar -->
-    <div id="mobile-sidebar" class="sidebar fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-20 md:hidden p-4">
-        <nav class="flex flex-col space-y-4 pt-16">
-            <a href="#" onclick="closeSidebar(); showUserView('home')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Beranda</a>
-            <a href="#" onclick="closeSidebar(); showUserView('products')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Dijual</a>
-            <a href="#" onclick="closeSidebar(); showUserView('mystery')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Mystery Box</a>
-            <a href="#" onclick="closeSidebar(); showUserView('leaderboard')" class="text-lg text-gray-700 hover:text-indigo-600 font-medium">Leaderboard</a>
-            <a href="#" id="mobile-admin-link" onclick="closeSidebar(); showAdminView('manage-products')" class="text-lg text-red-600 hover:text-red-800 font-medium admin-link border-t pt-4 mt-4">Admin Panel</a>
-            <button onclick="closeSidebar(); openAdminLoginModal()" class="w-full py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition mt-4">
-                Login Admin
-            </button>
-             <button onclick="closeSidebar(); logoutAdmin()" class="w-full py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition admin-link mt-2 hidden">
-                Logout
-            </button>
-        </nav>
-    </div>
-    <div id="sidebar-overlay" onclick="closeSidebar()" class="fixed inset-0 bg-black bg-opacity-50 z-10 hidden md:hidden"></div>
+        <!-- Main Content Area -->
+        <main id="content-area" class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+            <!-- Content will be rendered here by JavaScript -->
+            <div class="text-center py-20 text-gray-500">Memuat aplikasi...</div>
+        </main>
 
-    <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div id="loading-spinner" class="text-center p-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-            <p class="mt-4 text-gray-600">Memuat data...</p>
-        </div>
-
-        <!-- USER VIEW -->
-        <div id="user-view" class="hidden">
-            <!-- User Home Section (Beranda) -->
-            <section id="user-home" class="view-section">
-                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Beranda - Rangkuman Produk</h2>
-                <div id="category-summary" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Category summaries will be injected here -->
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-indigo-200">
-                        <p class="text-indigo-600 font-semibold text-sm">Total Produk</p>
-                        <p id="total-products" class="text-4xl font-bold text-gray-800 mt-1">0</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- User Products Section (Dijual) -->
-            <section id="user-products" class="view-section hidden">
-                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Semua Produk Dijual</h2>
-                <div id="product-list" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                    <!-- Products will be injected here -->
-                </div>
-            </section>
-
-            <!-- User Mystery Box Section -->
-            <section id="user-mystery" class="view-section hidden">
-                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Mystery Box Berhadiah</h2>
-                <div class="bg-white p-6 rounded-xl shadow-lg border border-red-300 max-w-lg mx-auto text-center">
-                    <div class="text-6xl mb-4">🎁</div>
-                    <h3 class="text-2xl font-bold text-red-600 mb-2">Baju dan Balik Nanti!</h3>
-                    <p class="text-gray-600 mb-6">Dapatkan kesempatan memenangkan hadiah istimewa! Harga: Rp 50.000</p>
-                    
-                    <!-- Tombol Utama Mystery Box (Selalu muncul untuk memicu info pembayaran) -->
-                    <button id="mystery-box-cta" onclick="openPaymentInfoModal()" class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-300 shadow-md">
-                        Beli Mystery Box / Lihat Info
-                    </button>
-                    
-                    <div id="mystery-box-status" class="mt-4 text-center">
-                        <!-- Status akan diinjeksikan di sini -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- User Leaderboard Section -->
-            <section id="user-leaderboard" class="view-section hidden">
-                <h2 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-2">Leaderboard Pemenang</h2>
-                <div class="bg-white p-4 rounded-xl shadow-lg">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID (Pengenal)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher Hadiah</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Menang</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboard-table" class="bg-white divide-y divide-gray-200">
-                            <!-- Leaderboard data will be injected here -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-
-        <!-- ADMIN VIEW -->
-        <div id="admin-view" class="hidden">
-            <h2 class="text-3xl font-extrabold text-red-600 mb-6 border-b pb-2">Admin Panel</h2>
-            <div class="flex space-x-4 mb-6">
-                <button onclick="showAdminView('manage-products')" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition">Kelola Produk</button>
-                <button onclick="showAdminView('manage-mystery')" class="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600 transition">Kelola Mystery Box</button>
-                <button onclick="showUserView('home')" class="px-4 py-2 rounded-lg text-gray-600 border border-gray-300 hover:bg-gray-100 transition">Kembali ke User View</button>
+        <!-- Footer -->
+        <footer class="bg-gray-100 border-t mt-8">
+            <div class="max-w-7xl mx-auto p-4 text-center text-sm text-gray-500">
+                &copy; 2024 TokoID. Dibuat dengan Gemini. | User ID: <span id="current-user-id">Memuat...</span>
             </div>
+        </footer>
 
-            <!-- Admin Manage Products -->
-            <section id="admin-manage-products" class="admin-section">
-                <h3 class="text-2xl font-bold mb-4">Daftar Produk</h3>
-                <button onclick="openProductModal()" class="mb-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Tambah Produk Baru</button>
-                <div class="bg-white p-4 rounded-xl shadow-lg">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-product-table" class="bg-white divide-y divide-gray-200">
-                            <!-- Admin products will be injected here -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+        <!-- Modal Container -->
+        <div id="modal-container">
+            <!-- Modals will be injected here -->
+        </div>
 
-            <!-- Admin Manage Mystery Box -->
-            <section id="admin-manage-mystery" class="admin-section hidden">
-                <h3 class="text-2xl font-bold mb-4">Kelola Mystery Box Plays</h3>
-                <div class="bg-white p-4 rounded-xl shadow-lg">
-                    <p class="mb-4 text-sm text-gray-600">Total User Bermain: <span id="total-mystery-users" class="font-bold">0</span></p>
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID (Proxy IP)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Beli</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token Kirim</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Menang?</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-mystery-table" class="bg-white divide-y divide-gray-200">
-                            <!-- Admin mystery box plays will be injected here -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-    </main>
-    
-    <!-- Modal: Admin Password Login -->
-    <div id="admin-login-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
-            <h3 class="text-xl font-bold text-indigo-600 mb-4">Login Admin</h3>
-            <form id="admin-login-form">
-                <div class="mb-4">
-                    <label for="admin-password" class="block text-sm font-medium text-gray-700">Password</label>
-                    <input type="password" id="admin-password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <p id="admin-login-error" class="text-red-500 text-sm mb-4 hidden">Password salah. Coba lagi.</p>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeAdminLoginModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Masuk</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Modal: Product Form (Admin) - Placeholder -->
-    <div id="product-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-30 p-4">
-        <!-- Content will be generated by JS functions -->
     </div>
 
-    <!-- Universal Confirmation/Message Modal -->
-    <div id="message-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <div id="modal-icon" class="text-4xl mb-4 text-indigo-500">🎉</div>
-            <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-2">Pesan</h3>
-            <p id="modal-body" class="text-gray-600 mb-6">Pesan detail.</p>
-            <button onclick="closeMessageModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Tutup</button>
-        </div>
-    </div>
-
-    <!-- Modal BARU: Payment Information and Token Generation Trigger -->
-    <div id="payment-info-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-40 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 text-center">
-            <h3 class="text-xl font-bold text-red-600 mb-4">Langkah Pembelian Mystery Box</h3>
-            <ol class="list-decimal list-inside text-gray-700 space-y-3 mb-6 text-left text-base">
-                <li>Bayar Mystery Box (Rp 50.000) melalui link berikut: 
-                    <a href="${PAYMENT_LINK}" target="_blank" class="text-indigo-600 font-semibold break-all hover:underline">${PAYMENT_LINK}</a>
-                </li>
-                <li>Kirim bukti bayar ke WhatsApp Admin: 
-                    <a href="https://wa.me/${WA_ADMIN_NUMBER}" target="_blank" class="text-indigo-600 font-semibold break-all hover:underline">${WA_ADMIN_NUMBER}</a>
-                </li>
-                <li>Tunggu balasan Admin yang akan memberikan **TOKEN RAHASIA** Anda.</li>
-                <li>Setelah mendapatkan token, klik tombol di bawah untuk memasukkan token.</li>
-            </ol>
-            <button onclick="registerPlayAndOpenTokenInput()" class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                Saya Sudah Bayar dan Punya Token
-            </button>
-            <button onclick="closePaymentInfoModal()" class="w-full py-2 mt-3 bg-gray-300 text-gray-800 font-semibold rounded-lg hover:bg-gray-400 transition">
-                Tutup / Kembali
-            </button>
-        </div>
-    </div>
-    
-    <!-- Modal BARU: Token Input for Opening Box -->
-    <div id="token-input-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-40 p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <h3 class="text-xl font-bold text-green-600 mb-4">Masukkan Token Anda</h3>
-            <form id="token-form">
-                <div class="mb-4">
-                    <label for="mystery-token" class="block text-sm font-medium text-gray-700 mb-1">Token Rahasia (dari Admin):</label>
-                    <input type="text" id="mystery-token" required maxlength="6" pattern="[A-Z0-9]{6}"
-                        class="mt-1 block w-full text-center text-2xl font-mono border border-gray-300 rounded-md shadow-sm p-2 focus:ring-green-500 focus:border-green-500 uppercase tracking-widest">
-                    <p class="text-xs text-gray-500 mt-1">Token 6 digit (A-Z, 0-9)</p>
-                </div>
-                <p id="token-error" class="text-red-500 text-sm mb-4 hidden">Token salah atau sudah digunakan. Coba lagi.</p>
-                <div class="flex justify-center space-x-3">
-                    <button type="button" onclick="closeTokenInputModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">Batal</button>
-                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">Buka Mystery Box!</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-
-    <!-- JavaScript & Firebase Logic -->
+    <!-- Firebase SDKs -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, get, set, push, update, onValue, remove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
-        
-        // --- MODULE-SCOPE STATE ---
-        let app, auth, db, userId;
-        let isAuthReady = false;
-        let isAdmin = false;
-        let latestPlayId = null; 
-        
-        // --- EXPOSE GLOBAL FUNCTIONS (Fix for onclick errors) ---
-        // (Existing window exposure functions are omitted for brevity but assumed to be present)
-        window.toggleSidebar = toggleSidebar;
-        window.closeSidebar = closeSidebar;
-        window.showUserView = showUserView;
-        window.showAdminView = showAdminView;
-        window.showMessageModal = showMessageModal;
-        window.closeMessageModal = closeMessageModal;
-        window.openPaymentInfoModal = openPaymentInfoModal;
-        window.closePaymentInfoModal = closePaymentInfoModal;
-        window.registerPlayAndOpenTokenInput = registerPlayAndOpenTokenInput;
-        window.closeTokenInputModal = closeTokenInputModal;
-        window.openProductModal = openProductModal;
-        window.closeProductModal = closeProductModal;
-        window.deleteProduct = deleteProduct;
-        window.buyProduct = buyProduct;
-        window.updatePlayStatus = updatePlayStatus;
-        window.saveToken = saveToken;
-        window.saveVoucher = saveVoucher;
-        window.openAdminLoginModal = openAdminLoginModal;
-        window.closeAdminLoginModal = closeAdminLoginModal;
-        window.logoutAdmin = logoutAdmin;
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, runTransaction, setLogLevel } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- FIREBASE PATHING ---
-        function getProductsRef() {
-            return ref(db, `artifacts/${appId}/public/data/products`);
-        }
-        function getMysteryPlaysRef(uid) {
-             return ref(db, `artifacts/${appId}/users/${uid}/mystery_box_plays`);
-        }
-        function getAllMysteryPlaysAdminRef() {
-            return ref(db, `artifacts/${appId}/users/`);
-        }
-        function getLeaderboardRef() {
-            return ref(db, `artifacts/${appId}/public/data/leaderboard`);
-        }
+        // --- GLOBAL FIREBASE CONFIGURATION (MANDATORY) ---
+        // These global variables are provided by the Canvas environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
 
+        // Hardcoded ADMIN_UID (The user who is currently signed in should be the admin for a simple setup)
+        // This will be set after successful authentication.
+        let ADMIN_USER_ID = null;
 
-        // --- UI FUNCTIONS (omitted for brevity) ---
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        const sidebar = document.getElementById('mobile-sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        const userView = document.getElementById('user-view');
-        const adminView = document.getElementById('admin-view');
-        const loadingSpinner = document.getElementById('loading-spinner');
-        const adminLinks = document.querySelectorAll('.admin-link');
-        const adminLoginBtn = document.getElementById('admin-login-btn');
-        const adminLogoutBtn = document.getElementById('admin-logout-btn');
+        // Firestore paths
+        const COLLECTIONS = {
+            PRODUCTS: 'products',
+            MB_PLAYS: 'mysteryBoxPlays',
+        };
 
-
-        function toggleSidebar() {
-            const isOpen = sidebar.classList.toggle('open');
-            overlay.classList.toggle('hidden', !isOpen);
-            hamburgerBtn.querySelector('.hamburger-icon').classList.toggle('open', isOpen);
-        }
-
-        function closeSidebar() {
-            sidebar.classList.remove('open');
-            overlay.classList.add('hidden');
-            hamburgerBtn.querySelector('.hamburger-icon').classList.remove('open');
-        }
-
-        hamburgerBtn.addEventListener('click', toggleSidebar);
-
-        function updateAdminUI(isNowAdmin) {
-            isAdmin = isNowAdmin;
-            if (isNowAdmin) {
-                document.body.classList.add('admin-active');
-                adminLinks.forEach(link => link.classList.remove('hidden'));
-                adminLoginBtn.classList.add('hidden');
-                adminLogoutBtn.classList.remove('hidden');
-            } else {
-                document.body.classList.remove('admin-active');
-                adminLinks.forEach(link => link.classList.add('hidden'));
-                adminLoginBtn.classList.remove('hidden');
-                adminLogoutBtn.classList.add('hidden');
-                showUserView('home'); 
-            }
-        }
-
-        function showView(viewId) {
-            userView.classList.add('hidden');
-            adminView.classList.add('hidden');
-            
-            if (viewId.startsWith('user')) {
-                userView.classList.remove('hidden');
-                document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
-                document.getElementById(viewId.replace('user-', 'user-')).classList.remove('hidden');
-            } else if (viewId.startsWith('admin')) {
-                adminView.classList.remove('hidden');
-                document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden'));
-                document.getElementById(viewId.replace('admin-', 'admin-')).classList.remove('hidden');
-            }
-        }
-
-        function showUserView(section) {
-            showView('user-' + section);
-        }
-
-        function showAdminView(section) {
-            if (isAdmin) {
-                showView('admin-' + section);
-            } else {
-                showMessageModal('🚫 Akses Ditolak', 'Anda tidak memiliki izin akses sebagai Admin. Silahkan Login Admin terlebih dahulu.', 'text-red-500');
-                showUserView('home');
-            }
-        }
-        
-        function showMessageModal(title, body, iconClass = 'text-indigo-500', icon = '🎉') {
-            document.getElementById('modal-icon').innerHTML = icon;
-            document.getElementById('modal-icon').className = `text-4xl mb-4 ${iconClass}`;
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-body').textContent = body;
-            document.getElementById('message-modal').classList.remove('hidden');
-            document.getElementById('message-modal').classList.add('flex');
-        }
-
-        function closeMessageModal() {
-            document.getElementById('message-modal').classList.add('hidden');
-            document.getElementById('message-modal').classList.remove('flex');
-        }
-        
-        // --- ADMIN LOGIN MODAL FUNCTIONS ---
-        
-        function openAdminLoginModal() {
-            document.getElementById('admin-login-error').classList.add('hidden');
-            document.getElementById('admin-password').value = '';
-            document.getElementById('admin-login-modal').classList.remove('hidden');
-            document.getElementById('admin-login-modal').classList.add('flex');
-        }
-
-        function closeAdminLoginModal() {
-            document.getElementById('admin-login-modal').classList.add('hidden');
-            document.getElementById('admin-login-modal').classList.remove('flex');
-        }
-        
-        document.getElementById('admin-login-form').addEventListener('submit', handleAdminLoginSubmit);
-        
-        function handleAdminLoginSubmit(e) {
-            e.preventDefault();
-            const password = document.getElementById('admin-password').value;
-            const errorEl = document.getElementById('admin-login-error');
-
-            if (password === ADMIN_PASSWORD) {
-                closeAdminLoginModal();
-                updateAdminUI(true); 
-                showAdminView('manage-products');
-                showMessageModal('Login Berhasil', 'Anda berhasil masuk sebagai Admin!', 'text-green-600', '🔑');
-            } else {
-                errorEl.classList.remove('hidden');
-            }
-        }
-
-        function logoutAdmin() {
-            if (!confirm('Yakin ingin keluar dari Admin Panel?')) return;
-            updateAdminUI(false); 
-            showMessageModal('Logout Berhasil', 'Anda telah keluar dari Admin Panel.', 'text-red-500', '🚪');
-        }
-        
-        // Dummy function for product modal content
-        function openProductModal() {
-             const productModal = document.getElementById('product-modal');
-             productModal.innerHTML = `
-                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
-                     <h3 class="text-xl font-bold text-indigo-600 mb-4">Tambah/Edit Produk</h3>
-                     <p class="text-gray-500">Fitur ini tidak diimplementasikan secara penuh. Gunakan Firebase Realtime Database langsung untuk data produk.</p>
-                     <button onclick="closeProductModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg">Tutup</button>
-                 </div>
-             `;
-             productModal.classList.remove('hidden');
-             productModal.classList.add('flex');
-        }
-        function closeProductModal() {
-             document.getElementById('product-modal').classList.add('hidden');
-        }
-        
-        // Dummy function for buyProduct
-        function buyProduct(productId, name) {
-            showMessageModal('Pembelian', `Anda mencoba membeli produk: ${name}. Fitur checkout belum diimplementasikan.`, 'text-yellow-500', '🛒');
-        }
-        
-        function deleteProduct(productId, name) {
-             showMessageModal('Hapus Produk', `Fitur hapus untuk produk ${name} belum diimplementasikan.`, 'text-red-500', '🗑️');
-        }
-        
-        function formatRupiah(number) {
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
-        }
-
-        function renderUserHome(products) {
-            document.getElementById('total-products').textContent = Object.keys(products).length;
-            // Additional home summaries can be added here
-        }
-
-        function renderUserProducts(products) {
-            const listEl = document.getElementById('product-list');
-            listEl.innerHTML = '';
-            
-            if (Object.keys(products).length === 0) {
-                listEl.innerHTML = '<p class="col-span-4 text-center text-gray-500 p-8">Belum ada produk yang ditambahkan oleh Admin.</p>';
-                return;
+        // --- Core Application Class ---
+        class StoreApp {
+            constructor() {
+                this.db = null;
+                this.auth = null;
+                this.userId = null;
+                this.isAuthReady = false;
+                this.isAdmin = false;
+                this.currentView = 'userHome'; // userHome | userProducts | userMB | adminProducts | adminMB
+                this.products = [];
+                this.mbPlays = [];
+                this.userIP = null;
+                this.isSidebarOpen = false;
+                this.initApp();
             }
 
-            Object.entries(products).forEach(([id, product]) => {
-                const card = `
-                    <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition duration-300 overflow-hidden">
-                        <img src="https://placehold.co/400x300/1e40af/ffffff?text=${product.name.substring(0, 10).replace(/ /g, '+')}" 
-                             onerror="this.onerror=null;this.src='https://placehold.co/400x300/9ca3af/ffffff?text=Produk';" 
-                             alt="${product.name}" class="w-full h-32 object-cover">
-                        <div class="p-4">
-                            <h4 class="font-bold text-lg text-gray-800 truncate">${product.name}</h4>
-                            <p class="text-indigo-600 font-semibold mt-1">${formatRupiah(product.price)}</p>
-                            <p class="text-sm text-gray-500">Stok: ${product.stock}</p>
-                            <button onclick="buyProduct('${id}', '${product.name}')" class="mt-3 w-full py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition">
-                                Beli
-                            </button>
+            async initApp() {
+                try {
+                    // 1. Initialize Firebase
+                    if (Object.keys(firebaseConfig).length === 0) {
+                         throw new Error("Firebase config not found.");
+                    }
+                    setLogLevel('debug'); // Enable Firestore logs
+                    const app = initializeApp(firebaseConfig);
+                    this.db = getFirestore(app);
+                    this.auth = getAuth(app);
+                    window.App = this; // Make the App instance globally accessible
+
+                    // 2. Fetch User IP Address
+                    await this.fetchUserIP();
+
+                    // 3. Handle Authentication
+                    onAuthStateChanged(this.auth, async (user) => {
+                        if (user) {
+                            this.userId = user.uid;
+                            document.getElementById('current-user-id').textContent = user.uid;
+                            ADMIN_USER_ID = user.uid; // Set the current user as the Admin initially
+
+                            // Check if the current user is the admin
+                            this.isAdmin = (this.userId === ADMIN_USER_ID);
+
+                        } else {
+                            // This part should not be reached if signInWithCustomToken is successful
+                            this.userId = 'anonymous';
+                            document.getElementById('current-user-id').textContent = 'ANONYMOUS';
+                            this.isAdmin = false;
+                        }
+
+                        this.isAuthReady = true;
+                        this.setupListeners(); // Start listening to database changes only after auth
+                        this.renderNavigation();
+                        this.renderView();
+                    });
+
+                    // Sign in using custom token or anonymously
+                    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(this.auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(this.auth);
+                    }
+
+                } catch (error) {
+                    console.error("Error initializing Firebase or Auth:", error);
+                    document.getElementById('content-area').innerHTML = `<div class="text-center text-red-600 py-20">Gagal memuat aplikasi. Cek konsol untuk detail error.</div>`;
+                }
+            }
+
+            async fetchUserIP() {
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const data = await response.json();
+                    this.userIP = data.ip;
+                    console.log('User IP Address:', this.userIP);
+                } catch (error) {
+                    console.error("Gagal mendapatkan IP Address:", error);
+                    this.userIP = 'IP_NOT_FOUND';
+                }
+            }
+
+            // --- Database Listeners ---
+            setupListeners() {
+                if (!this.db || !this.isAuthReady) return;
+
+                // 1. Products Listener (Public Data)
+                const productsPath = this.getPublicCollectionRef(COLLECTIONS.PRODUCTS);
+                onSnapshot(productsPath, (snapshot) => {
+                    this.products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.renderView(); // Re-render whenever products change
+                }, (error) => {
+                    console.error("Error fetching products:", error);
+                });
+
+                // 2. Mystery Box Plays Listener (Public Data)
+                const mbPlaysPath = this.getPublicCollectionRef(COLLECTIONS.MB_PLAYS);
+                onSnapshot(mbPlaysPath, (snapshot) => {
+                    this.mbPlays = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    this.renderView(); // Re-render whenever MB plays change
+                }, (error) => {
+                    console.error("Error fetching MB Plays:", error);
+                });
+            }
+
+            // --- Firestore Helpers ---
+            getPublicCollectionRef(collectionName) {
+                return collection(this.db, `artifacts/${appId}/public/data/${collectionName}`);
+            }
+            getAdminCollectionRef(collectionName) {
+                // Admin data is stored under the admin user's private path for security/management
+                return collection(this.db, `artifacts/${appId}/users/${ADMIN_USER_ID}/${collectionName}`);
+            }
+            getMbPlayByIp(ipAddress) {
+                return this.mbPlays.find(play => play.ipAddress === ipAddress);
+            }
+            getUserMbPlays() {
+                // Filter plays for the current IP and check if the user has completed the payment flow.
+                return this.mbPlays.filter(play => play.ipAddress === this.userIP);
+            }
+
+            // --- UI/View Management ---
+            toggleSidebar() {
+                this.isSidebarOpen = !this.isSidebarOpen;
+                document.getElementById('mobile-sidebar').classList.toggle('-translate-x-full', !this.isSidebarOpen);
+                document.getElementById('mobile-overlay').classList.toggle('hidden', !this.isSidebarOpen);
+                document.getElementById('hamburger-btn').classList.toggle('menu-open', this.isSidebarOpen);
+            }
+
+            closeSidebar() {
+                this.isSidebarOpen = false;
+                document.getElementById('mobile-sidebar').classList.add('-translate-x-full');
+                document.getElementById('mobile-overlay').classList.add('hidden');
+                document.getElementById('hamburger-btn').classList.remove('menu-open');
+            }
+
+            toggleAdminView() {
+                this.isAdmin = !this.isAdmin;
+                if (this.isAdmin) {
+                    this.currentView = 'adminProducts';
+                } else {
+                    this.currentView = 'userHome';
+                }
+                this.renderNavigation();
+                this.renderView();
+                this.closeSidebar();
+            }
+
+            setView(viewName) {
+                this.currentView = viewName;
+                this.renderView();
+                this.closeSidebar();
+            }
+
+            renderNavigation() {
+                const navLinks = this.isAdmin ? this.renderAdminNav() : this.renderUserNav();
+
+                document.getElementById('desktop-nav').querySelector('div').innerHTML = navLinks.join('');
+                document.getElementById('mobile-sidebar').querySelector('nav').innerHTML = navLinks.join('');
+
+                // Update admin switch button text
+                const adminBtn = document.getElementById('admin-switch-btn-desktop');
+                if (adminBtn) adminBtn.textContent = this.isAdmin ? 'User View' : 'Admin View';
+                const adminBtnMobile = document.getElementById('admin-switch-btn');
+                if (adminBtnMobile) adminBtnMobile.textContent = this.isAdmin ? 'User View' : 'Admin View';
+            }
+
+            renderUserNav() {
+                return [
+                    { name: 'Beranda', view: 'userHome' },
+                    { name: 'Dijual', view: 'userProducts' },
+                    { name: 'Mystery Box', view: 'userMB' },
+                    { name: 'Leaderboard', view: 'userLeaderboard' }
+                ].map(item => `
+                    <a href="#" onclick="App.setView('${item.view}'); return false;"
+                       class="px-3 py-2 rounded-md text-sm font-medium transition ${this.currentView === item.view ? 'bg-indigo-500 text-white' : 'text-gray-700 hover:bg-gray-100'}">
+                        ${item.name}
+                    </a>
+                `);
+            }
+
+            renderAdminNav() {
+                return [
+                    { name: 'Kelola Produk', view: 'adminProducts' },
+                    { name: 'Kelola Mystery Box', view: 'adminMB' }
+                ].map(item => `
+                    <a href="#" onclick="App.setView('${item.view}'); return false;"
+                       class="px-3 py-2 rounded-md text-sm font-medium transition ${this.currentView === item.view ? 'bg-indigo-500 text-white' : 'text-gray-700 hover:bg-gray-100'}">
+                        ${item.name}
+                    </a>
+                `);
+            }
+
+            renderView() {
+                const contentArea = document.getElementById('content-area');
+                if (!this.isAuthReady) {
+                    contentArea.innerHTML = this.renderLoading();
+                    return;
+                }
+
+                if (this.isAdmin) {
+                    // Render Admin Views
+                    switch (this.currentView) {
+                        case 'adminProducts':
+                            contentArea.innerHTML = this.renderAdminProducts();
+                            this.renderProductList();
+                            break;
+                        case 'adminMB':
+                            contentArea.innerHTML = this.renderAdminMB();
+                            this.renderMBPlayList();
+                            break;
+                        default:
+                            this.currentView = 'adminProducts';
+                            contentArea.innerHTML = this.renderAdminProducts();
+                            this.renderProductList();
+                    }
+                } else {
+                    // Render User Views
+                    switch (this.currentView) {
+                        case 'userProducts':
+                            contentArea.innerHTML = this.renderUserProducts();
+                            break;
+                        case 'userMB':
+                            contentArea.innerHTML = this.renderUserMB();
+                            break;
+                        case 'userLeaderboard':
+                            contentArea.innerHTML = this.renderUserLeaderboard();
+                            break;
+                        case 'userHome':
+                        default:
+                            this.currentView = 'userHome';
+                            contentArea.innerHTML = this.renderUserHome();
+                    }
+                }
+                // Ensure icons are rendered
+                lucide.createIcons();
+            }
+
+            renderLoading() {
+                return `
+                    <div class="flex flex-col items-center justify-center py-20">
+                        <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="mt-4 text-gray-600">Sedang memuat data dan mengautentikasi...</p>
+                    </div>
+                `;
+            }
+
+            // --- MODALS ---
+            showModal(id, title, body, footer = '') {
+                const modalHtml = `
+                    <div id="${id}" class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" onclick="App.hideModal('${id}')">
+                        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 transition-all duration-300 transform scale-100" onclick="event.stopPropagation()">
+                            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                                <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
+                                <button onclick="App.hideModal('${id}')" class="text-gray-400 hover:text-gray-600">
+                                    <i data-lucide="x" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+                            <div class="text-gray-700">
+                                ${body}
+                            </div>
+                            <div class="mt-4 pt-4 border-t">
+                                ${footer}
+                            </div>
                         </div>
                     </div>
                 `;
-                listEl.innerHTML += card;
-            });
-        }
-        
-        function renderAdminProducts(products) {
-             const tableBody = document.getElementById('admin-product-table');
-             tableBody.innerHTML = '';
+                document.getElementById('modal-container').innerHTML = modalHtml;
+                lucide.createIcons();
+            }
 
-             Object.entries(products).forEach(([id, product]) => {
-                 const row = `
-                    <tr class="hover:bg-gray-100">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${product.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.stock}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatRupiah(product.price)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="openProductModal('${id}')" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
-                            <button onclick="deleteProduct('${id}', '${product.name}')" class="text-red-600 hover:text-red-900">Hapus</button>
+            hideModal(id) {
+                const modal = document.getElementById(id);
+                if (modal) modal.remove();
+            }
+
+            // --- USER VIEWS ---
+
+            renderUserHome() {
+                const productGroups = this.products.reduce((acc, product) => {
+                    acc[product.category] = (acc[product.category] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const categoryList = Object.entries(productGroups).map(([category, count]) => `
+                    <li class="flex justify-between items-center p-4 bg-white rounded-lg shadow-md border-l-4 border-indigo-500">
+                        <span class="text-lg font-medium text-gray-700">${category}</span>
+                        <span class="text-2xl font-bold text-indigo-600">${count}</span>
+                    </li>
+                `).join('');
+
+                const productCount = this.products.length;
+                const totalStock = this.products.reduce((sum, p) => sum + (p.stock || 0), 0);
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Selamat Datang di TokoID</h1>
+                    <p class="text-gray-600 mb-8">Beranda menampilkan rangkuman cepat barang yang kami jual.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                        <div class="bg-indigo-500 text-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="package" class="w-8 h-8"></i>
+                                <h3 class="text-xl font-semibold">Total Jenis Produk</h3>
+                            </div>
+                            <p class="text-4xl font-extrabold mt-2">${Object.keys(productGroups).length}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <div class="flex items-center space-x-3 text-gray-700">
+                                <i data-lucide="tag" class="w-8 h-8 text-indigo-500"></i>
+                                <h3 class="text-xl font-semibold">Total Barang Dijual</h3>
+                            </div>
+                            <p class="text-4xl font-extrabold mt-2 text-indigo-600">${productCount}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <div class="flex items-center space-x-3 text-gray-700">
+                                <i data-lucide="stock-line" class="w-8 h-8 text-green-500"></i>
+                                <h3 class="text-xl font-semibold">Total Stok Tersedia</h3>
+                            </div>
+                            <p class="text-4xl font-extrabold mt-2 text-green-600">${totalStock}</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Rangkuman Berdasarkan Jenis Barang</h2>
+                    <ul class="space-y-4">
+                        ${categoryList.length > 0 ? categoryList : '<li class="text-gray-500">Belum ada data produk. Silahkan tambah melalui menu Admin.</li>'}
+                    </ul>
+                `;
+            }
+
+            renderUserProducts() {
+                const productCards = this.products.filter(p => p.stock > 0).map(product => `
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl">
+                        <img src="${product.imageUrl || 'https://placehold.co/400x300/a5b4fc/1e3a8a?text=Produk'}"
+                             alt="${product.name}" class="w-full h-48 object-cover object-center"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x300/a5b4fc/1e3a8a?text=Produk Placeholder';"
+                        >
+                        <div class="p-5 flex-grow">
+                            <p class="text-sm font-medium text-indigo-600 mb-1">${product.category}</p>
+                            <h3 class="text-xl font-bold text-gray-800 line-clamp-2">${product.name}</h3>
+                            <p class="text-3xl font-extrabold text-green-600 mt-2">Rp ${this.formatRupiah(product.price)}</p>
+                            <p class="text-sm text-gray-500 mt-1">Stok: ${product.stock}</p>
+                        </div>
+                        <div class="p-5 border-t">
+                            <button onclick="App.handleBuyProduct('${product.id}', '${product.buyLink}')"
+                                    class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-300">
+                                Beli Sekarang
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Semua Barang Dijual</h1>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        ${productCards.length > 0 ? productCards : '<p class="col-span-full text-center text-gray-500 p-10 bg-white rounded-xl">Saat ini tidak ada produk yang tersedia. Cek lagi nanti!</p>'}
+                    </div>
+                `;
+            }
+
+            async handleBuyProduct(productId, buyLink) {
+                if (!this.db || !this.isAuthReady) {
+                    this.showModal('auth-error', 'Kesalahan', 'Autentikasi belum selesai. Silakan coba lagi.');
+                    return;
+                }
+
+                const productRef = doc(this.getPublicCollectionRef(COLLECTIONS.PRODUCTS), productId);
+
+                try {
+                    await runTransaction(this.db, async (transaction) => {
+                        const productDoc = await transaction.get(productRef);
+                        if (!productDoc.exists()) {
+                            throw "Produk tidak ditemukan!";
+                        }
+
+                        const currentStock = productDoc.data().stock;
+                        if (currentStock <= 0) {
+                            throw "Maaf, stok barang ini sudah habis.";
+                        }
+
+                        // Kurangi stok
+                        transaction.update(productRef, { stock: currentStock - 1 });
+                    });
+
+                    // Sukses mengurangi stok, alihkan ke link CTA
+                    window.open(buyLink, '_blank');
+                    this.showModal('buy-success', 'Pembelian Berhasil!', `
+                        <p>Stok berhasil dikurangi. Anda akan diarahkan ke halaman pembayaran/CTA.</p>
+                        <p class="mt-2 text-sm text-gray-500">Pastikan Anda menyelesaikan transaksi di halaman tujuan.</p>
+                    `, `<button onclick="App.hideModal('buy-success')" class="bg-indigo-500 text-white px-4 py-2 rounded-lg">OK</button>`);
+
+                } catch (error) {
+                    console.error("Gagal melakukan pembelian:", error);
+                    this.showModal('buy-error', 'Gagal Beli', `<p>${error}</p>`, `<button onclick="App.hideModal('buy-error')" class="bg-red-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                }
+            }
+
+            renderUserMB() {
+                if (!this.userIP) {
+                    return `<div class="text-center p-10 text-gray-500">Gagal mendapatkan IP Anda. Tidak bisa memainkan Mystery Box.</div>`;
+                }
+
+                const userPlays = this.getUserMbPlays();
+                const currentPlay = userPlays.find(p => !p.hasOpened && p.isApproved);
+                const isWaitingPaymentProof = userPlays.find(p => !p.isApproved && !p.isPaidProofSent);
+                const isWaitingAdminApproval = userPlays.find(p => !p.isApproved && p.isPaidProofSent);
+                const hasOpenedToday = userPlays.some(p => {
+                    const playDate = new Date(p.timestamp);
+                    const today = new Date();
+                    return playDate.toDateString() === today.toDateString() && p.hasOpened;
+                });
+
+                let actionSection;
+
+                if (currentPlay) {
+                    // State: Approved, Ready to Open
+                    actionSection = `
+                        <p class="text-center text-green-600 font-semibold text-lg mb-4">SELAMAT! Bukti pembayaran Anda telah dikonfirmasi oleh Admin. Anda sekarang dapat membuka Mystery Box!</p>
+                        <button onclick="App.handleOpenMysteryBox('${currentPlay.id}')"
+                                class="w-full bg-green-500 text-white font-bold text-xl py-4 rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-300 transform hover:scale-[1.02]">
+                            <i data-lucide="gift" class="w-6 h-6 inline mr-2"></i> BUKA MYSTERY BOX SEKARANG!
+                        </button>
+                    `;
+                } else if (isWaitingAdminApproval) {
+                    // State: Sent Proof, Waiting Approval
+                    actionSection = `
+                        <div class="text-center p-6 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg">
+                            <i data-lucide="clock" class="w-8 h-8 mx-auto mb-3"></i>
+                            <p class="font-bold text-lg">Menunggu Konfirmasi Admin</p>
+                            <p>Anda telah mengirimkan bukti pembayaran. Admin sedang memprosesnya. Mohon tunggu notifikasi untuk bisa membuka Mystery Box.</p>
+                        </div>
+                    `;
+                } else if (isWaitingPaymentProof) {
+                    // State: Played (redirected) but hasn't sent proof (This is only triggered after 'Beli' click)
+                    actionSection = `
+                        <div class="text-center p-6 bg-red-100 border border-red-400 text-red-800 rounded-lg">
+                            <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3"></i>
+                            <p class="font-bold text-lg">TINDAKAN DIBUTUHKAN</p>
+                            <p>Anda telah melakukan pembelian Mystery Box, namun belum mengirimkan bukti pembayaran.</p>
+                            <button onclick="App.showPaymentProofModal('${isWaitingPaymentProof.id}')"
+                                    class="mt-4 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">
+                                Kirim Bukti Bayar Sekarang
+                            </button>
+                        </div>
+                    `;
+                } else if (hasOpenedToday) {
+                     // State: Has opened a box today (or just opened, and lost)
+                     actionSection = `
+                        <div class="text-center p-6 bg-gray-100 border border-gray-400 text-gray-800 rounded-lg">
+                            <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-3"></i>
+                            <p class="font-bold text-lg">Coba Lagi Besok</p>
+                            <p>Anda sudah bermain Mystery Box. Silakan coba lagi besok untuk kesempatan menang yang baru!</p>
+                        </div>
+                    `;
+                } else {
+                    // State: Fresh player or has finished previous play
+                    actionSection = `
+                        <p class="text-center text-gray-700 mb-4">Klik tombol di bawah untuk membeli Mystery Box dan memulai permainan!</p>
+                        <button onclick="App.handleBuyMysteryBox()"
+                                class="w-full bg-indigo-600 text-white font-bold text-xl py-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-300 transform hover:scale-[1.02]">
+                            <i data-lucide="shopping-cart" class="w-6 h-6 inline mr-2"></i> BELI MYSTERY BOX
+                        </button>
+                    `;
+                }
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Mystery Box Berhadiah Baju</h1>
+                    <div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-2xl border-4 border-indigo-400">
+                        <div class="text-center mb-6">
+                            <i data-lucide="package" class="w-20 h-20 text-indigo-600 mx-auto"></i>
+                            <h2 class="text-2xl font-extrabold text-gray-800 mt-3">Raih Kesempatan Menang!</h2>
+                            <p class="text-gray-500">Mistery Box berisi baju dan *balik lagi*. Pemenang diundi berdasarkan IP Address Anda!</p>
+                            <p class="text-xs text-gray-400 mt-1">IP Anda: ${this.userIP}</p>
+                        </div>
+                        ${actionSection}
+                    </div>
+                `;
+            }
+
+            async handleBuyMysteryBox() {
+                if (!this.db || !this.isAuthReady || !this.userIP) return;
+
+                // 1. Catat permainan baru di database
+                const newPlay = {
+                    ipAddress: this.userIP,
+                    userId: this.userId,
+                    timestamp: new Date().toISOString(),
+                    isPaidProofSent: false, // Menunggu bukti bayar
+                    isApproved: false, // Menunggu konfirmasi admin
+                    isWinner: false, // Status awal
+                    hasOpened: false, // Belum dibuka
+                };
+
+                try {
+                    const docRef = await addDoc(this.getPublicCollectionRef(COLLECTIONS.MB_PLAYS), newPlay);
+
+                    // 2. Redirect ke link pembayaran (Call to action ke link lain)
+                    const externalLink = 'https://wa.me/6285817938860?text=Saya%20ingin%20membeli%20Mystery%20Box%20%28ID%3A%20' + docRef.id + '%29';
+                    window.open(externalLink, '_blank');
+
+                    // 3. Tampilkan modal untuk mengirim bukti bayar
+                    this.showPaymentProofModal(docRef.id);
+
+                } catch (error) {
+                    console.error("Gagal mencatat Mystery Box Play:", error);
+                    this.showModal('mb-buy-error', 'Gagal', 'Terjadi kesalahan saat memulai Mystery Box. Coba lagi.');
+                }
+            }
+
+            showPaymentProofModal(playId) {
+                const waLink = 'https://wa.me/6285817938860?text=Admin%2C%20ini%20bukti%20pembayaran%20Mystery%20Box%20saya%20dengan%20Play%20ID%3A%20' + playId;
+                this.showModal('payment-proof-modal', 'Kirim Bukti Pembayaran', `
+                    <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                        <li>Silakan kirim bukti bayar Mystery Box ke Admin.</li>
+                        <li>Setelah berhasil terkirim, tunggu konfirmasi dari Admin.</li>
+                        <li>Setelah dikonfirmasi (diceklis oleh Admin), Anda bisa menggunakan token/akses untuk membuka Mystery Box.</li>
+                    </ol>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm font-semibold text-gray-600 mb-2">WA Admin: 085817938860</p>
+                        <button onclick="App.handlePaymentProofSent('${playId}')"
+                                class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition shadow-md">
+                            <i data-lucide="whatsapp" class="w-5 h-5 inline mr-2"></i> KONFIRMASI KIRIM BUKTI
+                        </button>
+                    </div>
+                `, `<button onclick="App.hideModal('payment-proof-modal')" class="bg-gray-400 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                lucide.createIcons();
+            }
+
+            async handlePaymentProofSent(playId) {
+                if (!this.db || !this.isAuthReady) return;
+
+                try {
+                    const playRef = doc(this.getPublicCollectionRef(COLLECTIONS.MB_PLAYS), playId);
+                    await updateDoc(playRef, { isPaidProofSent: true });
+
+                    this.hideModal('payment-proof-modal');
+                    this.showModal('proof-sent-success', 'Terkirim!', 'Bukti bayar Anda telah dicatat. Mohon tunggu konfirmasi dari Admin sebelum membuka Mystery Box.');
+                    this.setView('userMB');
+
+                } catch (error) {
+                    console.error("Gagal update bukti bayar:", error);
+                }
+            }
+
+            async handleOpenMysteryBox(playId) {
+                if (!this.db || !this.isAuthReady) return;
+
+                try {
+                    const playRef = doc(this.getPublicCollectionRef(COLLECTIONS.MB_PLAYS), playId);
+                    const playDoc = await getDoc(playRef);
+
+                    if (!playDoc.exists() || playDoc.data().hasOpened) {
+                        this.showModal('mb-error', 'Kesalahan', 'Box sudah dibuka atau ID tidak valid.');
+                        return;
+                    }
+
+                    const playData = playDoc.data();
+
+                    // Update status telah dibuka
+                    await updateDoc(playRef, { hasOpened: true });
+
+                    // Tampilkan hasil
+                    if (playData.isWinner) {
+                        this.showModal('mb-win', 'SELAMAT! ANDA MENANG!', `
+                            <div class="text-center p-4">
+                                <i data-lucide="award" class="w-12 h-12 text-yellow-500 mx-auto mb-4"></i>
+                                <p class="text-xl font-bold text-gray-800">Anda berhasil memenangkan VOUCHER TUKAR BAJU!</p>
+                                <p class="mt-4">Silakan **screenshot** notifikasi ini dan kirimkan ke Admin (WA: 085817938860) untuk klaim hadiah Anda.</p>
+                                <div class="mt-4 p-3 bg-gray-100 rounded-lg">
+                                    <p class="font-mono text-lg text-indigo-700">VOUCHER-${Math.random().toString(36).substring(2, 10).toUpperCase()}</p>
+                                </div>
+                            </div>
+                        `, `<button onclick="App.hideModal('mb-win')" class="bg-indigo-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                    } else {
+                        this.showModal('mb-lose', 'Coba Lagi Nanti :(', `
+                            <div class="text-center p-4">
+                                <i data-lucide="sad" class="w-12 h-12 text-gray-500 mx-auto mb-4"></i>
+                                <p class="text-xl font-bold text-gray-800">Maaf, Anda belum beruntung.</p>
+                                <p class="mt-2">Coba lagi di Mystery Box selanjutnya untuk kesempatan menang!</p>
+                            </div>
+                        `, `<button onclick="App.hideModal('mb-lose')" class="bg-red-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                    }
+                    this.setView('userMB'); // Re-render the MB page
+                } catch (error) {
+                    console.error("Gagal membuka Mystery Box:", error);
+                    this.showModal('mb-open-error', 'Gagal', 'Terjadi kesalahan saat membuka Box. Coba lagi.');
+                }
+            }
+
+            renderUserLeaderboard() {
+                // Filter pemenang dan hitung jumlah kemenangan per user/IP
+                const winners = this.mbPlays.filter(p => p.isApproved && p.isWinner);
+                const winCounts = winners.reduce((acc, play) => {
+                    const key = play.ipAddress;
+                    acc[key] = (acc[key] || { count: 0, userId: play.userId });
+                    acc[key].count++;
+                    return acc;
+                }, {});
+
+                const leaderboardData = Object.entries(winCounts)
+                    .map(([ip, data]) => ({ ip, count: data.count, userId: data.userId }))
+                    .sort((a, b) => b.count - a.count);
+
+                const leaderboardRows = leaderboardData.map((item, index) => `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4 font-bold text-lg text-center">${index + 1}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.ip}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500 hidden sm:table-cell">${item.userId}</td>
+                        <td class="px-6 py-4 font-bold text-center text-indigo-600">${item.count}</td>
+                    </tr>
+                `).join('');
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Leaderboard Pemenang Mystery Box</h1>
+                    <div class="overflow-x-auto shadow-md rounded-lg">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-center">Peringkat</th>
+                                    <th scope="col" class="px-6 py-3">IP Address</th>
+                                    <th scope="col" class="px-6 py-3 hidden sm:table-cell">User ID</th>
+                                    <th scope="col" class="px-6 py-3 text-center">Total Kemenangan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${leaderboardRows.length > 0 ? leaderboardRows : '<tr><td colspan="4" class="text-center p-4 text-gray-500">Belum ada pemenang tercatat.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // --- ADMIN VIEWS ---
+
+            renderAdminProducts() {
+                if (!this.isAdmin) return this.renderAccessDenied();
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Admin: Kelola Produk Dijual</h1>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Tambah/Edit Produk</h2>
+                        <form id="product-form" onsubmit="App.handleProductSubmit(event)">
+                            <input type="hidden" id="product-id">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-4">
+                                    <input type="text" id="product-name" placeholder="Nama Produk" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="number" id="product-price" placeholder="Harga (contoh: 50000)" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="number" id="product-stock" placeholder="Stok Awal" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                </div>
+                                <div class="space-y-4">
+                                    <input type="text" id="product-category" placeholder="Kategori (contoh: Jaket)" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="url" id="product-imageurl" placeholder="URL Gambar Produk (Contoh: https://...)" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="url" id="product-buylink" placeholder="Link CTA Beli (Contoh: https://wa.me/...)" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end space-x-4">
+                                <button type="button" onclick="App.clearProductForm()" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition">Batal/Clear</button>
+                                <button type="submit" id="product-submit-btn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Tambah Produk</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Daftar Produk (${this.products.length})</h2>
+                    <div class="overflow-x-auto shadow-md rounded-lg bg-white">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Nama</th>
+                                    <th scope="col" class="px-6 py-3">Kategori</th>
+                                    <th scope="col" class="px-6 py-3">Harga</th>
+                                    <th scope="col" class="px-6 py-3">Stok</th>
+                                    <th scope="col" class="px-6 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-list-body">
+                                <!-- Product rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            renderProductList() {
+                const listBody = document.getElementById('product-list-body');
+                if (!listBody) return;
+
+                listBody.innerHTML = this.products.map(product => `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${product.name}</th>
+                        <td class="px-6 py-4">${product.category}</td>
+                        <td class="px-6 py-4">Rp ${this.formatRupiah(product.price)}</td>
+                        <td class="px-6 py-4 font-bold ${product.stock < 10 ? 'text-red-500' : 'text-green-600'}">${product.stock}</td>
+                        <td class="px-6 py-4 space-x-2">
+                            <button onclick="App.editProduct('${product.id}')" class="text-indigo-600 hover:text-indigo-900 font-medium">Edit</button>
+                            <button onclick="App.deleteProduct('${product.id}')" class="text-red-600 hover:text-red-900 font-medium">Hapus</button>
                         </td>
                     </tr>
-                `;
-                tableBody.innerHTML += row;
-             });
-        }
-
-        // (The rest of the user/admin functions for Mystery Box and Leaderboard are assumed to be here)
-
-        // --- FIREBASE INITIALIZATION & AUTH (PERBAIKAN UTAMA) ---
-
-        async function attemptSignIn() {
-             try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                // If successful, onAuthStateChanged will fire again, hitting the 'if (user)' block.
-            } catch (signInError) {
-                console.error("Firebase Sign-In Attempt Failed:", signInError);
-                // If sign-in fails (e.g., bad token, network), we stop the spinner and show UI
-                isAuthReady = false;
-                userId = 'guest_unauth';
-                loadingSpinner.classList.add('hidden');
-                showUserView('home');
-                showMessageModal('Gagal Otorisasi', 'Gagal masuk ke Firebase. Aplikasi mungkin tidak dapat menyimpan data secara persisten.', 'text-red-500', '⚠️');
+                `).join('') || '<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada produk.</td></tr>';
             }
-        }
 
-        window.onload = async () => {
-            try {
-                app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getDatabase(app);
-                
-                // Set up Auth State Listener
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        // --- SUCCESS PATH ---
-                        userId = user.uid;
-                        isAuthReady = true;
-                        
-                        updateAdminUI(false); 
-                        setupRealtimeListeners();
-                        
-                        loadingSpinner.classList.add('hidden');
-                        showUserView('home');
+            async handleProductSubmit(event) {
+                event.preventDefault();
+                if (!this.db || !this.isAdmin) return;
 
-                    } else if (!isAuthReady) {
-                        // --- INITIAL SIGN-IN ATTEMPT ---
-                        // Only run this logic on the very first check (when isAuthReady is still false/initial)
-                        await attemptSignIn();
+                const id = document.getElementById('product-id').value;
+                const name = document.getElementById('product-name').value;
+                const price = parseInt(document.getElementById('product-price').value);
+                const stock = parseInt(document.getElementById('product-stock').value);
+                const category = document.getElementById('product-category').value;
+                const imageUrl = document.getElementById('product-imageurl').value;
+                const buyLink = document.getElementById('product-buylink').value;
+
+                const productData = { name, price, stock, category, imageUrl, buyLink };
+
+                try {
+                    if (id) {
+                        // Edit existing product
+                        const productRef = doc(this.getPublicCollectionRef(COLLECTIONS.PRODUCTS), id);
+                        await updateDoc(productRef, productData);
+                        console.log("Produk berhasil diupdate:", id);
+                    } else {
+                        // Add new product
+                        await addDoc(this.getPublicCollectionRef(COLLECTIONS.PRODUCTS), productData);
+                        console.log("Produk berhasil ditambahkan.");
                     }
-                });
-            } catch (error) {
-                // --- CRITICAL INIT FAILURE PATH (Firebase App Initialization Failure) ---
-                console.error("Error during Firebase initialization:", error);
-                loadingSpinner.classList.add('hidden'); // CRUCIAL: Hide spinner on failure
-                userView.classList.remove('hidden'); // Show the container
-                document.getElementById('user-home').classList.remove('hidden');
-                
-                loadingSpinner.innerHTML = `<p class="text-red-600">Gagal memuat aplikasi. Cek koneksi atau konfigurasi Firebase. (${error.message})</p>`;
-            }
-        };
-        
-        function setupRealtimeListeners() {
-            // Listen for Products (and other common listeners)
-            onValue(getProductsRef(), (snapshot) => {
-                const products = snapshot.val() || {};
-                renderUserProducts(products);
-                renderUserHome(products);
-                if (isAdmin) {
-                    renderAdminProducts(products);
+                    this.clearProductForm();
+                } catch (error) {
+                    console.error("Gagal menyimpan produk:", error);
                 }
-            });
+            }
 
-            // Listen for Mystery Plays (Admin only)
-            onValue(getAllMysteryPlaysAdminRef(), (snapshot) => {
-                const allPlaysData = snapshot.val() || {};
-                if (isAdmin) {
-                    renderAdminMystery(allPlaysData);
+            editProduct(productId) {
+                const product = this.products.find(p => p.id === productId);
+                if (!product) return;
+
+                document.getElementById('product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-price').value = product.price;
+                document.getElementById('product-stock').value = product.stock;
+                document.getElementById('product-category').value = product.category;
+                document.getElementById('product-imageurl').value = product.imageUrl;
+                document.getElementById('product-buylink').value = product.buyLink;
+                document.getElementById('product-submit-btn').textContent = 'Update Produk';
+            }
+
+            async deleteProduct(productId) {
+                if (window.confirm("Yakin ingin menghapus produk ini?")) {
+                    try {
+                        const productRef = doc(this.getPublicCollectionRef(COLLECTIONS.PRODUCTS), productId);
+                        await deleteDoc(productRef);
+                        console.log("Produk berhasil dihapus:", productId);
+                    } catch (error) {
+                        console.error("Gagal menghapus produk:", error);
+                    }
                 }
-            });
-            
-            // Listen for User's Mystery Play Status
-            if (userId) {
-                onValue(getMysteryPlaysRef(userId), (snapshot) => {
-                    const userPlays = snapshot.val() || {};
-                    renderMysteryBoxUserStatus(userPlays);
-                });
             }
-            
-            // Listen for Leaderboard
-            onValue(getLeaderboardRef(), (snapshot) => {
-                const winners = snapshot.val() || {};
-                renderLeaderboard(winners);
-            });
-        }
-        
-        // --- MYSTERY BOX LOGIC (USER) ---
-        
-        function getLatestPlay(userPlays) {
-            if (!userPlays) return null;
-            const playsArray = Object.entries(userPlays).map(([playId, play]) => ({ playId, ...play }));
-            if (playsArray.length === 0) return null;
-            return playsArray.sort((a, b) => b.timestamp - a.timestamp)[0];
-        }
 
-        function openPaymentInfoModal() {
-            if (!isAuthReady) return showMessageModal('Otorisasi', 'Sedang memuat otorisasi. Mohon tunggu sebentar.', 'text-yellow-500', '⏳');
-            
-            document.getElementById('payment-info-modal').classList.remove('hidden');
-            document.getElementById('payment-info-modal').classList.add('flex');
-        }
-
-        function closePaymentInfoModal() {
-            document.getElementById('payment-info-modal').classList.add('hidden');
-            document.getElementById('payment-info-modal').classList.remove('flex');
-        }
-        
-        function closeTokenInputModal() {
-            document.getElementById('token-input-modal').classList.add('hidden');
-            document.getElementById('token-input-modal').classList.remove('flex');
-            document.getElementById('token-error').classList.add('hidden');
-        }
-
-        async function registerPlayAndOpenTokenInput() {
-            closePaymentInfoModal();
-            if (!isAuthReady || !userId) return showMessageModal('Otorisasi', 'Autentikasi belum siap.', 'text-yellow-500', '⏳');
-
-            const userPlaysRef = getMysteryPlaysRef(userId);
-            const snapshot = await get(userPlaysRef);
-            const userPlays = snapshot.val() || {};
-            const latestPlay = getLatestPlay(userPlays);
-            
-            if (latestPlay && latestPlay.isWinner === undefined) {
-                latestPlayId = latestPlay.playId;
-            } else {
-                const playRef = push(userPlaysRef);
-                latestPlayId = playRef.key;
-                const newPlayData = {
-                    userId: userId,
-                    timestamp: Date.now(),
-                    token: null, 
-                    isWinner: undefined, 
-                    voucher: null,
-                };
-                await set(playRef, newPlayData);
+            clearProductForm() {
+                document.getElementById('product-form').reset();
+                document.getElementById('product-id').value = '';
+                document.getElementById('product-submit-btn').textContent = 'Tambah Produk';
             }
-            
-            document.getElementById('token-input-modal').classList.remove('hidden');
-            document.getElementById('token-input-modal').classList.add('flex');
-        }
 
-        document.getElementById('token-form').addEventListener('submit', handleTokenSubmit);
+            renderAdminMB() {
+                if (!this.isAdmin) return this.renderAccessDenied();
 
-        async function handleTokenSubmit(e) {
-            e.preventDefault();
-            const submittedToken = document.getElementById('mystery-token').value.toUpperCase();
-            const errorEl = document.getElementById('token-error');
+                const totalPlays = this.mbPlays.length;
+                const totalUsers = [...new Set(this.mbPlays.map(p => p.ipAddress))].length;
+                const totalWins = this.mbPlays.filter(p => p.isWinner).length;
 
-            if (!latestPlayId) {
-                errorEl.textContent = 'Tidak ada riwayat pembelian. Silahkan ulangi langkah beli.';
-                errorEl.classList.remove('hidden');
-                return;
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Admin: Kelola Mystery Box Plays</h1>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-indigo-500 text-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold">Total Kali Main</h3>
+                            <p class="text-4xl font-extrabold mt-2">${totalPlays}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-xl font-semibold text-gray-700">Total User (IP Unik)</h3>
+                            <p class="text-4xl font-extrabold mt-2 text-indigo-600">${totalUsers}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-xl font-semibold text-gray-700">Total Kemenangan</h3>
+                            <p class="text-4xl font-extrabold mt-2 text-green-600">${totalWins}</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Daftar Semua Permainan</h2>
+                    <div class="overflow-x-auto shadow-md rounded-lg bg-white">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">IP Address (User)</th>
+                                    <th scope="col" class="px-6 py-3">Bukti Bayar</th>
+                                    <th scope="col" class="px-6 py-3">Konfirmasi Admin</th>
+                                    <th scope="col" class="px-6 py-3">Status Menang</th>
+                                    <th scope="col" class="px-6 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mb-plays-body">
+                                <!-- MB Play rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             }
-            
-            try {
-                const playRef = ref(db, `artifacts/${appId}/users/${userId}/mystery_box_plays/${latestPlayId}`);
-                const snapshot = await get(playRef);
-                const latestPlay = snapshot.val();
-                
-                if (!latestPlay) {
-                    errorEl.textContent = 'Data pembelian tidak ditemukan.';
-                    errorEl.classList.remove('hidden');
+
+            renderMBPlayList() {
+                const listBody = document.getElementById('mb-plays-body');
+                if (!listBody) return;
+
+                // Group by IP and count plays per IP for display
+                const ipPlayCounts = this.mbPlays.reduce((acc, play) => {
+                    acc[play.ipAddress] = (acc[play.ipAddress] || 0) + 1;
+                    return acc;
+                }, {});
+
+                // Sort by creation time (newest first)
+                const sortedPlays = [...this.mbPlays].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                listBody.innerHTML = sortedPlays.map(play => {
+                    const isApproved = play.isApproved;
+                    const isWinner = play.isWinner;
+                    const isPaid = play.isPaidProofSent;
+                    const canOpen = isApproved && !play.hasOpened;
+                    const playCount = ipPlayCounts[play.ipAddress];
+
+                    let proofStatus, approvalStatus, winnerStatus;
+
+                    if (isPaid) {
+                        proofStatus = `<span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Terkirim</span>`;
+                    } else {
+                        proofStatus = `<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Menunggu</span>`;
+                    }
+
+                    if (isApproved) {
+                        approvalStatus = `<span class="bg-indigo-100 text-indigo-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Dikonfirmasi</span>`;
+                    } else if (isPaid) {
+                        approvalStatus = `<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Pending</span>`;
+                    } else {
+                        approvalStatus = `<span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Belum Bayar</span>`;
+                    }
+
+                    if (play.hasOpened) {
+                        winnerStatus = isWinner ? `<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">MENANG (Klaim)</span>` : `<span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Coba Lagi</span>`;
+                    } else if (canOpen) {
+                         winnerStatus = `<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Siap Dibuka</span>`;
+                    } else {
+                        winnerStatus = `<span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Belum Dimainkan</span>`;
+                    }
+
+
+                    return `
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                <span class="font-bold">${play.ipAddress}</span>
+                                <span class="text-xs text-gray-500 block">(${playCount}x Main)</span>
+                                <span class="text-xs text-gray-500 block">ID: ${play.userId}</span>
+                                <span class="text-xs text-gray-400 block">${new Date(play.timestamp).toLocaleString()}</span>
+                            </th>
+                            <td class="px-6 py-4">${proofStatus}</td>
+                            <td class="px-6 py-4">${approvalStatus}</td>
+                            <td class="px-6 py-4">${winnerStatus}</td>
+                            <td class="px-6 py-4 space-y-2 flex flex-col items-start">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" ${isApproved ? 'checked' : ''} onchange="App.toggleMBApproval('${play.id}', this.checked)">
+                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span class="ms-3 text-sm font-medium text-gray-900">Konfirm Bayar</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" ${isWinner ? 'checked' : ''} onchange="App.toggleMBWinner('${play.id}', this.checked)" ${!isApproved ? 'disabled' : ''}>
+                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                    <span class="ms-3 text-sm font-medium text-gray-900">Menang</span>
+                                </label>
+                            </td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data permainan Mystery Box.</td></tr>';
+            }
+
+            async toggleMBApproval(playId, isApproved) {
+                if (!this.db || !this.isAdmin) return;
+                try {
+                    const playRef = doc(this.getPublicCollectionRef(COLLECTIONS.MB_PLAYS), playId);
+                    await updateDoc(playRef, { isApproved: isApproved });
+                    console.log(`Mystery Box Play ${playId} Approval set to: ${isApproved}`);
+                } catch (error) {
+                    console.error("Gagal update approval:", error);
+                }
+            }
+
+            async toggleMBWinner(playId, isWinner) {
+                if (!this.db || !this.isAdmin) return;
+
+                // Ensure the play is approved before setting winner status
+                const play = this.mbPlays.find(p => p.id === playId);
+                if (!play || !play.isApproved) {
+                    alert('Tidak bisa menentukan pemenang sebelum pembayaran dikonfirmasi!');
                     return;
                 }
 
-                if (!latestPlay.token) {
-                    errorEl.textContent = 'Admin belum memasukkan token untuk pembelian Anda. Mohon hubungi Admin.';
-                    errorEl.classList.remove('hidden');
-                    return;
-                }
-
-                if (latestPlay.token === submittedToken && latestPlay.isWinner === undefined) {
-                    
-                    if (latestPlay.isWinner === true) {
-                        showMessageModal('ANDA MENANG!', `Selamat! Anda mendapatkan voucher tukar: ${latestPlay.voucher || 'Voucher Tidak Tersedia'}. Screenshot dan kirim ke WA Admin!`, 'text-green-700', '🏆');
-                    } else { 
-                        showMessageModal('Coba Lagi Nanti 😥', 'Anda belum beruntung. Coba lagi di kesempatan berikutnya!', 'text-red-600', '😥');
-                    }
-                    
-                    await update(playRef, { isWinner: latestPlay.isWinner }); 
-                    
-                    closeTokenInputModal();
-
-                } else if (latestPlay.token === submittedToken && latestPlay.isWinner !== undefined) {
-                    errorEl.textContent = 'Token ini sudah digunakan. Lihat status Anda di bawah.';
-                    errorEl.classList.remove('hidden');
-                } else {
-                    errorEl.textContent = 'Token salah. Mohon periksa kembali token Anda.';
-                    errorEl.classList.remove('hidden');
-                }
-                
-            } catch (error) {
-                console.error("Error opening mystery box:", error);
-                errorEl.textContent = 'Terjadi error saat memproses. Coba lagi.';
-                errorEl.classList.remove('hidden');
-            }
-        }
-
-        function renderMysteryBoxUserStatus(userPlays) {
-            const statusEl = document.getElementById('mystery-box-status');
-            const ctaBtn = document.getElementById('mystery-box-cta');
-            
-            statusEl.innerHTML = '';
-
-            const latestPlay = getLatestPlay(userPlays);
-            latestPlayId = latestPlay ? latestPlay.playId : null;
-            
-            ctaBtn.textContent = 'Beli Mystery Box / Lihat Info';
-            ctaBtn.onclick = openPaymentInfoModal;
-
-            if (!latestPlay) {
-                statusEl.innerHTML = '<p class="text-gray-500">Anda belum membeli Mystery Box. Silahkan Beli di atas.</p>';
-                return;
-            }
-            
-            if (!latestPlay.token) {
-                statusEl.innerHTML = `
-                    <p class="text-yellow-600 font-semibold mt-4">⏳ Menunggu Token dari Admin...</p>
-                    <p class="text-sm text-gray-500 mt-2">Pastikan sudah kirim bukti bayar ke WA Admin. User ID Anda: <span class="font-bold">${userId}</span></p>
-                `;
-                ctaBtn.textContent = 'Lihat Status Pembelian';
-                ctaBtn.onclick = openPaymentInfoModal;
-
-            } else if (latestPlay.token && latestPlay.isWinner === undefined) {
-                 statusEl.innerHTML = `
-                    <p class="text-green-600 font-semibold mt-4">✅ Token Diberikan! Klik di bawah untuk membuka.</p>
-                    <p class="text-sm text-gray-500 mt-2">Masukkan token yang Anda terima untuk membuka kotak.</p>
-                `;
-                ctaBtn.textContent = 'Buka Mystery Box Sekarang!';
-                ctaBtn.onclick = registerPlayAndOpenTokenInput; 
-                
-            } else if (latestPlay.isWinner === true) {
-                statusEl.innerHTML = `
-                    <p class="text-green-700 font-extrabold text-2xl mt-4">ANDA MENANG! 🎉</p>
-                    <p class="text-lg font-semibold mt-2">Voucher Tukar Hadiah:</p>
-                    <p class="text-3xl font-mono text-indigo-700 bg-yellow-100 p-2 rounded-lg break-all">${latestPlay.voucher || 'Voucher Tidak Tersedia'}</p>
-                    <p class="text-sm text-gray-600 mt-4">Segera screenshot dan kirim kode voucher ini ke WA Admin!</p>
-                `;
-                ctaBtn.textContent = 'Beli Lagi';
-                ctaBtn.onclick = openPaymentInfoModal;
-
-            } else if (latestPlay.isWinner === false) {
-                statusEl.innerHTML = `
-                    <p class="text-red-600 font-extrabold text-2xl mt-4">Coba Lagi Nanti 😥</p>
-                    <p class="text-sm text-gray-500 mt-2">Anda belum beruntung. Silahkan beli lagi untuk kesempatan baru.</p>
-                `;
-                ctaBtn.textContent = 'Beli Lagi';
-                ctaBtn.onclick = openPaymentInfoModal;
-            }
-        }
-
-
-        // --- MYSTERY BOX LOGIC (ADMIN) ---
-
-        function renderAdminMystery(allPlaysData) {
-            if (!isAdmin) return; 
-            
-            const tableBody = document.getElementById('admin-mystery-table');
-            const totalUsersEl = document.getElementById('total-mystery-users');
-            tableBody.innerHTML = '';
-            
-            const groupedPlays = {};
-            let uniqueUsers = new Set();
-
-            for (const uid in allPlaysData) {
-                // Ensure we only process nodes that contain mystery_box_plays
-                if (allPlaysData[uid].mystery_box_plays) {
-                    groupedPlays[uid] = Object.entries(allPlaysData[uid].mystery_box_plays || {}).map(([key, play]) => ({ playId: key, ...play }));
-                    if (groupedPlays[uid].length > 0) {
-                         uniqueUsers.add(uid);
-                    }
+                try {
+                    const playRef = doc(this.getPublicCollectionRef(COLLECTIONS.MB_PLAYS), playId);
+                    await updateDoc(playRef, { isWinner: isWinner });
+                    console.log(`Mystery Box Play ${playId} Winner status set to: ${isWinner}`);
+                } catch (error) {
+                    console.error("Gagal update winner status:", error);
                 }
             }
-            totalUsersEl.textContent = uniqueUsers.size;
-
-            const allPlaysList = Object.values(groupedPlays).flat().sort((a, b) => b.timestamp - a.timestamp);
 
 
-            allPlaysList.forEach((play) => {
-                const uid = play.userId;
-                const playRefPath = `artifacts/${appId}/users/${uid}/mystery_box_plays/${play.playId}`;
-                const time = new Date(play.timestamp).toLocaleString('id-ID');
-                
-                const tokenInput = `
-                    <div class="flex items-center space-x-2">
-                        <input type="text" id="token-${play.playId}" value="${play.token || ''}" 
-                            maxlength="6" placeholder="A1B2C3"
-                            class="w-20 border border-gray-300 rounded-md p-1 text-xs font-mono uppercase">
-                        <button onclick="saveToken('${playRefPath}', document.getElementById('token-${play.playId}').value, '${uid}')" 
-                            class="text-sm text-indigo-600 hover:text-indigo-900">Set</button>
+            renderAccessDenied() {
+                return `
+                    <div class="text-center p-10 bg-red-100 border border-red-400 text-red-800 rounded-xl shadow-lg mt-10">
+                        <i data-lucide="lock" class="w-10 h-10 mx-auto mb-4"></i>
+                        <h1 class="text-2xl font-bold">Akses Ditolak</h1>
+                        <p class="mt-2">Anda tidak memiliki izin Admin untuk melihat halaman ini.</p>
+                        <button onclick="App.toggleAdminView()" class="mt-4 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">Kembali ke User View</button>
                     </div>
                 `;
-                
-                // If token is not set, disable win/lose options
-                const isTokenSet = !!play.token;
-                
-                const isWinnerCheckbox = `
-                    <input type="checkbox" ${play.isWinner === true ? 'checked' : ''} 
-                        ${!isTokenSet ? 'disabled' : ''}
-                        onchange="updatePlayStatus('${playRefPath}', 'isWinner', this.checked, '${uid}', '${play.playId}')"
-                        class="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
-                `;
-
-                const isWinnerConfirmed = play.isWinner === true;
-                const voucherInput = `
-                    <div class="flex items-center space-x-2">
-                        <input type="text" id="voucher-${play.playId}" value="${play.voucher || ''}" 
-                            class="w-24 border border-gray-300 rounded-md p-1 text-xs" 
-                            placeholder="Voucher Code" ${!isWinnerConfirmed ? 'disabled' : ''}>
-                        <button onclick="saveVoucher('${playRefPath}', document.getElementById('voucher-${play.playId}').value, '${uid}')" 
-                            class="text-sm text-indigo-600 hover:text-indigo-900" ${!isWinnerConfirmed ? 'disabled' : ''}>Simpan</button>
-                    </div>
-                `;
-
-                let rowClass = 'bg-white';
-                if (play.isWinner === true) { rowClass = 'bg-green-100'; }
-                else if (play.isWinner === false) { rowClass = 'bg-red-100'; }
-                else if (play.token) { rowClass = 'bg-yellow-50'; } 
-
-                const row = `
-                    <tr class="${rowClass} hover:bg-gray-100 transition">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900 break-all">${uid}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${time}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${tokenInput}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">${isWinnerCheckbox}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${voucherInput}</td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        }
-
-        async function saveToken(path, token, winnerUid) {
-            if (!isAdmin) return showAdminView('manage-mystery');
-            
-            const formattedToken = token.toUpperCase().trim();
-            if (formattedToken.length !== 6 || !/^[A-Z0-9]{6}$/.test(formattedToken)) {
-                 return showMessageModal('Gagal', 'Token harus 6 karakter (huruf/angka) dan tidak boleh kosong.', 'text-red-500', '⚠️');
             }
-            
-            const playRef = ref(db, path);
-            
-            try {
-                 await update(playRef, { token: formattedToken });
-                 showMessageModal('Token Tersimpan', `Token (${formattedToken}) berhasil disimpan. Berikan ini ke user.`, 'text-green-600', '💾');
-            } catch(error) {
-                console.error("Error saving token:", error);
-                showMessageModal('Error', 'Gagal menyimpan token.', 'text-red-500', '❌');
-            }
-        }
-        
-        async function updatePlayStatus(path, field, value, winnerUid, playId) {
-            if (!isAdmin) return showAdminView('manage-mystery');
-            
-            const playRef = ref(db, path);
-            const updates = {};
-            
-            try {
-                if (field === 'isWinner') {
-                    updates[field] = value;
-                    // Only generate/set voucher if setting to true
-                    if (value === true) {
-                        updates.voucher = updates.voucher || generateVoucherCode(); 
-                        
-                        // Update/Add to leaderboard
-                        const leaderboardRef = ref(getLeaderboardRef(), winnerUid);
-                        await set(leaderboardRef, {
-                            userId: winnerUid,
-                            voucher: updates.voucher,
-                            date: new Date().toISOString()
-                        });
-                    } else if (value === false) {
-                        // If setting to false, remove from leaderboard and clear voucher in play record
-                        updates.voucher = null;
-                        await remove(ref(getLeaderboardRef(), winnerUid));
-                    }
-                } 
 
-                await update(playRef, updates);
-                showMessageModal('Update Sukses', `Status ${field} berhasil diperbarui!`, 'text-green-600', '👍');
-            } catch (error) {
-                console.error("Error updating play status:", error);
-                showMessageModal('Error', 'Gagal memperbarui status.', 'text-red-500', '❌');
-            }
-        }
-        
-        async function saveVoucher(path, voucherCode, winnerUid) {
-            if (!isAdmin) return showAdminView('manage-mystery');
-            
-            if (!voucherCode) {
-                 return showMessageModal('Gagal', 'Kode voucher tidak boleh kosong.', 'text-red-500', '⚠️');
-            }
-            
-            const playRef = ref(db, path);
-            
-            try {
-                 await update(playRef, { voucher: voucherCode });
-                 
-                 const leaderboardRef = ref(getLeaderboardRef(), winnerUid);
-                 await update(leaderboardRef, { voucher: voucherCode });
-                 
-                 showMessageModal('Voucher Tersimpan', 'Kode voucher berhasil disimpan.', 'text-green-600', '💾');
-            } catch(error) {
-                console.error("Error saving voucher:", error);
-                showMessageModal('Error', 'Gagal menyimpan voucher.', 'text-red-500', '❌');
+            // --- Utility Functions ---
+            formatRupiah(number) {
+                return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             }
         }
 
-        function generateVoucherCode() {
-            return 'VCHR-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
-        
-        
-        // --- LEADERBOARD LOGIC ---
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if App is already initialized (e.g., in a development environment)
+            if (typeof window.App === 'undefined') {
+                window.App = new StoreApp();
 
-        function renderLeaderboard(winners) {
-            const tableBody = document.getElementById('leaderboard-table');
-            tableBody.innerHTML = '';
-            
-            const winnerList = Object.values(winners || {});
-            
-            if (winnerList.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">Belum ada pemenang tercatat.</td></tr>';
-                return;
+                // Attach event listeners for hamburger menu
+                document.getElementById('hamburger-btn').addEventListener('click', () => {
+                    window.App.toggleSidebar();
+                });
+
+                // Attach event listeners for mobile admin switch
+                document.getElementById('admin-switch-btn').addEventListener('click', () => {
+                    window.App.toggleAdminView();
+                });
             }
-
-            winnerList.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            winnerList.forEach((winner, index) => {
-                const date = new Date(winner.date).toLocaleDateString('id-ID');
-                const row = `
-                    <tr class="hover:bg-yellow-50 transition">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
-                        <td class="px-6 py-4 text-sm text-gray-500 break-all">${winner.userId}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-lg font-bold text-indigo-600">${winner.voucher}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>
-                    </tr>
-                `;
-                tableBody.innerHTML += row;
-            });
-        }
+        });
 
     </script>
 </body>
