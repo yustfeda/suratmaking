@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TOKOaing</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        
+        /* Mencegah Horizontal Scroll */
+        @media (max-width: 640px) {
+            body {
+                overflow-x: hidden; 
+            }
+        }
+
+        /* Custom styles for animated hamburger menu */
+        .hamburger-menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 24px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .bar {
+            height: 3px;
+            width: 100%;
+            background-color: #374151;
+            border-radius: 9999px;
+            transition: all 0.3s ease-in-out;
+        }
+        .menu-open .bar:nth-child(1) {
+            transform: translateY(8.5px) rotate(45deg);
+        }
+        .menu-open .bar:nth-child(2) {
+            opacity: 0;
+        }
+        .menu-open .bar:nth-child(3) {
+            transform: translateY(-8.5px) rotate(-45deg);
+        }
+        /* Style for modals */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+        
+        /* CSS: Meningkatkan kemudahan scrollbar horizontal di HP/Tablet */
+        @media (max-width: 768px) {
+            .overflow-x-auto::-webkit-scrollbar {
+                height: 10px; 
+            }
+            .overflow-x-auto::-webkit-scrollbar-thumb {
+                background-color: #a5b4fc; 
+                border-radius: 5px; 
+            }
+            .overflow-x-auto::-webkit-scrollbar-track {
+                background: #f1f1f1;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app" class="flex flex-col min-h-screen">
+        <!-- Main Header -->
+        <header class="bg-white shadow-md sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <a href="#" class="text-2xl font-bold" onclick="App.setView('userHome'); return false;">
+                        <span class="text-indigo-600">TOKO</span><span class="text-orange-500">aing</span>
+                    </a>
+
+                    <!-- Desktop Navigation -->
+                    <nav id="desktop-nav" class="hidden sm:block">
+                        <div class="flex space-x-4 items-center">
+                            <!-- Nav links rendered by JS -->
+                        </div>
+                    </nav>
+
+                    <!-- Hamburger Menu Button (Mobile) -->
+                    <div class="sm:hidden flex items-center space-x-4">
+                        <button id="cart-button-mobile" class="relative p-2 rounded-full hover:bg-gray-100 transition" onclick="App.setView('userCart')">
+                            <i data-lucide="shopping-cart" class="w-6 h-6 text-gray-700"></i>
+                            <span id="cart-count-mobile" class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold w-4 h-4 flex items-center justify-center rounded-full transform translate-x-1 -translate-y-1 hidden"></span>
+                        </button>
+                        <button id="hamburger-btn" class="hamburger-menu transition-all duration-300">
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                        </button>
+                    </div>
+
+                    <!-- Desktop Admin Button (Hidden on Mobile) -->
+                    <button id="admin-switch-btn-desktop" class="hidden sm:block text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1 rounded-full hover:bg-gray-200 transition" onclick="App.toggleAdminView()">
+                        Admin View
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Sidebar -->
+        <div id="mobile-sidebar" class="fixed inset-y-0 right-0 w-64 bg-white z-40 transform translate-x-full transition-transform duration-300 shadow-xl sm:hidden">
+             <div class="p-4 border-b">
+                 <h2 class="text-xl font-bold">
+                    <span class="text-indigo-600">TOKO</span><span class="text-orange-500">aing</span>
+                 </h2>
+             </div>
+             <nav class="p-4 space-y-2">
+                 <!-- Mobile Nav links rendered by JS -->
+                 <div id="mobile-nav-links" class="flex flex-col space-y-2"></div>
+                 <div class="pt-4 border-t">
+                     <button id="admin-switch-btn-mobile" class="w-full text-left text-sm font-medium text-gray-700 bg-gray-100 px-3 py-2 rounded-lg hover:bg-gray-200 transition" onclick="App.toggleAdminView()">
+                        Admin View
+                    </button>
+                 </div>
+             </nav>
+        </div>
+        <div id="mobile-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden sm:hidden" onclick="App.closeSidebar()"></div>
+
+        <!-- Main Content Area -->
+        <main id="content-area" class="flex-grow max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8">
+            <!-- Content will be rendered here by JavaScript -->
+            <div class="text-center py-20 text-gray-500">Memuat aplikasi...</div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-100 border-t mt-8">
+            <div class="max-w-7xl mx-auto p-4 text-center text-sm text-gray-500">
+                &copy; 2025 <TokoI></TokoI>TOKOaing. | User ID: <span id="current-user-id">Memuat...</span>
+            </div>
+        </footer>
+
+        <!-- Modal Container -->
+        <div id="modal-container">
+            <!-- Modals will be injected here -->
+        </div>
+
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Import fungsi Firebase AUTH dan RTDB
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { 
+            getAuth, 
+            signInAnonymously, 
+            signInWithCustomToken, 
+            onAuthStateChanged,
+            createUserWithEmailAndPassword, // DITAMBAH
+            signInWithEmailAndPassword,     // DITAMBAH
+            signOut                         // DITAMBACH
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        
+        import { getDatabase, ref, onValue, set, update, remove, runTransaction, push, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // --- GLOBAL FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA626-nkHphZDSQoJfZk1WwBqm93Zlp8g0",
+            authDomain: "jaket-9af25.firebaseapp.com",
+            databaseURL: "https://jaket-9af25-default-rtdb.firebaseio.com",
+            projectId: "jaket-9af25",
+            storageBucket: "jaket-9af25.firebasestorage.app",
+            messagingSenderId: "590090949778",
+            appId: "1:590090949778:web:7ac315b5ebabb184a2824b"
+        };
+        const ADMIN_PASSWORD = "Masuk22";
+        
+        // Path Root di Realtime Database
+        const DB_ROOT_PATHS = {
+            PRODUCTS: 'products',
+            MB_PLAYS: 'mysteryBoxPlays', // Public Path, filtered by userId
+            USER_CARTS: 'userCarts', // Private Path (keyed by userId)
+        };
+
+        // --- Core Application Class ---
+        class StoreApp {
+            constructor() {
+                this.db = null; 
+                this.auth = null;
+                this.userId = null;
+                this.userEmail = null;
+                this.isAuthReady = false;
+                this.isLoggedIn = false; // State untuk user terotentikasi (bukan anonim)
+                this.isAdmin = false;
+                this.currentView = 'userHome'; 
+                this.products = [];
+                this.mbPlays = [];
+                this.userCart = {}; // Keranjang pengguna saat ini {productId: {productData, quantity}}
+                this.isSidebarOpen = false;
+                this.initApp();
+            }
+
+            async initApp() {
+                try {
+                    // 1. Inisialisasi Firebase
+                    const app = initializeApp(firebaseConfig);
+                    this.db = getDatabase(app); 
+                    this.auth = getAuth(app);
+                    window.App = this; 
+
+                    // 2. Tangani Autentikasi
+                    onAuthStateChanged(this.auth, (user) => {
+                        if (user) {
+                            this.userId = user.uid;
+                            this.userEmail = user.email; // Email hanya ada jika bukan anonim
+                            this.isLoggedIn = !!user.email; // True jika ada email (login)
+                            document.getElementById('current-user-id').textContent = user.uid;
+                        } else {
+                            // User logout atau anonim
+                            this.userId = 'anonymous';
+                            this.userEmail = null;
+                            this.isLoggedIn = false;
+                            document.getElementById('current-user-id').textContent = '';
+                            this.isAdmin = false;
+                            this.userCart = {}; // Kosongkan keranjang
+                        }
+
+                        this.isAuthReady = true;
+                        this.setupListeners(); 
+                        this.renderNavigation();
+                        this.renderView();
+                    });
+
+                    // Coba sign in secara anonim dulu untuk mendapatkan User ID awal
+                    if (!this.auth.currentUser) {
+                        await signInAnonymously(this.auth);
+                    }
+
+                } catch (error) {
+                    console.error("Error initializing Firebase or Auth:", error);
+                    document.getElementById('content-area').innerHTML = `<div class="text-center text-red-600 py-20">Gagal memuat aplikasi. Cek konsol untuk detail error: ${error.message}</div>`;
+                }
+            }
+
+            // --- Database Listeners (onValue - RTDB) ---
+            setupListeners() {
+                if (!this.db || !this.isAuthReady) return;
+
+                // Helper untuk konversi snapshot RTDB ke Array
+                const snapshotToArray = (snapshot) => {
+                    const list = [];
+                    snapshot.forEach((childSnapshot) => {
+                        const productData = childSnapshot.val();
+                        list.push({ 
+                            id: childSnapshot.key, 
+                            ...productData,
+                            imageUrl: this.getProductImageSource(productData)
+                        });
+                    });
+                    return list;
+                };
+
+                // Listener Produk (Public Data)
+                const productsRef = this.getPublicRef(DB_ROOT_PATHS.PRODUCTS);
+                onValue(productsRef, (snapshot) => {
+                    this.products = snapshotToArray(snapshot);
+                    this.renderView(); 
+                }, (error) => {
+                    console.error("Error fetching products (RTDB):", error);
+                });
+
+                // Listener Mystery Box Plays (Public Data - Tetap di public untuk admin)
+                const mbPlaysRef = this.getPublicRef(DB_ROOT_PATHS.MB_PLAYS);
+                onValue(mbPlaysRef, (snapshot) => {
+                    this.mbPlays = snapshotToArray(snapshot);
+                    this.renderView(); 
+                }, (error) => {
+                    console.error("Error fetching MB Plays (RTDB):", error);
+                });
+
+                // Listener Keranjang Pengguna (Private Data - hanya jika user login)
+                if (this.isLoggedIn) {
+                    const cartRef = this.getUserPrivateRef(DB_ROOT_PATHS.USER_CARTS, this.userId);
+                    onValue(cartRef, (snapshot) => {
+                        this.userCart = snapshot.val() || {};
+                        this.renderNavigation(); // Update keranjang count
+                        this.renderView(); // Update view jika sedang di keranjang
+                    }, (error) => {
+                        console.error("Error fetching user cart (RTDB):", error);
+                    });
+                }
+            }
+
+            getProductImageSource(product) {
+                // Prioritaskan URL Link
+                if (product.imageLink && product.imageLink.startsWith('http')) {
+                    return product.imageLink;
+                }
+                // Gunakan Base64 jika tersedia
+                if (product.imageBase64 && product.imageBase64.length > 10) {
+                    if (product.imageBase64.startsWith('data:')) {
+                        return product.imageBase64;
+                    }
+                    return `data:image/jpeg;base64,${product.imageBase64.replace(/^data:image\/(png|jpeg|gif);base64,/, '')}`;
+                }
+                // Fallback ke placeholder
+                return 'https://placehold.co/400x300/a5b4fc/1e3a8a?text=Produk';
+            }
+
+
+            // --- Realtime Database (RTDB) Helpers ---
+            getPublicRef(path) {
+                return ref(this.db, path);
+            }
+            
+            getSpecificRef(collectionName, itemId) {
+                return ref(this.db, `${collectionName}/${itemId}`);
+            }
+
+            //Helper untuk data user spesifik (misalnya Keranjang)
+            getUserPrivateRef(collectionName, userId) {
+                return ref(this.db, `${collectionName}/${userId}`);
+            }
+
+            getUserMbPlays() {
+                // Filter plays untuk userId saat ini (hanya jika sudah login)
+                if (!this.isLoggedIn) return [];
+                return this.mbPlays.filter(play => play.userId === this.userId);
+            }
+
+            // --- AUTHENTICATION HANDLERS ---
+            async handleRegister(event) {
+                event.preventDefault();
+                const email = document.getElementById('reg-email').value;
+                const password = document.getElementById('reg-password').value;
+                const errorElement = document.getElementById('auth-error');
+
+                try {
+                    await createUserWithEmailAndPassword(this.auth, email, password);
+                    this.showModal('reg-success', 'Sukses', 'Registrasi Berhasil! Anda telah login.');
+                    this.setView('userHome');
+                } catch (error) {
+                    let errorMessage = error.message;
+                    if (error.code === 'auth/email-already-in-use') {
+                        errorMessage = 'Email sudah terdaftar. Silakan login atau gunakan email lain.';
+                    } else if (error.code === 'auth/weak-password') {
+                        errorMessage = 'Password harus minimal 6 karakter.';
+                    }
+                    errorElement.textContent = errorMessage;
+                    errorElement.classList.remove('hidden');
+                    console.error("Register Error:", error);
+                }
+            }
+
+            async handleLogin(event) {
+                event.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                const errorElement = document.getElementById('auth-error');
+
+                try {
+                    await signInWithEmailAndPassword(this.auth, email, password);
+                    this.setView('userHome');
+                } catch (error) {
+                    let errorMessage = 'Login gagal. Cek email dan password Anda.';
+                    errorElement.textContent = errorMessage;
+                    errorElement.classList.remove('hidden');
+                    console.error("Login Error:", error);
+                }
+            }
+
+            async handleLogout() {
+                try {
+                    await signOut(this.auth);
+                    this.isAdmin = false;
+                    this.userCart = {};
+                    this.setView('userHome');
+                    this.showModal('logout-success', 'Keluar', 'Anda telah berhasil keluar (Logout).');
+                } catch (error) {
+                    console.error("Logout Error:", error);
+                }
+            }
+
+
+            // --- UI/View Management & Navigation ---
+
+            toggleSidebar() {
+                this.isSidebarOpen = !this.isSidebarOpen;
+                document.getElementById('mobile-sidebar').classList.toggle('translate-x-full', !this.isSidebarOpen);
+                document.getElementById('mobile-overlay').classList.toggle('hidden', !this.isSidebarOpen);
+                document.getElementById('hamburger-btn').classList.toggle('menu-open', this.isSidebarOpen);
+            }
+
+            closeSidebar() {
+                this.isSidebarOpen = false;
+                document.getElementById('mobile-sidebar').classList.add('translate-x-full');
+                document.getElementById('mobile-overlay').classList.add('hidden');
+                document.getElementById('hamburger-btn').classList.remove('menu-open');
+            }
+
+            toggleAdminView() {
+                if (this.isAdmin) {
+                    this.isAdmin = false;
+                    this.currentView = 'userHome';
+                } else {
+                    this.currentView = 'adminLogin';
+                }
+                this.renderNavigation();
+                this.renderView();
+                this.closeSidebar();
+            }
+
+            handleAdminLogin(event) {
+                event.preventDefault();
+                const passwordInput = document.getElementById('admin-password').value;
+                const errorElement = document.getElementById('admin-login-error');
+
+                if (passwordInput === ADMIN_PASSWORD) {
+                    this.isAdmin = true;
+                    this.currentView = 'adminProducts';
+                    this.renderNavigation();
+                    this.renderView();
+                } else {
+                    errorElement.textContent = 'Password salah. Coba lagi.';
+                    errorElement.classList.remove('hidden');
+                }
+            }
+
+            setView(viewName) {
+                // Guard untuk halaman yang memerlukan Admin
+                if (['adminProducts', 'adminMB'].includes(viewName) && !this.isAdmin) {
+                    this.currentView = 'adminLogin';
+                // Guard untuk halaman yang memerlukan Login (Non-Anonim)
+                } else if (['userMB', 'userProfile', 'userOrders', 'userCart'].includes(viewName) && !this.isLoggedIn) {
+                    this.currentView = 'userLogin';
+                } else {
+                    this.currentView = viewName;
+                }
+                this.renderNavigation();
+                this.renderView();
+                this.closeSidebar();
+            }
+
+            renderNavigation() {
+                // Navigasi Dasar
+                let navItems = [
+                    { name: 'Beranda', view: 'userHome', icon: 'home' },
+                    { name: 'Dijual', view: 'userProducts', icon: 'tag' },
+                    { name: 'Mystery Box', view: 'userMB', icon: 'package' }
+                ];
+                
+                // Navigasi User Login vs Logout
+                if (this.isLoggedIn) {
+                    // Navigasi untuk user yang sudah Login
+                    navItems.push(
+                        { name: 'Keranjang', view: 'userCart', icon: 'shopping-cart', desktopOnly: true },
+                        { name: 'Pesanan Saya', view: 'userOrders', icon: 'file-text' },
+                        { name: 'Profil', view: 'userProfile', icon: 'user' },
+                        { name: 'Logout', view: 'userLogout', icon: 'log-out', handler: 'App.handleLogout()' }
+                    );
+                } else if (!this.isAdmin) {
+                    // Navigasi untuk user yang belum Login (non-Admin)
+                    navItems.push(
+                        { name: 'Login', view: 'userLogin', icon: 'log-in' },
+                        { name: 'Register', view: 'userRegister', icon: 'user-plus' }
+                    );
+                }
+
+
+                if (this.isAdmin) {
+                    // Konfigurasi Navigasi Admin
+                    navItems = [
+                        { name: 'Kelola Produk', view: 'adminProducts', icon: 'box' },
+                        { name: 'Kelola Mystery Box', view: 'adminMB', icon: 'gift' }
+                    ];
+                }
+
+                const cartCount = Object.keys(this.userCart).length;
+                
+                const navLinks = navItems.map(item => {
+                    const isActive = this.currentView === item.view;
+                    const baseClasses = "px-3 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2";
+                    const activeClasses = 'bg-indigo-600 text-white shadow-md';
+                    const inactiveClasses = 'text-gray-700 hover:bg-gray-100';
+                    const finalClasses = isActive ? activeClasses : inactiveClasses;
+                    const clickHandler = item.handler || `App.setView('${item.view}')`;
+                    
+                    if (item.view === 'userCart' && item.desktopOnly) {
+                        return `
+                            <button onclick="${clickHandler}; return false;" class="${baseClasses} ${finalClasses} relative">
+                                <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+                                <span>${item.name}</span>
+                                <span id="cart-count-desktop" class="${cartCount > 0 ? '' : 'hidden'} absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">${cartCount}</span>
+                            </button>
+                        `;
+                    }
+
+                    return `
+                        <a href="#" onclick="${clickHandler}; return false;"
+                           class="${baseClasses} ${finalClasses}">
+                           <i data-lucide="${item.icon}" class="w-5 h-5"></i>
+                           <span>${item.name}</span>
+                        </a>
+                    `;
+                }).join('');
+                
+                // Render Desktop Nav
+                document.getElementById('desktop-nav').querySelector('div').innerHTML = navLinks;
+                
+                // Render Mobile Nav
+                document.getElementById('mobile-nav-links').innerHTML = navLinks;
+
+                // Update Mobile Cart Count
+                const cartCountMobile = document.getElementById('cart-count-mobile');
+                if (cartCountMobile) {
+                    cartCountMobile.textContent = cartCount;
+                    cartCountMobile.classList.toggle('hidden', cartCount === 0 || !this.isLoggedIn);
+                }
+                
+                // Update Admin Button Text
+                const adminBtnDesktop = document.getElementById('admin-switch-btn-desktop');
+                if (adminBtnDesktop) adminBtnDesktop.textContent = this.isAdmin ? 'Logout Admin' : 'Admin View';
+                const adminBtnMobile = document.getElementById('admin-switch-btn-mobile');
+                if (adminBtnMobile) adminBtnMobile.textContent = this.isAdmin ? 'Logout Admin' : 'Admin View';
+            }
+
+
+            renderView() {
+                const contentArea = document.getElementById('content-area');
+                if (!this.isAuthReady) {
+                    contentArea.innerHTML = this.renderLoading();
+                    return;
+                }
+
+                if (this.isAdmin) {
+                    switch (this.currentView) {
+                        case 'adminProducts':
+                            contentArea.innerHTML = this.renderAdminProducts();
+                            this.renderProductList();
+                            break;
+                        case 'adminMB':
+                            contentArea.innerHTML = this.renderAdminMB();
+                            this.renderMBPlayList();
+                            break;
+                        default:
+                            this.currentView = 'adminProducts';
+                            contentArea.innerHTML = this.renderAdminProducts();
+                            this.renderProductList();
+                    }
+                } else {
+                    switch (this.currentView) {
+                        case 'userRegister':
+                            contentArea.innerHTML = this.renderUserRegister();
+                            break;
+                        case 'userLogin':
+                            contentArea.innerHTML = this.renderUserLogin();
+                            break;
+                        case 'userProfile':
+                            contentArea.innerHTML = this.renderUserProfile();
+                            break;
+                        case 'userOrders':
+                            contentArea.innerHTML = this.renderUserOrders();
+                            break;
+                        case 'userCart':
+                            contentArea.innerHTML = this.renderUserCart();
+                            break;
+                        case 'adminLogin':
+                            contentArea.innerHTML = this.renderAdminLogin();
+                            break;
+                        case 'userProducts':
+                            contentArea.innerHTML = this.renderUserProducts();
+                            break;
+                        case 'userMB':
+                            contentArea.innerHTML = this.renderUserMB();
+                            break;
+                        case 'userHome':
+                        default:
+                            this.currentView = 'userHome';
+                            contentArea.innerHTML = this.renderUserHome();
+                    }
+                }
+                lucide.createIcons();
+            }
+
+            renderLoading() {
+                return `
+                    <div class="flex flex-col items-center justify-center py-20">
+                        <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="mt-4 text-gray-600">Sedang memuat data dan mengautentikasi...</p>
+                    </div>
+                `;
+            }
+
+            // --- AUTH VIEWS ---
+            renderUserRegister() {
+                return `
+                    <div class="flex items-center justify-center min-h-[60vh]">
+                        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-indigo-500">
+                            <h2 class="text-2xl font-bold text-gray-900 text-center">Registrasi Akun Baru</h2>
+                            <form onsubmit="App.handleRegister(event)" class="space-y-4">
+                                <div>
+                                    <input type="email" id="reg-email" placeholder="Alamat Email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <input type="password" id="reg-password" placeholder="Password (min 6 karakter)" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <p id="auth-error" class="hidden text-sm text-red-600 text-center"></p>
+                                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition">
+                                    Daftar Sekarang
+                                </button>
+                            </form>
+                            <button onclick="App.setView('userLogin')" class="w-full text-sm text-gray-500 hover:text-indigo-600 mt-4">
+                                Sudah punya akun? Login di sini.
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderUserLogin() {
+                return `
+                    <div class="flex items-center justify-center min-h-[60vh]">
+                        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-indigo-500">
+                            <h2 class="text-2xl font-bold text-gray-900 text-center">Login ke Akun Anda</h2>
+                            <form onsubmit="App.handleLogin(event)" class="space-y-4">
+                                <div>
+                                    <input type="email" id="login-email" placeholder="Alamat Email" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <input type="password" id="login-password" placeholder="Password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <p id="auth-error" class="hidden text-sm text-red-600 text-center"></p>
+                                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition">
+                                    Login
+                                </button>
+                            </form>
+                            <button onclick="App.setView('userRegister')" class="w-full text-sm text-gray-500 hover:text-indigo-600 mt-4">
+                                Belum punya akun? Daftar sekarang.
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderUserProfile() {
+                if (!this.isLoggedIn) return this.renderUserLogin(); // Should be caught by setView, but for safety
+                return `
+                    <h1 class="text-"3xl" font-bold text-gray-800 mb-8 border-b pb-2">Profil Pengguna</h1>
+                    <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg space-y-6">
+                        <div class="flex items-center space-x-4 border-b pb-4">
+                            <i data-lucide="user-circle" class="w-12 h-12 text-indigo-500"></i>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800">${this.userEmail}</h2>
+                                <p class="text-sm text-gray-500">Status: <span class="text-green-600 font-semibold">Aktif (Login)</span></p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="font-medium text-gray-700">User ID (UID)</span>
+                                <span class="font-mono text-sm text-gray-600">${this.userId}</span>
+                            </div>
+                             <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                <span class="font-medium text-gray-700">Email</span>
+                                <span class="font-medium text-indigo-600">${this.userEmail}</span>
+                            </div>
+                        </div>
+                        <button onclick="App.handleLogout()" class="w-full bg-red-600 text-white font-semibold py-3 rounded-lg hover:bg-red-700 transition">
+                            <i data-lucide="log-out" class="w-5 h-5 inline mr-2"></i> Logout
+                        </button>
+                    </div>
+                `;
+            }
+
+            renderUserOrders() {
+                if (!this.isLoggedIn) return this.renderUserLogin();
+                const userPlays = this.getUserMbPlays();
+                
+                const playRows = userPlays.map(play => {
+                    const statusText = play.hasOpened 
+                        ? (play.isWinner ? 'Menang' : 'Kalah')
+                        : (play.isApproved ? 'Siap Dibuka' : (play.isPaidProofSent ? 'Menunggu Konfirmasi' : 'Menunggu Bukti Bayar'));
+                        
+
+                    const statusColor = play.hasOpened 
+                        ? (play.isWinner ? 'text-yellow-600' : 'text-red-500')
+                        : (play.isApproved ? 'text-green-600' : 'text-yellow-500');
+
+                    return `
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${play.id.substring(0, 8)}...</td>
+                            <td class="px-6 py-4">Mystery Box</td>
+                            <td class="px-6 py-4 text-xs">${new Date(play.timestamp).toLocaleString()}</td>
+                            <td class="px-6 py-4 font-bold ${statusColor}">${statusText}</td>
+                            <td class="px-6 py-4">
+                                ${play.isApproved && !play.hasOpened ? 
+                                    `<button onclick="App.handleOpenMysteryBox('${play.id}')" class="text-green-600 hover:text-green-800 font-medium">Buka Box</button>` 
+                                    : play.isPaidProofSent ? `<span class="text-gray-500">Tunggu Admin</span>`
+                                    : `<button onclick="App.showPaymentProofModal('${play.id}')" class="text-indigo-600 hover:text-indigo-800 font-medium">Kirim Bukti</button>`
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // NOTE: Keranjang tidak dianggap sebagai 'Pesanan Saya' sampai checkout.
+                // Pesanan Saya di sini diwakili oleh data Mystery Box Plays.
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Pesanan Saya (Mystery Box)</h1>
+                    <div class="overflow-x-auto shadow-md rounded-lg">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 bg-indigo-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Play ID</th>
+                                    <th scope="col" class="px-6 py-3">Item</th>
+                                    <th scope="col" class="px-6 py-3">Tanggal</th>
+                                    <th scope="col" class="px-6 py-3">Status</th>
+                                    <th scope="col" class="px-6 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${playRows.length > 0 ? playRows : '<tr><td colspan="5" class="text-center p-6 text-gray-500">Anda belum pernah membeli Mystery Box.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // --- CART LOGIC ---
+            async handleAddToCart(productId) {
+                if (!this.isLoggedIn) {
+                    this.showModal('login-required', 'Perlu Login', 'Anda harus login terlebih dahulu untuk menambahkan produk ke keranjang.');
+                    this.setView('userLogin');
+                    return;
+                }
+
+                const product = this.products.find(p => p.id === productId);
+                if (!product || product.stock <= 0) {
+                    this.showModal('stock-error', 'Stok Habis', 'Produk ini sedang tidak tersedia atau stok habis.');
+                    return;
+                }
+
+                // Cek apakah produk sudah ada di keranjang
+                const currentCartItem = this.userCart[productId];
+                const newQuantity = currentCartItem ? currentCartItem.quantity + 1 : 1;
+
+                if (newQuantity > product.stock) {
+                     this.showModal('stock-limit', 'Batas Stok', 'Anda tidak dapat menambahkan lebih dari stok yang tersedia.');
+                    return;
+                }
+
+                const cartRef = this.getUserPrivateRef(DB_ROOT_PATHS.USER_CARTS, this.userId);
+
+                // Update keranjang di database
+                try {
+                    const newCart = {
+                        ...this.userCart,
+                        [productId]: {
+                            ...product,
+                            quantity: newQuantity,
+                            // Simpan data mentah gambar agar keranjang statis
+                            imageLink: product.imageLink,
+                            imageBase64: product.imageBase64
+                        }
+                    };
+                    await set(cartRef, newCart);
+                    this.showModal('cart-success', 'Ditambahkan!', `${product.name} telah ditambahkan ke keranjang. Jumlah: ${newQuantity}`);
+                } catch (error) {
+                    console.error("Error adding to cart:", error);
+                    this.showModal('db-error', 'Error', 'Gagal menyimpan keranjang.');
+                }
+            }
+
+            async updateCartItemQuantity(productId, delta) {
+                if (!this.isLoggedIn || !this.userCart[productId]) return;
+                
+                const currentItem = this.userCart[productId];
+                const newQuantity = currentItem.quantity + delta;
+
+                const productInStock = this.products.find(p => p.id === productId);
+
+                if (newQuantity <= 0) {
+                    this.removeCartItem(productId);
+                    return;
+                }
+                
+                if (productInStock && newQuantity > productInStock.stock) {
+                    this.showModal('stock-limit', 'Batas Stok', `Hanya ada ${productInStock.stock} unit untuk ${currentItem.name}.`);
+                    return;
+                }
+
+                const cartRef = this.getUserPrivateRef(DB_ROOT_PATHS.USER_CARTS, this.userId);
+                const updatedItem = { ...currentItem, quantity: newQuantity };
+
+                try {
+                    await update(cartRef, { [productId]: updatedItem });
+                } catch (error) {
+                    console.error("Error updating cart quantity:", error);
+                }
+            }
+
+            async removeCartItem(productId) {
+                if (!this.isLoggedIn) return;
+                
+                const cartRef = this.getUserPrivateRef(DB_ROOT_PATHS.USER_CARTS, this.userId);
+                
+                // Gunakan update dengan null untuk menghapus field
+                const updateObject = { [productId]: null };
+                try {
+                    await update(cartRef, updateObject);
+                } catch (error) {
+                    console.error("Error removing cart item:", error);
+                }
+            }
+
+            renderUserCart() {
+                if (!this.isLoggedIn) return this.renderUserLogin();
+
+                const cartItems = Object.entries(this.userCart).map(([productId, item]) => {
+                    const productSource = this.getProductImageSource(item);
+                    const subtotal = item.price * item.quantity;
+                    return { ...item, productId, productSource, subtotal };
+                });
+
+                const totalCart = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+                const cartRows = cartItems.map(item => `
+                    <div class="flex items-center p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition">
+                        <!-- Gambar -->
+                        <img src="${item.productSource}" 
+                             alt="${item.name}" 
+                             class="w-16 h-16 object-cover rounded-lg mr-4"
+                             onerror="this.onerror=null;this.src='https://placehold.co/100x100/a5b4fc/1e3a8a?text=Foto';"
+                        >
+                        
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-gray-800">${item.name}</h3>
+                            <p class="text-sm text-gray-500">Harga: Rp ${this.formatRupiah(item.price)}</p>
+                            <p class="text-lg font-extrabold text-indigo-600">Rp ${this.formatRupiah(item.subtotal)}</p>
+                        </div>
+
+                        <!-- Kontrol Kuantitas -->
+                        <div class="flex items-center space-x-2">
+                            <button onclick="App.updateCartItemQuantity('${item.productId}', -1)" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                                <i data-lucide="minus" class="w-4 h-4"></i>
+                            </button>
+                            <span class="font-bold text-lg w-6 text-center">${item.quantity}</span>
+                            <button onclick="App.updateCartItemQuantity('${item.productId}', 1)" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <!-- Hapus -->
+                        <button onclick="App.removeCartItem('${item.productId}')" class="ml-4 p-2 text-red-500 hover:text-red-700">
+                            <i data-lucide="trash" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `).join('');
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Keranjang Belanja Anda</h1>
+                    
+                    ${cartItems.length > 0 ? `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Daftar Item Keranjang -->
+                            <div class="lg:col-span-2 space-y-4">
+                                ${cartRows}
+                            </div>
+                            <!-- Ringkasan Total -->
+                            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-lg border-t-4 border-indigo-500 h-fit sticky top-20">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">Ringkasan Belanja</h2>
+                                <div class="flex justify-between items-center py-2 border-b">
+                                    <span class="text-gray-600">Total Item (${cartItems.length} jenis)</span>
+                                    <span class="font-semibold">${cartItems.reduce((sum, item) => sum + item.quantity, 0)} Pcs</span>
+                                </div>
+                                <div class="flex justify-between items-center py-4">
+                                    <span class="text-2xl font-bold text-gray-800">Total Pembayaran</span>
+                                    <span class="text-2xl font-extrabold text-indigo-600">Rp ${this.formatRupiah(totalCart)}</span>
+                                </div>
+                                <button onclick="App.handleCheckout()" 
+                                        class="w-full bg-green-600 text-white font-bold text-lg py-3 rounded-lg hover:bg-green-700 transition shadow-md shadow-green-300 mt-4">
+                                    <i data-lucide="credit-card" class="w-5 h-5 inline mr-2"></i> Lanjutkan ke Checkout (Contoh)
+                                </button>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="text-center p-10 bg-white rounded-xl shadow-lg mt-10">
+                            <i data-lucide="shopping-cart" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+                            <p class="text-xl text-gray-600">Keranjang Anda kosong.</p>
+                            <button onclick="App.setView('userProducts')" class="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">
+                                Mulai Belanja
+                            </button>
+                        </div>
+                    `}
+                `;
+            }
+
+            handleCheckout() {
+                this.showModal('checkout-info', 'Proses Checkout', `
+                    <p>Fungsi checkout di aplikasi demo ini akan mengarahkan Anda ke WhatsApp Admin.</p>
+                    <p class="mt-2 text-sm text-gray-500">Total belanja Anda adalah <span class="font-bold text-indigo-600">Rp ${this.formatRupiah(this.calculateCartTotal())}</span>.</p>
+                `, `
+                    <button onclick="window.open('https://wa.me/6285817938860?text=Saya%20ingin%20melakukan%20checkout%20untuk%20total%20belanja%20Rp%20${this.calculateCartTotal()}', '_blank'); App.hideModal('checkout-info')" class="bg-green-600 text-white px-4 py-2 rounded-lg">Lanjut ke WhatsApp</button>
+                    <button onclick="App.hideModal('checkout-info')" class="bg-gray-400 text-white px-4 py-2 rounded-lg">Batal</button>
+                `);
+            }
+
+            calculateCartTotal() {
+                return Object.values(this.userCart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            }
+            
+            // --- MODALS ---
+            showModal(id, title, body, footer = '') { /* ... content ... */
+                const modalHtml = `
+                    <div id="${id}" class="modal-overlay fixed inset-0 flex items-center justify-center z-50 p-4" onclick="App.hideModal('${id}')">
+                        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 transition-all duration-300 transform scale-100" onclick="event.stopPropagation()">
+                            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                                <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
+                                <button onclick="App.hideModal('${id}')" class="text-gray-400 hover:text-gray-600">
+                                    <i data-lucide="x" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+                            <div class="text-gray-700">
+                                ${body}
+                            </div>
+                            <div class="mt-4 pt-4 border-t">
+                                ${footer}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('modal-container').innerHTML = modalHtml;
+                lucide.createIcons();
+            }
+
+            hideModal(id) {
+                const modal = document.getElementById(id);
+                if (modal) modal.remove();
+            }
+
+            // --- USER VIEWS (Diperbarui) ---
+            renderAdminLogin() { /* ... content ... */ return `
+                    <div class="flex items-center justify-center min-h-[60vh]">
+                        <div class="w-full max-w-sm p-8 space-y-6 bg-white rounded-xl shadow-2xl border-t-4 border-indigo-500">
+                            <h2 class="text-2xl font-bold text-gray-900 text-center">Login Admin</h2>
+                            <p class="text-gray-500 text-center">Masukkan password Admin untuk mengakses halaman pengelolaan.</p>
+                            <form onsubmit="App.handleAdminLogin(event)" class="space-y-4">
+                                <div>
+                                    <label for="admin-password" class="sr-only">Password</label>
+                                    <input type="password" id="admin-password" placeholder="Password" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                </div>
+                                <p id="admin-login-error" class="hidden text-sm text-red-600 text-center"></p>
+                                <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition">
+                                    Masuk
+                                </button>
+                            </form>
+                            <button onclick="App.setView('userHome')" class="w-full text-sm text-gray-500 hover:text-indigo-600 mt-4">
+                                Kembali ke Halaman Utama
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            renderUserHome() { /* ... content ... */
+                const productGroups = this.products.reduce((acc, product) => {
+                    acc[product.category] = (acc[product.category] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const categoryList = Object.entries(productGroups).map(([category, count]) => `
+                    <li class="flex justify-between items-center p-4 bg-white rounded-lg shadow-md border-l-4 border-indigo-500">
+                        <span class="text-lg font-medium text-gray-700">${category}</span>
+                        <span class="text-2xl font-bold text-indigo-600">${count}</span>
+                    </li>
+                `).join('');
+
+                const productCount = this.products.length;
+                const totalStock = this.products.reduce((sum, p) => sum + (p.stock || 0), 0);
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-2">Selamat Datang di <span class="text-indigo-600">TOKO</span><span class="text-orange-500">aing</span></h1>
+                    <p class="text-gray-600 mb-8">Anda ${this.isLoggedIn ? '<span class="text-green-600 font-bold">sudah login</span>' : '<span class="text-red-500 font-bold">belum login</span>'}. Silakan login untuk fitur Mystery Box dan Keranjang.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                        <div class="bg-indigo-500 text-white p-6 rounded-xl shadow-lg">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="package" class="w-8 h-8"></i>
+                                <h3 class="text-xl font-semibold">Total Jenis Produk</h3>
+                            </div>
+                            <p class="text-4xl font-extrabold mt-2">${Object.keys(productGroups).length}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <div class="flex items-center space-x-3 text-gray-700">
+                                <i data-lucide="tag" class="w-8 h-8 text-indigo-500"></i>
+                                <h3 class="text-xl font-semibold">Total Barang Dijual</h3>
+                            </div>
+                            <p class="text-4xl font-extrabold mt-2 text-indigo-600">${productCount}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <div class="flex items-center space-x-3 text-gray-700">
+                                <i data-lucide="archive" class="w-8 h-8 text-green-500"></i>
+                                <h3 class="text-xl font-semibold">Total Stok Tersedia</h3>
+                            </div>
+                            <p class="text-4xl font-extrabold mt-2 text-green-600">${totalStock}</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Rangkuman Berdasarkan Jenis Barang</h2>
+                    <ul class="space-y-4">
+                        ${categoryList.length > 0 ? categoryList : '<li class="text-gray-500">Belum ada data produk. Silahkan tambah melalui menu Admin.</li>'}
+                    </ul>
+                `;
+            }
+
+            renderUserProducts() {
+                const productCards = this.products.filter(p => p.stock > 0).map(product => `
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl">
+                        <img src="${product.imageUrl}"
+                             alt="${product.name}" class="w-full h-48 object-cover object-center"
+                             onerror="this.onerror=null;this.src='https://placehold.co/400x300/a5b4fc/1e3a8a?text=Produk Placeholder';"
+                        >
+                        <div class="p-5 flex-grow">
+                            <p class="text-sm font-medium text-indigo-600 mb-1">${product.category}</p>
+                            <h3 class="text-xl font-bold text-gray-800 line-clamp-2">${product.name}</h3>
+                            <p class="text-3xl font-extrabold text-green-600 mt-2">Rp ${this.formatRupiah(product.price)}</p>
+                            <p class="text-sm text-gray-500 mt-1">Stok: ${product.stock}</p>
+                        </div>
+                        <div class="p-5 border-t space-y-3">
+                            <button onclick="App.handleAddToCart('${product.id}')"
+                                    class="w-full bg-orange-500 text-white font-semibold py-2 rounded-lg hover:bg-orange-600 transition-colors shadow-md shadow-orange-300">
+                                <i data-lucide="shopping-cart" class="w-5 h-5 inline mr-2"></i> Tambah ke Keranjang
+                            </button>
+                            <button onclick="App.handleBuyProduct('${product.id}', '${product.buyLink}')"
+                                    class="w-full bg-indigo-600 text-white font-semibold py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-300">
+                                Beli Langsung
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Semua Barang Dijual</h1>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        ${productCards.length > 0 ? productCards : '<p class="col-span-full text-center text-gray-500 p-10 bg-white rounded-xl">Saat ini tidak ada produk yang tersedia. Cek lagi nanti!</p>'}
+                    </div>
+                `;
+            }
+
+            async handleBuyProduct(productId, buyLink) {
+                if (!this.db || !this.isAuthReady) {
+                    this.showModal('auth-error', 'Kesalahan', 'Autentikasi belum selesai. Silakan coba lagi.');
+                    return;
+                }
+
+                // RTDB Reference ke stok produk
+                const stockRef = this.getSpecificRef(DB_ROOT_PATHS.PRODUCTS, productId);
+
+                try {
+                    const transactionResult = await runTransaction(stockRef, (currentData) => {
+                        if (currentData === null || currentData.stock <= 0) {
+                            return; 
+                        }
+                        currentData.stock -= 1;
+                        return currentData; 
+                    });
+
+                    if (transactionResult.committed) {
+                        window.open(buyLink, '_blank');
+                        this.showModal('buy-success', 'Pembelian Berhasil!', `
+                            <p>pembelian berhasil. pastikan anda sudah membayar !.</p>
+                            <p class="mt-2 text-sm text-gray-500">Pastikan Anda menyelesaikan transaksi di halaman tujuan.</p>
+                        `, `<button onclick="App.hideModal('buy-success')" class="bg-indigo-500 text-white px-4 py-2 rounded-lg">OK</button>`);
+                    } else {
+                        this.showModal('buy-error', 'Gagal Beli', `<p>Maaf, stok barang ini sudah habis atau gagal transaksi.</p>`, `<button onclick="App.hideModal('buy-error')" class="bg-red-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                    }
+
+                } catch (error) {
+                    console.error("Gagal melakukan pembelian:", error);
+                    this.showModal('buy-error', 'Gagal Beli', `<p>Terjadi kesalahan sistem saat transaksi: ${error.message}</p>`, `<button onclick="App.hideModal('buy-error')" class="bg-red-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                }
+            }
+
+
+            renderUserMB() {
+                // Pengecekan Login (walaupun sudah ada di setView)
+                if (!this.isLoggedIn) {
+                    return `
+                        <div class="text-center p-10 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-xl shadow-lg mt-10">
+                            <i data-lucide="lock" class="w-10 h-10 mx-auto mb-4"></i>
+                            <h1 class="text-2xl font-bold">Akses Terbatas</h1>
+                            <p class="mt-2">Fitur Mystery Box hanya tersedia untuk pengguna yang sudah **Login**.</p>
+                            <button onclick="App.setView('userLogin')" class="mt-4 bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition">
+                                Login Sekarang
+                            </button>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Mystery Box Berhadiah Baju</h1>
+                    <div class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-2xl border-4 border-indigo-400">
+                        <div class="text-center mb-6">
+                            <i data-lucide="package" class="w-20 h-20 text-indigo-600 mx-auto"></i>
+                            <h2 class="text-2xl font-extrabold text-gray-800 mt-3">Raih Kesempatan Menang!</h2>
+                            <p class="text-gray-500">Mistery Box berisi hadiah menarik. Pemenang diundi berdasarkan ID Akun Anda!</p>
+                            <p class="text-xs text-gray-400 mt-1">Akun: ${this.userEmail}</p>
+                        </div>
+                        ${this.renderMBActionSection()}
+                    </div>
+                `;
+            }
+
+            renderMBActionSection() {
+                if (!this.isLoggedIn) return ''; // Di-handle oleh renderUserMB
+
+                const userPlays = this.getUserMbPlays();
+                const currentPlay = userPlays.find(p => !p.hasOpened && p.isApproved);
+                const isWaitingPaymentProof = userPlays.find(p => !p.isApproved && !p.isPaidProofSent);
+                const isWaitingAdminApproval = userPlays.find(p => !p.isApproved && p.isPaidProofSent);
+
+                let actionSection;
+
+                if (currentPlay) {
+                    actionSection = `
+                        <p class="text-center text-green-600 font-semibold text-lg mb-4">SELAMAT! Bukti pembayaran Anda telah dikonfirmasi oleh Admin. Anda sekarang dapat membuka Mystery Box!</p>
+                        <button onclick="App.handleOpenMysteryBox('${currentPlay.id}')"
+                                class="w-full bg-green-500 text-white font-bold text-xl py-4 rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-green-300 transform hover:scale-[1.02]">
+                            <i data-lucide="gift" class="w-6 h-6 inline mr-2"></i> BUKA MYSTERY BOX SEKARANG!
+                        </button>
+                    `;
+                } else if (isWaitingAdminApproval) {
+                    actionSection = `
+                        <div class="text-center p-6 bg-yellow-100 border border-yellow-400 text-yellow-800 rounded-lg">
+                            <i data-lucide="clock" class="w-8 h-8 mx-auto mb-3"></i>
+                            <p class="font-bold text-lg">Menunggu Konfirmasi Admin</p>
+                            <p>Anda telah mengirimkan bukti pembayaran. Admin sedang memprosesnya. Mohon tunggu konfirmasi untuk bisa membuka Mystery Box.</p>
+                        </div>
+                    `;
+                } else if (isWaitingPaymentProof) {
+                    actionSection = `
+                        <div class="text-center p-6 bg-red-100 border border-red-400 text-red-800 rounded-lg">
+                            <i data-lucide="alert-triangle" class="w-8 h-8 mx-auto mb-3"></i>
+                            <p class="font-bold text-lg">TINDAKAN DIBUTUHKAN</p>
+                            <p>Anda telah melakukan pembelian Mystery Box, namun belum mengirimkan bukti pembayaran.</p>
+                            <button onclick="App.showPaymentProofModal('${isWaitingPaymentProof.id}')"
+                                    class="mt-4 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">
+                                Kirim Bukti Bayar Sekarang
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    actionSection = `
+                        <p class="text-center text-gray-700 mb-4">Klik tombol di bawah untuk membeli Mystery Box!</p>
+                        <button onclick="App.handleBuyMysteryBox()"
+                                class="w-full bg-indigo-600 text-white font-bold text-xl py-4 rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-300 transform hover:scale-[1.02]">
+                            <i data-lucide="shopping-cart" class="w-6 h-6 inline mr-2"></i> BELI MYSTERY BOX
+                        </button>
+                    `;
+                }
+                return actionSection;
+            }
+
+            // Mulai Pembelian Mystery Box (Menggunakan RTDB push)
+            async handleBuyMysteryBox() {
+                if (!this.isLoggedIn) {
+                    this.showModal('login-required', 'Perlu Login', 'Anda harus login terlebih dahulu untuk membeli Mystery Box.');
+                    this.setView('userLogin');
+                    return;
+                }
+                
+                const newPlay = {
+                    userId: this.userId, // Menggunakan User ID yang sudah login
+                    userEmail: this.userEmail,
+                    timestamp: new Date().toISOString(),
+                    isPaidProofSent: false, 
+                    isApproved: false, 
+                    isWinner: false, 
+                    hasOpened: false, 
+                };
+
+                try {
+                    // 1. Catat permainan baru di database menggunakan push untuk ID unik
+                    const playsRef = this.getPublicRef(DB_ROOT_PATHS.MB_PLAYS);
+                    const newPlayRef = push(playsRef);
+                    await set(newPlayRef, newPlay);
+                    const newPlayId = newPlayRef.key;
+
+                    // 2. Redirect ke link pembayaran (lynk.id)
+                    const externalLink = 'https://lynk.id/yustdan/gmz9dn1dk1ek/checkout';
+                    window.open(externalLink, '_blank');
+                    
+                    // 3. Tampilkan modal untuk langkah selanjutnya
+                    this.showPaymentProofModal(newPlayId, true);
+
+                } catch (error) {
+                    console.error("Gagal mencatat Mystery Box Play:", error);
+                    this.showModal('mb-buy-error', 'Gagal', 'Terjadi kesalahan saat memulai Mystery Box. Coba lagi.');
+                }
+            }
+
+            // Modal Kirim Bukti Bayar (Diperbarui untuk alur baru)
+            showPaymentProofModal(playId, isNew = false) { 
+                 const redirectAction = isNew ? `window.open('https://wa.me/6285817938860?text=Saya%20sudah%20membeli%20Mystery%20Box%20dan%20ingin%20mengirim%20bukti%20pembayaran.%20Play%20ID%3A%20${playId}', '_blank'); App.handlePaymentProofSent('${playId}')` 
+                                             : `window.open('https://wa.me/6285817938860?text=Saya%20mengirim%20bukti%20bayar%20untuk%20Play%20ID%3A%20${playId}', '_blank'); App.handlePaymentProofSent('${playId}')`;
+                                             
+                this.showModal('payment-proof-modal', 'Konfirmasi Pembayaran Anda', `
+                    <p class="text-lg font-semibold text-gray-800 mb-3">Langkah Selanjutnya:</p>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                        <li>Lakukan pembayaran melalui link <span class="font-bold text-indigo-600">https://lynk.id/yustdan</span> yang telah dibuka.</li>
+                        <li>Kirimkan bukti pembayaran Anda ke WhatsApp Admin (085817938860) dengan mencantumkan **Play ID** di bawah.</li>
+                        <li>Setelah screenshoot bukti bayar silahkan mengirim bukti bayar, tekan tombol ** KIRIM BUKTI** di bawah.</li>
+                    </ol>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm font-semibold text-gray-600 mb-2">Play ID Anda: <span class="font-mono text-indigo-700">${playId}</span></p>
+                        <button onclick="${redirectAction}"
+                                class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition shadow-md">
+                            <i data-lucide="send" class="w-5 h-5 inline mr-2"></i> KIRIM BUKTI PEMBAYARAN
+                        </button>
+                    </div>
+                `, `<button onclick="App.hideModal('payment-proof-modal')" class="bg-gray-400 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                lucide.createIcons();
+            }
+
+            // Update status bahwa bukti bayar sudah dikirim user (Menggunakan RTDB update)
+            async handlePaymentProofSent(playId) {
+                if (!this.db || !this.isLoggedIn) return;
+
+                try {
+                    const playRef = this.getSpecificRef(DB_ROOT_PATHS.MB_PLAYS, playId);
+                    await update(playRef, { isPaidProofSent: true });
+
+                    this.hideModal('payment-proof-modal');
+                    this.showModal('proof-sent-success', 'Terkirim!', 'Status bukti bayar Anda telah dicatat. Admin akan segera memprosesnya.');
+                    this.setView('userOrders'); // Arahkan ke Pesanan Saya
+
+                } catch (error) {
+                    console.error("Gagal update bukti bayar:", error);
+                }
+            }
+
+            // Membuka Mystery Box (Menggunakan RTDB update)
+            async handleOpenMysteryBox(playId) {
+                if (!this.db || !this.isLoggedIn) return;
+
+                try {
+                    const play = this.mbPlays.find(p => p.id === playId);
+                    if (!play || play.hasOpened) {
+                        this.showModal('mb-error', 'Kesalahan', 'Box sudah dibuka atau ID tidak valid.');
+                        return;
+                    }
+
+                    // Update status telah dibuka
+                    const playRef = this.getSpecificRef(DB_ROOT_PATHS.MB_PLAYS, playId);
+                    await update(playRef, { hasOpened: true });
+
+                    // Tampilkan hasil
+                    if (play.isWinner) {
+                        this.showModal('mb-win', 'SELAMAT! ANDA MENANG!', `
+                            <div class="text-center p-4">
+                                <i data-lucide="award" class="w-12 h-12 text-yellow-500 mx-auto mb-4"></i>
+                                <p class="text-xl font-bold text-gray-800">Anda berhasil memenangkan VOUCHER TUKAR BAJU!</p>
+                                <p class="mt-4">Silakan **screenshot** notifikasi ini dan kirimkan ke Admin (WA: 085817938860) untuk klaim hadiah Anda.</p>
+                                <div class="mt-4 p-3 bg-gray-100 rounded-lg">
+                                    <p class="font-mono text-lg text-indigo-700">VOUCHER-${Math.random().toString(36).substring(2, 10).toUpperCase()}</p>
+                                </div>
+                            </div>
+                        `, `<button onclick="App.hideModal('mb-win')" class="bg-indigo-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                    } else {
+                        this.showModal('mb-lose', 'Coba Lagi Nanti :(', `
+                            <div class="text-center p-4">
+                                <i data-lucide="frown" class="w-12 h-12 text-gray-500 mx-auto mb-4"></i>
+                                <p class="text-xl font-bold text-gray-800">Maaf, Anda belum beruntung.</p>
+                                <p class="mt-2">Coba lagi Mystery Box baru untuk kesempatan menang!</p>
+                            </div>
+                        `, `<button onclick="App.hideModal('mb-lose')" class="bg-red-500 text-white px-4 py-2 rounded-lg">Tutup</button>`);
+                    }
+                    this.setView('userOrders'); 
+                } catch (error) {
+                    console.error("Gagal membuka Mystery Box:", error);
+                    this.showModal('mb-open-error', 'Gagal', 'Terjadi kesalahan saat membuka Box. Coba lagi.');
+                }
+            }
+
+
+            // --- ADMIN VIEWS ---
+            renderAdminProducts() {
+                // Tampilan ini tidak berubah, logic gambar sudah mendukung Base64/URL
+                if (!this.isAdmin) return this.renderAccessDenied();
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Admin: Kelola Produk Dijual</h1>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Tambah/Edit Produk</h2>
+                        <form id="product-form" onsubmit="App.handleProductSubmit(event)">
+                            <input type="hidden" id="product-id">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-4">
+                                    <input type="text" id="product-name" placeholder="Nama Produk" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="number" id="product-price" placeholder="Harga (contoh: 50000)" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="number" id="product-stock" placeholder="Stok Awal" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <input type="text" id="product-category" placeholder="Kategori (contoh: Jaket)" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                </div>
+                                <div class="space-y-4">
+                                    <!-- Field untuk URL Gambar -->
+                                    <input type="url" id="product-image-link" placeholder="1. URL Gambar Produk (Contoh: https://...)" class="w-full p-3 border border-gray-300 rounded-lg">
+                                    
+                                    <!-- Field untuk Base64 Gambar -->
+                                    <textarea id="product-image-base64" rows="3" placeholder="2. Base64 Gambar Produk (Data URI atau Base64 mentah)" class="w-full p-3 border border-gray-300 rounded-lg resize-none"></textarea>
+                                    <p class="text-xs text-gray-500 -mt-3">Jika mengisi URL dan Base64, URL akan diprioritaskan.</p>
+
+                                    <!-- Link CTA Beli -->
+                                    <input type="url" id="product-buylink" placeholder="https://lynk.id/yustdan/gmz9dn1dk1ek/checkout" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                </div>
+                            </div>
+                            <div class="mt-6 flex justify-end space-x-4">
+                                <button type="button" onclick="App.clearProductForm()" class="bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition">Batal/Clear</button>
+                                <button type="submit" id="product-submit-btn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Tambah Produk</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Daftar Produk (${this.products.length})</h2>
+                    <!-- Wrapper untuk horizontal scroll jika tabel terlalu lebar di mobile -->
+                    <div class="overflow-x-auto shadow-md rounded-lg bg-white">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Nama</th>
+                                    <th scope="col" class="px-6 py-3">Kategori</th>
+                                    <th scope="col" class="px-6 py-3">Harga</th>
+                                    <th scope="col" class="px-6 py-3">Stok</th>
+                                    <th scope="col" class="px-6 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-list-body">
+                                <!-- Product rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            renderProductList() { 
+                const listBody = document.getElementById('product-list-body');
+                if (!listBody) return;
+
+                listBody.innerHTML = this.products.map(product => `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${product.name}</th>
+                        <td class="px-6 py-4">${product.category}</td>
+                        <td class="px-6 py-4">Rp ${this.formatRupiah(product.price)}</td>
+                        <td class="px-6 py-4 font-bold ${product.stock < 10 ? 'text-red-500' : 'text-green-600'}">${product.stock}</td>
+                        <td class="px-6 py-4 space-x-2">
+                            <button onclick="App.editProduct('${product.id}')" class="text-indigo-600 hover:text-indigo-900 font-medium">Edit</button>
+                            <button onclick="App.deleteProduct('${product.id}')" class="text-red-600 hover:text-red-900 font-medium">Hapus</button>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada produk.</td></tr>';
+            }
+
+            async handleProductSubmit(event) {
+                event.preventDefault();
+                if (!this.db || !this.isAdmin) return;
+
+                const id = document.getElementById('product-id').value;
+                const name = document.getElementById('product-name').value;
+                const category = document.getElementById('product-category').value;
+                const buyLink = document.getElementById('product-buylink').value;
+                
+                const imageLink = document.getElementById('product-image-link').value.trim();
+                const imageBase64 = document.getElementById('product-image-base64').value.trim();
+
+                const price = parseInt(document.getElementById('product-price').value);
+                const stock = parseInt(document.getElementById('product-stock').value);
+
+                if (isNaN(price) || price <= 0 || isNaN(stock) || stock < 0 || (!imageLink && !imageBase64)) {
+                    this.showModal('validation-error', 'Input Error', 'Pastikan Harga & Stok valid, dan salah satu sumber Gambar (URL/Base64) diisi.');
+                    return;
+                }
+                
+                const productData = { 
+                    name, 
+                    price, 
+                    stock, 
+                    category, 
+                    buyLink,
+                    imageLink: imageLink || null, 
+                    imageBase64: imageBase64 || null 
+                };
+
+                try {
+                    if (id) {
+                        const productRef = this.getSpecificRef(DB_ROOT_PATHS.PRODUCTS, id);
+                        await update(productRef, productData);
+                        console.log("Produk berhasil diupdate (RTDB):", id);
+                    } else {
+                        const productsRef = this.getPublicRef(DB_ROOT_PATHS.PRODUCTS);
+                        const newProductRef = push(productsRef);
+                        await set(newProductRef, productData);
+                        console.log("Produk berhasil ditambahkan (RTDB).");
+                    }
+                    this.clearProductForm();
+                } catch (error) {
+                    console.error("Gagal menyimpan produk (RTDB):", error);
+                    this.showModal('db-error', 'DB Error', 'Gagal menyimpan data produk. Cek konsol.');
+                }
+            }
+
+            editProduct(productId) { 
+                const product = this.products.find(p => p.id === productId);
+                if (!product) return;
+                
+                document.getElementById('product-id').value = product.id;
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-price').value = product.price;
+                document.getElementById('product-stock').value = product.stock;
+                document.getElementById('product-category').value = product.category;
+                
+                document.getElementById('product-image-link').value = product.imageLink || '';
+                document.getElementById('product-image-base64').value = product.imageBase64 || '';
+                
+                document.getElementById('product-buylink').value = product.buyLink;
+                document.getElementById('product-submit-btn').textContent = 'Update Produk';
+            }
+
+            async deleteProduct(productId) {
+                 this.showModal('confirm-delete', 'Konfirmasi Hapus', `
+                    <p>Apakah Anda yakin ingin menghapus produk ini secara permanen?</p>
+                `, `
+                    <button onclick="App.hideModal('confirm-delete')" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">Batal</button>
+                    <button onclick="App._confirmDeleteProduct('${productId}')" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">Ya, Hapus</button>
+                `);
+            }
+            
+            async _confirmDeleteProduct(productId) {
+                this.hideModal('confirm-delete');
+                 try {
+                    const productRef = this.getSpecificRef(DB_ROOT_PATHS.PRODUCTS, productId);
+                    await remove(productRef);
+                    console.log("Produk berhasil dihapus (RTDB):", productId);
+                } catch (error) {
+                    console.error("Gagal menghapus produk (RTDB):", error);
+                    this.showModal('db-error', 'DB Error', 'Gagal menghapus data produk.');
+                }
+            }
+
+            clearProductForm() { 
+                document.getElementById('product-form').reset();
+                document.getElementById('product-id').value = '';
+                document.getElementById('product-submit-btn').textContent = 'Tambah Produk';
+            }
+
+            renderAdminMB() {
+                if (!this.isAdmin) return this.renderAccessDenied();
+
+                const totalPlays = this.mbPlays.length;
+                const totalUsers = [...new Set(this.mbPlays.map(p => p.userId))].length; // Hitung berdasarkan userId
+                const totalWins = this.mbPlays.filter(p => p.isWinner).length;
+
+                return `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-8 border-b pb-2">Admin: Kelola Mystery Box Plays</h1>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-indigo-500 text-white p-6 rounded-xl shadow-lg">
+                            <h3 class="text-xl font-semibold">Total Kali Main</h3>
+                            <p class="text-4xl font-extrabold mt-2">${totalPlays}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-xl font-semibold text-gray-700">Total User (UID Unik)</h3>
+                            <p class="text-4xl font-extrabold mt-2 text-indigo-600">${totalUsers}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-xl font-semibold text-gray-700">Total Kemenangan</h3>
+                            <p class="text-4xl font-extrabold mt-2 text-green-600">${totalWins}</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Daftar Semua Permainan</h2>
+                    
+                    <div class="overflow-x-auto shadow-md rounded-lg bg-white table-scroll-wrapper">
+                        <table class="w-full text-sm text-left text-gray-500 min-w-[700px]">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Akun (UID/Email)</th>
+                                    <th scope="col" class="px-6 py-3">Bukti Bayar</th>
+                                    <th scope="col" class="px-6 py-3">Konfirmasi Admin</th>
+                                    <th scope="col" class="px-6 py-3">Status Menang</th>
+                                    <th scope="col" class="px-6 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mb-plays-body">
+                                <!-- MB Play rows will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            renderMBPlayList() { 
+                const listBody = document.getElementById('mb-plays-body');
+                if (!listBody) return;
+
+                const uidPlayCounts = this.mbPlays.reduce((acc, play) => {
+                    acc[play.userId] = (acc[play.userId] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const sortedPlays = [...this.mbPlays].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                listBody.innerHTML = sortedPlays.map(play => {
+                    const isApproved = play.isApproved;
+                    const isWinner = play.isWinner;
+                    const isPaid = play.isPaidProofSent;
+                    const hasOpened = play.hasOpened;
+                    const canOpen = isApproved && !hasOpened;
+                    const playCount = uidPlayCounts[play.userId] || 0;
+
+                    let proofStatus, approvalStatus, winnerStatus;
+
+                    if (isPaid) {
+                        proofStatus = `<span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Terkirim</span>`;
+                    } else {
+                        proofStatus = `<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Menunggu</span>`;
+                    }
+
+                    if (isApproved) {
+                        approvalStatus = `<span class="bg-indigo-100 text-indigo-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Dikonfirmasi</span>`;
+                    } else if (isPaid) {
+                        approvalStatus = `<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Pending</span>`;
+                    } else {
+                        approvalStatus = `<span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Belum Bayar</span>`;
+                    }
+
+                    if (hasOpened) {
+                        winnerStatus = isWinner ? `<span class="bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">MENANG (Klaim)</span>` : `<span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Coba Lagi</span>`;
+                    } else if (canOpen) {
+                         winnerStatus = `<span class="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Siap Dibuka</span>`;
+                    } else {
+                        winnerStatus = `<span class="bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">Belum Dimainkan</span>`;
+                    }
+
+
+                    return `
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                <span class="font-bold text-base">${play.userEmail || 'UID Anonim'}</span>
+                                <span class="text-xs text-gray-500 block">${play.userId.substring(0, 8)}... (${playCount}x Main)</span>
+                                <span class="text-xs text-gray-400 block">${new Date(play.timestamp).toLocaleString()}</span>
+                            </th>
+                            <td class="px-6 py-4">${proofStatus}</td>
+                            <td class="px-6 py-4">${approvalStatus}</td>
+                            <td class="px-6 py-4">${winnerStatus}</td>
+                            <td class="px-6 py-4 space-y-2 flex flex-col items-start min-w-[150px]">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" ${isApproved ? 'checked' : ''} onchange="App.toggleMBApproval('${play.id}', this.checked)">
+                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    <span class="ms-3 text-sm font-medium text-gray-900">Konfirm Bayar</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" value="" class="sr-only peer" ${isWinner ? 'checked' : ''} onchange="App.toggleMBWinner('${play.id}', this.checked)" ${!isApproved ? 'disabled' : ''}>
+                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                    <span class="ms-3 text-sm font-medium text-gray-900">Menang</span>
+                                </label>
+                            </td>
+                        </tr>
+                    `;
+                }).join('') || '<tr><td colspan="5" class="text-center p-4 text-gray-500">Belum ada data permainan Mystery Box.</td></tr>';
+            }
+
+            // Toggle Approval (Menggunakan RTDB update)
+            async toggleMBApproval(playId, isApproved) {
+                if (!this.db || !this.isAdmin) return;
+                try {
+                    const playRef = this.getSpecificRef(DB_ROOT_PATHS.MB_PLAYS, playId);
+                    await update(playRef, { isApproved: isApproved });
+                    console.log(`Mystery Box Play ${playId} Approval set to: ${isApproved} (RTDB)`);
+                } catch (error) {
+                    console.error("Gagal update approval (RTDB):", error);
+                }
+            }
+
+            // Toggle Winner (Menggunakan RTDB update)
+            async toggleMBWinner(playId, isWinner) {
+                if (!this.db || !this.isAdmin) return;
+
+                const play = this.mbPlays.find(p => p.id === playId);
+                if (!play || !play.isApproved) {
+                    this.showModal('toggle-error', 'Kesalahan', 'Tidak bisa menentukan pemenang sebelum pembayaran dikonfirmasi!');
+                    return;
+                }
+
+                try {
+                    const playRef = this.getSpecificRef(DB_ROOT_PATHS.MB_PLAYS, playId);
+                    await update(playRef, { isWinner: isWinner });
+                    console.log(`Mystery Box Play ${playId} Winner status set to: ${isWinner} (RTDB)`);
+                } catch (error) {
+                    console.error("Gagal update winner status (RTDB):", error);
+                }
+            }
+
+
+            renderAccessDenied() { 
+                return `
+                    <div class="text-center p-10 bg-red-100 border border-red-400 text-red-800 rounded-xl shadow-lg mt-10">
+                        <i data-lucide="lock" class="w-10 h-10 mx-auto mb-4"></i>
+                        <h1 class="text-2xl font-bold">Akses Ditolak</h1>
+                        <p class="mt-2">Anda tidak memiliki izin Admin untuk melihat halaman ini.</p>
+                        <button onclick="App.toggleAdminView()" class="mt-4 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition">Halaman Login Admin</button>
+                    </div>
+                `;
+            }
+
+            // --- Utility Functions ---
+            formatRupiah(number) {
+                return new Intl.NumberFormat('id-ID').format(number);
+            }
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof window.App === 'undefined') {
+                window.App = new StoreApp();
+
+                document.getElementById('hamburger-btn').addEventListener('click', () => {
+                    window.App.toggleSidebar();
+                });
+            }
+        });
+
+    </script>
+</body>
+</html>
